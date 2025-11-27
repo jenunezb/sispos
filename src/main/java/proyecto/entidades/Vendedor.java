@@ -1,17 +1,21 @@
 package proyecto.entidades;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@Getter @Setter @NoArgsConstructor @ToString
+import java.io.Serializable;
+import java.util.List;
+
 @Entity
-public class Vendedor {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String nombre;
-    private String telefono;
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+public class Vendedor extends Usuario implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "sede_id")

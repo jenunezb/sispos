@@ -1,0 +1,67 @@
+package proyecto.servicios.implementacion;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import proyecto.dto.UsuarioDTO;
+import proyecto.entidades.Cuenta;
+import proyecto.entidades.Vendedor;
+import proyecto.repositorios.AdministradorRepository;
+import proyecto.repositorios.CiudadRepo;
+import proyecto.repositorios.CuentaRepo;
+import proyecto.repositorios.VendedorRepository;
+import proyecto.servicios.interfaces.AdministradorServicio;
+
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class AdministradorServicioImpl implements AdministradorServicio {
+
+    private final AdministradorRepository administradorRepository;
+    private final VendedorRepository vendedorRepository;
+    BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final CiudadRepo ciudadRepo;
+    private final CuentaRepo cuentaRepo;
+
+    @Override
+    public int crearVendedor(UsuarioDTO usuarioDTO) throws Exception {
+        if (estaRepetidaCedula(usuarioDTO.cedula())) {
+            throw new Exception("La cédula ya se encuentra registrada");
+        }
+
+        if (estaRepetidoCorreo(usuarioDTO.correo())) {
+            throw new Exception("El correo ya se encuentra registrado");
+        }
+
+        Vendedor vendedor = new Vendedor();
+        vendedor.setCedula(usuarioDTO.cedula());
+        vendedor.setNombre(usuarioDTO.nombre());
+        vendedor.setTelefono(usuarioDTO.telefono());
+        vendedor.setCiudad(ciudadRepo.findByNombre(usuarioDTO.ciudad()));
+        vendedor.setCorreo(usuarioDTO.correo());
+        vendedor.setEstado(true);
+        String passwordEncriptada = passwordEncoder.encode(usuarioDTO.password());
+        vendedor.setPassword(passwordEncriptada);
+
+        Vendedor vendedorNuevo = vendedorRepository.save(vendedor);
+
+        return vendedorNuevo.getCodigo();
+    }
+
+    public boolean estaRepetidaCedula(String cedula) {
+        Optional<Vendedor> digitadorBuscado = vendedorRepository.findByCedula(cedula);
+        if (!digitadorBuscado.isEmpty()) {
+            if (!digitadorBuscado.get().isEstado()) {
+                return false;
+            }
+            return true;
+        }
+        return vendedorRepository.existsByCedula(cedula);
+    }
+
+    public boolean estaRepetidoCorreo(String correo) {
+        Optional<Cuenta> cuenta = cuentaRepo.findByCorreo(correo);
+        return cuenta.isPresent(); // Devuelve true si la cuenta está presente (correo repetido), false si no está presente
+    }
+}

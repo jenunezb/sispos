@@ -20,4 +20,5 @@ public class Sede {
 
     @OneToMany(mappedBy = "sede")
     private List<Vendedor> vendedores;
+
 }
