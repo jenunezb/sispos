@@ -3,16 +3,12 @@ package proyecto.controladores;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import proyecto.dto.LoginDTO;
-import proyecto.dto.MensajeDTO;
-import proyecto.dto.TokenDTO;
+import org.springframework.web.bind.annotation.*;
+import proyecto.dto.*;
 import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.AutenticacionServicio;
-import proyecto.servicios.interfaces.VendedorServicio;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,6 +16,7 @@ import proyecto.servicios.interfaces.VendedorServicio;
 public class AutenticacionController {
 
     private final AutenticacionServicio autenticacionServicio;
+    private final AdministradorServicio administradorServicio;
 
     @PostMapping("/login")
     public ResponseEntity<MensajeDTO<TokenDTO>> login(@Valid @RequestBody LoginDTO loginDTO)
@@ -27,5 +24,9 @@ public class AutenticacionController {
         TokenDTO tokenDTO = autenticacionServicio.login(loginDTO);
         return ResponseEntity.ok().body(new MensajeDTO<>(false, tokenDTO));
     }
-
+    @GetMapping("/ciudades")
+    public ResponseEntity<MensajeDTO<List<CiudadGetDTO>>>listarCiudades(){
+        List<CiudadGetDTO> ciudadGetDTOS = autenticacionServicio.listarCiudades();
+        return ResponseEntity.ok().body(new MensajeDTO<>(false, ciudadGetDTOS));
+    }
 }

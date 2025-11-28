@@ -3,6 +3,7 @@ package proyecto.servicios.implementacion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import proyecto.dto.CiudadGetDTO;
 import proyecto.dto.LoginDTO;
 import proyecto.dto.TokenDTO;
 import proyecto.entidades.Administrador;
@@ -15,6 +16,7 @@ import proyecto.servicios.interfaces.AutenticacionServicio;
 import proyecto.utils.JWTUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,6 +31,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
     @Override
     public TokenDTO login(LoginDTO loginDTO) throws Exception {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        System.out.println("➡️ Correo recibido: #" + loginDTO.email() + "#");
         Optional<Cuenta> cuentaOptional = cuentaRepo.findByCorreo(loginDTO.email());
         if(cuentaOptional.isEmpty()){
             throw new CorreoNoEncontradoException("No existe el correo ingresado");
@@ -38,6 +41,11 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
             throw new Exception("La contraseña ingresada es incorrecta");
         }
         return new TokenDTO( crearToken(cuenta) );
+    }
+
+    @Override
+    public List<CiudadGetDTO> listarCiudades() {
+        return List.of();
     }
 
     private String crearToken(Cuenta cuenta){

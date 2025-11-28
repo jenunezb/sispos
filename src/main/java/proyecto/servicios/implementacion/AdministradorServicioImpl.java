@@ -3,7 +3,9 @@ package proyecto.servicios.implementacion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import proyecto.dto.AdministradorDTO;
 import proyecto.dto.UsuarioDTO;
+import proyecto.entidades.Administrador;
 import proyecto.entidades.Cuenta;
 import proyecto.entidades.Vendedor;
 import proyecto.repositorios.AdministradorRepository;
@@ -63,5 +65,28 @@ public class AdministradorServicioImpl implements AdministradorServicio {
     public boolean estaRepetidoCorreo(String correo) {
         Optional<Cuenta> cuenta = cuentaRepo.findByCorreo(correo);
         return cuenta.isPresent(); // Devuelve true si la cuenta está presente (correo repetido), false si no está presente
+    }
+
+    @Override
+    public int crearAdministrador(AdministradorDTO administradorDTO) throws Exception {
+
+        if (administradorDTO == null) {
+            throw new IllegalArgumentException("El objeto administradorDTO no puede ser nulo");
+        }
+        if (administradorDTO.correo() == null || administradorDTO.correo().isEmpty()) {
+            throw new Exception("Por favor completa el campo de correo");
+        }
+
+        if (estaRepetidoCorreo(administradorDTO.correo())) {
+            throw new Exception("El correo ya se encuentra registrado");
+        }
+
+        Administrador administrador = new Administrador();
+        administrador.setCorreo(administradorDTO.correo());
+        String passwordEncriptada = passwordEncoder.encode(administradorDTO.password());
+        administrador.setPassword(passwordEncriptada);
+        Administrador administradorNuevo = administradorRepository.save(administrador);
+
+        return administradorNuevo.getCodigo();
     }
 }
