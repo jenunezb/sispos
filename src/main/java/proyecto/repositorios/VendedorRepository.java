@@ -10,7 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
-    Vendedor findByCorreo(String correo);
+
+    Optional<Vendedor> findByCorreo(String correo);
 
     Optional<Vendedor> findByCedula(String cedula);
 

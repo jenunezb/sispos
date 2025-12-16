@@ -10,6 +10,7 @@ import proyecto.entidades.Cuenta;
 import proyecto.entidades.Vendedor;
 import proyecto.excepciones.CorreoNoEncontradoException;
 import proyecto.repositorios.CuentaRepo;
+import proyecto.repositorios.VendedorRepository;
 import proyecto.servicios.interfaces.AutenticacionServicio;
 import proyecto.utils.JWTUtils;
 
@@ -24,10 +25,15 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
 
     private final CuentaRepo cuentaRepo;
     private final JWTUtils jwtUtils;
+    private final VendedorRepository vendedorRepository;
 
 
     @Override
-    public TokenDTO login(LoginDTO loginDTO) throws Exception {
+    public TokenDTO login(LoginDTO loginDTO) throws Exception{
+
+        Vendedor vendedor = vendedorRepository.findByCorreo(loginDTO.email())
+                .orElseThrow(() -> new RuntimeException("Credenciales incorrectas"));
+
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         System.out.println("➡️ Correo recibido: #" + loginDTO.email() + "#");
         Optional<Cuenta> cuentaOptional = cuentaRepo.findByCorreo(loginDTO.email());
@@ -37,6 +43,11 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         Cuenta cuenta = cuentaOptional.get();
         if( !passwordEncoder.matches(loginDTO.password(), cuenta.getPassword()) ){
             throw new Exception("La contraseña ingresada es incorrecta");
+        }
+        if (!Boolean.TRUE.equals(vendedor.isEstado())) {
+            throw new RuntimeException(
+                    "El vendedor se encuentra desactivado. Comuníquese con el administrador."
+            );
         }
         return new TokenDTO( crearToken(cuenta) );
     }
