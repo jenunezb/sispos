@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import proyecto.dto.MensajeDTO;
 import proyecto.dto.SedeActualizarDTO;
 import proyecto.dto.SedeCrearDTO;
 import proyecto.dto.SedeDTO;
@@ -31,5 +32,12 @@ public class SedeController {
     @PutMapping
     public ResponseEntity<SedeDTO> actualizar(@Valid @RequestBody SedeActualizarDTO dto) {
         return ResponseEntity.ok(sedeServicio.actualizar(dto));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MensajeDTO<SedeDTO>> obtenerPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                new MensajeDTO<>(false, sedeServicio.obtenerPorId(id))
+        );
     }
 }

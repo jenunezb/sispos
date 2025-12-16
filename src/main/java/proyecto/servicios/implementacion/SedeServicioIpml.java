@@ -55,4 +55,12 @@ public class SedeServicioIpml implements SedeServicio {
                 sede.getUbicacion()
         );
     }
+
+    public SedeDTO obtenerPorId(Long id) {
+        Sede sede = sedeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        return toDTO(sede);
+    }
+
 }

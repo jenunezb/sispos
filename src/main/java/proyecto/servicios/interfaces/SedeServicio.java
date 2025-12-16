@@ -14,4 +14,7 @@ public interface SedeServicio {
     List<SedeDTO> listar();
 
     SedeDTO actualizar(SedeActualizarDTO dto);
+
+    SedeDTO obtenerPorId(Long id);
+
 }
