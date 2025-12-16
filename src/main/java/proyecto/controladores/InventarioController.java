@@ -1,0 +1,82 @@
+package proyecto.controladores;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import proyecto.dto.InventarioDTO;
+import proyecto.servicios.interfaces.InventarioServicio;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/inventarios")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
+public class InventarioController {
+
+    private final InventarioServicio inventarioServicio;
+
+    // ===============================
+    // LISTAR INVENTARIO POR SEDE
+    // ===============================
+    @GetMapping("/sede/{sedeId}")
+    public ResponseEntity<List<InventarioDTO>> listarPorSede(
+            @PathVariable Long sedeId
+    ) {
+        return ResponseEntity.ok(
+                inventarioServicio.listarPorSede(sedeId)
+        );
+    }
+
+    // ===============================
+    // OBTENER INVENTARIO POR PRODUCTO Y SEDE
+    // ===============================
+    @GetMapping("/producto/{productoId}/sede/{sedeId}")
+    public ResponseEntity<InventarioDTO> obtenerPorProductoYSede(
+            @PathVariable Long productoId,
+            @PathVariable Long sedeId
+    ) {
+        return ResponseEntity.ok(
+                inventarioServicio.obtenerPorProductoYSede(productoId, sedeId)
+        );
+    }
+
+    // ===============================
+    // REGISTRAR ENTRADA
+    // ===============================
+    @PostMapping("/entrada")
+    public ResponseEntity<Void> registrarEntrada(
+            @RequestParam Long productoId,
+            @RequestParam Long sedeId,
+            @RequestParam Integer cantidad
+    ) {
+        inventarioServicio.registrarEntrada(productoId, sedeId, cantidad);
+        return ResponseEntity.ok().build();
+    }
+
+    // ===============================
+    // REGISTRAR SALIDA (VENTA)
+    // ===============================
+    @PostMapping("/salida")
+    public ResponseEntity<Void> registrarSalida(
+            @RequestParam Long productoId,
+            @RequestParam Long sedeId,
+            @RequestParam Integer cantidad
+    ) {
+        inventarioServicio.registrarSalida(productoId, sedeId, cantidad);
+        return ResponseEntity.ok().build();
+    }
+
+    // ===============================
+    // REGISTRAR PÉRDIDA
+    // ===============================
+    @PostMapping("/perdida")
+    public ResponseEntity<Void> registrarPerdida(
+            @RequestParam Long productoId,
+            @RequestParam Long sedeId,
+            @RequestParam Integer cantidad
+    ) {
+        inventarioServicio.registrarPerdida(productoId, sedeId, cantidad);
+        return ResponseEntity.ok().build();
+    }
+}
