@@ -18,7 +18,6 @@ import java.util.List;
 @MappedSuperclass
 public class Usuario extends Cuenta implements Serializable {
 
-
     @Column(length = 10, nullable = false)
     @NotBlank(message = "La cédula es obligatoria")
     private String cedula;
@@ -35,7 +34,6 @@ public class Usuario extends Cuenta implements Serializable {
     @JoinColumn(nullable = false)
     @ManyToOne
     private Ciudad ciudad;
-
 
     @Column(nullable = false)
     private boolean estado;

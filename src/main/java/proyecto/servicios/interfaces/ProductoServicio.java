@@ -1,10 +1,20 @@
 package proyecto.servicios.interfaces;
 import java.util.List;
-import proyecto.entidades.Producto;
+
+import proyecto.dto.ProductoActualizarDTO;
+import proyecto.dto.ProductoCrearDTO;
+import proyecto.dto.ProductoDTO;
 
 public interface ProductoServicio {
-    List<Producto> listarProductos();
-    Producto obtenerPorId(Long id);
-    Producto guardar(Producto producto);
-    void eliminar(Long id);
+    ProductoDTO crearProducto(ProductoCrearDTO dto);
+
+    ProductoDTO actualizarProducto(ProductoActualizarDTO dto);
+
+    ProductoDTO obtenerProductoPorCodigo(Long codigo);
+
+    List<ProductoDTO> listarProductos();
+
+    List<ProductoDTO> listarProductosActivos();
+
+    void eliminarProducto(Long codigo);
 }
