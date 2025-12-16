@@ -24,9 +24,16 @@ public class AutenticacionController {
         TokenDTO tokenDTO = autenticacionServicio.login(loginDTO);
         return ResponseEntity.ok().body(new MensajeDTO<>(false, tokenDTO));
     }
+
     @GetMapping("/ciudades")
     public ResponseEntity<MensajeDTO<List<CiudadGetDTO>>>listarCiudades(){
         List<CiudadGetDTO> ciudadGetDTOS = autenticacionServicio.listarCiudades();
         return ResponseEntity.ok().body(new MensajeDTO<>(false, ciudadGetDTOS));
+    }
+
+    @PostMapping("/crearAdministrador")
+    public ResponseEntity<MensajeDTO<String>> crearAdministrador(@Valid @RequestBody AdministradorDTO administradorDTO)throws Exception{
+        administradorServicio.crearAdministrador(administradorDTO);
+        return ResponseEntity.ok().body(new MensajeDTO<>(false, "se agregó el administrador correctamente"));
     }
 }

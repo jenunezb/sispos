@@ -29,28 +29,22 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
 
 
     @Override
-    public TokenDTO login(LoginDTO loginDTO) throws Exception{
+    public TokenDTO login(LoginDTO loginDTO) throws Exception {
 
-        Vendedor vendedor = vendedorRepository.findByCorreo(loginDTO.email())
+        // Buscar cuenta por correo
+        Cuenta cuenta = cuentaRepo.findByCorreo(loginDTO.email())
                 .orElseThrow(() -> new RuntimeException("Credenciales incorrectas"));
 
+        // Validar contraseña
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        System.out.println("➡️ Correo recibido: #" + loginDTO.email() + "#");
-        Optional<Cuenta> cuentaOptional = cuentaRepo.findByCorreo(loginDTO.email());
-        if(cuentaOptional.isEmpty()){
-            throw new CorreoNoEncontradoException("No existe el correo ingresado");
-        }
-        Cuenta cuenta = cuentaOptional.get();
-        if( !passwordEncoder.matches(loginDTO.password(), cuenta.getPassword()) ){
+        if (!passwordEncoder.matches(loginDTO.password(), cuenta.getPassword())) {
             throw new Exception("La contraseña ingresada es incorrecta");
         }
-        if (!Boolean.TRUE.equals(vendedor.isEstado())) {
-            throw new RuntimeException(
-                    "El vendedor se encuentra desactivado. Comuníquese con el administrador."
-            );
-        }
-        return new TokenDTO( crearToken(cuenta) );
+
+        // Generar y retornar token
+        return new TokenDTO(crearToken(cuenta));
     }
+
 
     @Override
     public List<CiudadGetDTO> listarCiudades() {
@@ -61,8 +55,17 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         String rol;
         String nombre;
         if( cuenta instanceof Vendedor){
-            rol = "ingeniero";
+            rol = "vendedor";
             nombre = ((Vendedor) cuenta).getNombre();
+
+            // 🔒 Validar estado SOLO si es vendedor
+            if (cuenta instanceof Vendedor vendedor) {
+                if (!Boolean.TRUE.equals(vendedor.isEstado())) {
+                    throw new RuntimeException(
+                            "El vendedor se encuentra desactivado. Comuníquese con el administrador."
+                    );
+                }
+            }
         }else{
             rol = "administrador";
             nombre = "Administrador";

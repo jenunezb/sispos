@@ -12,6 +12,8 @@ import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
 
+import java.util.List;
+
 @RestController
 @SecurityRequirement(name = "bearerAuth")
 @RequestMapping("api/administrador")
@@ -89,6 +91,16 @@ public class AdministradorController {
         productoService.eliminarProducto(codigo);
         return ResponseEntity.ok(
                 new MensajeDTO(false, "Producto desactivado correctamente")
+        );
+    }
+
+    @GetMapping("/listar-vendedores")
+    public ResponseEntity<MensajeDTO<List<VendedorDTO>>> listarVendedores() {
+
+        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores();
+
+        return ResponseEntity.ok(
+                new MensajeDTO<>(false, vendedores)
         );
     }
 }
