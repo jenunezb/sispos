@@ -23,9 +23,6 @@ public class Producto {
     @Column(nullable = false)
     private Double precioVenta;
 
-    @Column(nullable = false)
-    private Integer cantidad;
-
     @Column(length = 50)
     private String categoria;
 

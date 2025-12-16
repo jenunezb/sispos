@@ -5,7 +5,6 @@ public record ProductoDTO(Long codigo,
                           String descripcion,
                           Double precioProduccion,
                           Double precioVenta,
-                          Integer cantidad,
                           String categoria,
                           Boolean estado) {
 }

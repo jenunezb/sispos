@@ -13,17 +13,12 @@ public record ProductoActualizarDTO(@NotNull(message = "El código del producto 
 
                                     @NotBlank String descripcion,
 
-                                    @NotNull
                                      @Positive
                                      Double precioProduccion,
 
                                     @NotNull
                                      @Positive
                                      Double precioVenta,
-
-                                    @NotNull
-                                     @Min(0)
-                                     Integer cantidad,
 
                                     String categoria,
 

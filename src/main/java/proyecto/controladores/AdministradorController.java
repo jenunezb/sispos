@@ -3,8 +3,7 @@ package proyecto.controladores;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.*;
@@ -18,13 +17,11 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 @RequestMapping("api/administrador")
 @AllArgsConstructor
-
 public class AdministradorController {
 
     private final AdministradorServicio administradorServicio;
     private final ProductoServicio productoService;
     private final VendedorServicio vendedorServicio;
-
 
     @PostMapping("/agregarVendedor")
     public ResponseEntity<MensajeDTO> crearVendedor(@RequestBody UsuarioDTO dto) throws Exception {
@@ -101,6 +98,16 @@ public class AdministradorController {
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, vendedores)
+        );
+    }
+
+    @GetMapping("/listar-productos")
+    public ResponseEntity<MensajeDTO<List<ProductoDTO>>> listarProductos() {
+
+        List<ProductoDTO> productoDTOS = productoService.listarProductos();
+
+        return ResponseEntity.ok(
+                new MensajeDTO<>(false, productoDTOS)
         );
     }
 }

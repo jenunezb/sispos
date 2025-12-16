@@ -10,16 +10,29 @@ public class Inventario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Integer stockActual;
-    private Integer entradas;
-    private Integer salidas;
-    private Integer perdidas;
+    // Stock actual disponible en la sede
+    @Column(nullable = false)
+    private Integer stockActual = 0;
 
-    @ManyToOne
-    @JoinColumn(name = "producto_id")
+    // Total histórico de entradas
+    @Column(nullable = false)
+    private Integer entradas = 0;
+
+    // Total histórico de salidas (ventas)
+    @Column(nullable = false)
+    private Integer salidas = 0;
+
+    // Total histórico de pérdidas (daños, vencidos, robos)
+    @Column(nullable = false)
+    private Integer perdidas = 0;
+
+    // Relación con producto
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
 
-    @ManyToOne
-    @JoinColumn(name = "sede_id")
+    // Relación con sede
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "sede_id", nullable = false)
     private Sede sede;
 }

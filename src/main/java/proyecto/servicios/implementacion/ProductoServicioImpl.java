@@ -25,7 +25,6 @@ public class ProductoServicioImpl implements ProductoServicio {
         producto.setDescripcion(dto.descripcion());
         producto.setPrecioProduccion(dto.precioProduccion());
         producto.setPrecioVenta(dto.precioVenta());
-        producto.setCantidad(dto.cantidad());
         producto.setCategoria(dto.categoria());
         producto.setEstado(true);
 
@@ -41,7 +40,6 @@ public class ProductoServicioImpl implements ProductoServicio {
         producto.setNombre(dto.nombre());
         producto.setPrecioProduccion(dto.precioProduccion());
         producto.setPrecioVenta(dto.precioVenta());
-        producto.setCantidad(dto.cantidad());
         producto.setCategoria(dto.categoria());
         producto.setEstado(dto.estado());
 
@@ -87,7 +85,6 @@ public class ProductoServicioImpl implements ProductoServicio {
                 producto.getDescripcion(),
                 producto.getPrecioProduccion(),
                 producto.getPrecioVenta(),
-                producto.getCantidad(),
                 producto.getCategoria(),
                 producto.getEstado()
         );

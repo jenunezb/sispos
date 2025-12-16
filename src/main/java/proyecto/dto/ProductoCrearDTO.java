@@ -19,9 +19,5 @@ public record ProductoCrearDTO(@NotBlank(message = "El nombre es obligatorio")
                                 @Positive(message = "El precio de venta debe ser mayor a 0")
                                 Double precioVenta,
 
-                               @NotNull(message = "La cantidad es obligatoria")
-                                @Min(value = 0, message = "La cantidad no puede ser negativa")
-                                Integer cantidad,
-
                                String categoria) {
 }
