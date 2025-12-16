@@ -25,17 +25,13 @@ public class AdministradorController {
 
 
     @PostMapping("/agregarVendedor")
-    public ResponseEntity<MensajeDTO<String>> crearVendedor(@Valid @RequestBody UsuarioDTO usuarioDTO)throws Exception{
-        try {
-            administradorServicio.crearVendedor(usuarioDTO);
-            return ResponseEntity.ok().body(new MensajeDTO<>(false, "Se agregó el vendedor correctamente"));
-        } catch (DataIntegrityViolationException e) {
-            return ResponseEntity.badRequest()
-                    .body(new MensajeDTO<>(true, "La cédula es obligatoria y no puede estar vacía"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new MensajeDTO<>(true, "Error interno al crear el vendedor"));
-        }
+    public ResponseEntity<MensajeDTO> crearVendedor(@RequestBody UsuarioDTO dto) throws Exception {
+
+        administradorServicio.crearVendedor(dto);
+
+        return ResponseEntity.ok(
+                new MensajeDTO(false, "Vendedor creado exitosamente")
+        );
     }
 
     @PostMapping("/crearAdministrador")
@@ -45,15 +41,13 @@ public class AdministradorController {
     }
 
     @PostMapping("/crearProducto")
-    public ResponseEntity<ProductoDTO> crearProducto(
-            @Valid @RequestBody ProductoCrearDTO dto) {
+    public ResponseEntity<ProductoDTO> crearProducto(@Valid @RequestBody ProductoCrearDTO dto) {
         ProductoDTO productoCreado = productoService.crearProducto(dto);
         return ResponseEntity.ok(productoCreado);
     }
 
     @PatchMapping("/estado")
-    public ResponseEntity<MensajeDTO> cambiarEstado(
-            @Valid @RequestBody CambiarEstadoVendedorDTO dto) {
+    public ResponseEntity<MensajeDTO> cambiarEstado(@Valid @RequestBody CambiarEstadoVendedorDTO dto) {
 
         vendedorServicio.cambiarEstado(dto.codigo(), dto.estado());
 
@@ -63,6 +57,38 @@ public class AdministradorController {
 
         return ResponseEntity.ok(
                 new MensajeDTO(false, texto)
+        );
+    }
+
+    /**
+     * Buscar producto por código
+     */
+    @GetMapping("/productos/{codigo}")
+    public ResponseEntity<ProductoDTO> obtenerProducto(@PathVariable Long codigo) {
+
+        ProductoDTO producto = productoService.obtenerProductoPorCodigo(codigo);
+        return ResponseEntity.ok(producto);
+    }
+
+    /**
+     * Editar producto
+     */
+    @PutMapping("/productos")
+    public ResponseEntity<ProductoDTO> editarProducto(@Valid @RequestBody ProductoActualizarDTO dto) {
+
+        ProductoDTO productoActualizado = productoService.actualizarProducto(dto);
+        return ResponseEntity.ok(productoActualizado);
+    }
+
+    /**
+     * Eliminar producto
+     */
+    @PutMapping("/productos/{codigo}/desactivar")
+    public ResponseEntity<MensajeDTO> desactivarProducto(
+            @PathVariable Long codigo) {
+        productoService.eliminarProducto(codigo);
+        return ResponseEntity.ok(
+                new MensajeDTO(false, "Producto desactivado correctamente")
         );
     }
 }

@@ -28,8 +28,8 @@ public class AdministradorServicioImpl implements AdministradorServicio {
 
     @Override
     public int crearVendedor(UsuarioDTO usuarioDTO) throws Exception {
-        if (estaRepetidaCedula(usuarioDTO.cedula())) {
-            throw new Exception("La cédula ya se encuentra registrada");
+        if (vendedorRepository.existsByCedula(usuarioDTO.cedula())) {
+            throw new RuntimeException("La cédula ya se encuentra registrada");
         }
 
         if (estaRepetidoCorreo(usuarioDTO.correo())) {

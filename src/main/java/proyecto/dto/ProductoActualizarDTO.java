@@ -11,6 +11,8 @@ public record ProductoActualizarDTO(@NotNull(message = "El código del producto 
                                     @NotBlank(message = "El nombre es obligatorio")
                                      String nombre,
 
+                                    @NotBlank String descripcion,
+
                                     @NotNull
                                      @Positive
                                      Double precioProduccion,

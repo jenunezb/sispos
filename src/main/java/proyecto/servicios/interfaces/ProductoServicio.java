@@ -6,6 +6,7 @@ import proyecto.dto.ProductoCrearDTO;
 import proyecto.dto.ProductoDTO;
 
 public interface ProductoServicio {
+
     ProductoDTO crearProducto(ProductoCrearDTO dto);
 
     ProductoDTO actualizarProducto(ProductoActualizarDTO dto);
