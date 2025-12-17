@@ -9,6 +9,8 @@ public interface InventarioServicio {
 
     List<InventarioDTO> listarPorSede(Long sedeId);
 
+    List<InventarioDTO> listarPorSede1(Long sedeId);
+
     InventarioDTO obtenerPorProductoYSede(Long productoId, Long sedeId);
 
     void registrarEntrada(Long productoId, Long sedeId, Integer cantidad);

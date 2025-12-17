@@ -114,7 +114,13 @@ public class InventarioServicioImpl implements InventarioServicio {
                 inv.getStockActual(),
                 inv.getEntradas(),
                 inv.getSalidas(),
-                inv.getPerdidas()
+                inv.getPerdidas(),
+                inv.getProducto().getPrecioVenta()
         );
     }
+
+    public List<InventarioDTO> listarPorSede1(Long sedeId) {
+        return inventarioRepository.listarInventarioCompletoPorSede(sedeId);
+    }
+
 }

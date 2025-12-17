@@ -38,6 +38,7 @@ public class ProductoServicioImpl implements ProductoServicio {
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
         producto.setNombre(dto.nombre());
+        producto.setDescripcion(dto.descripcion());
         producto.setPrecioProduccion(dto.precioProduccion());
         producto.setPrecioVenta(dto.precioVenta());
         producto.setCategoria(dto.categoria());

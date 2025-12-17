@@ -28,6 +28,11 @@ public class InventarioController {
         );
     }
 
+    @GetMapping("/sed/{sedeId}")
+    public ResponseEntity<List<InventarioDTO>> listarPorSede1(@PathVariable Long sedeId) {
+        return ResponseEntity.ok(inventarioServicio.listarPorSede(sedeId));
+    }
+
     // ===============================
     // OBTENER INVENTARIO POR PRODUCTO Y SEDE
     // ===============================

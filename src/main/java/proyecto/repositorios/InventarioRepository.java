@@ -1,7 +1,10 @@
 package proyecto.repositorios;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import proyecto.dto.InventarioDTO;
 import proyecto.entidades.Inventario;
 
 import java.util.List;
@@ -17,4 +20,23 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
 
     // Verificar si existe inventario para producto + sede
     boolean existsByProductoCodigoAndSedeId(Long productoId, Long sedeId);
+
+    @Query("""
+SELECT new proyecto.dto.InventarioDTO(
+    i.id,
+    p.codigo,
+    p.nombre,
+    COALESCE(i.stockActual, 0),
+    COALESCE(i.entradas, 0),
+    COALESCE(i.salidas, 0),
+    COALESCE(i.perdidas, 0),
+    p.precioVenta
+)
+FROM Producto p
+LEFT JOIN Inventario i
+    ON i.producto = p
+    AND i.sede.id = :sedeId
+""")
+    List<InventarioDTO> listarInventarioCompletoPorSede(@Param("sedeId") Long sedeId);
+
 }
