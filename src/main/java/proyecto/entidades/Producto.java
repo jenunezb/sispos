@@ -1,6 +1,7 @@
 package proyecto.entidades;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
 @Getter @Setter @NoArgsConstructor @ToString
@@ -14,10 +15,11 @@ public class Producto {
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = true, length = 255)
     private String descripcion;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
+    @PositiveOrZero
     private Double precioProduccion;
 
     @Column(nullable = false)

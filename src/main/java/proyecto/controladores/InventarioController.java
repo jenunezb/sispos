@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.InventarioDTO;
+import proyecto.dto.MovimientoInventarioDTO;
 import proyecto.servicios.interfaces.InventarioServicio;
 
 import java.util.List;
@@ -84,4 +85,13 @@ public class InventarioController {
         inventarioServicio.registrarPerdida(productoId, sedeId, cantidad);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/movimiento")
+    public ResponseEntity<Void> registrarMovimiento(
+            @RequestBody MovimientoInventarioDTO dto) {
+
+        inventarioServicio.registrarMovimiento(dto);
+        return ResponseEntity.ok().build();
+    }
+
 }
