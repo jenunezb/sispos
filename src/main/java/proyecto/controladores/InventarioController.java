@@ -69,7 +69,7 @@ public class InventarioController {
             @RequestParam Long sedeId,
             @RequestParam Integer cantidad
     ) {
-        inventarioServicio.registrarSalida(productoId, sedeId, cantidad);
+        inventarioServicio.registrarSalida(productoId, sedeId, cantidad, "observacion");
         return ResponseEntity.ok().build();
     }
 

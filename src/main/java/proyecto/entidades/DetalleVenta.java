@@ -1,5 +1,6 @@
 package proyecto.entidades;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,7 @@ public class DetalleVenta {
     @ManyToOne
     @JoinColumn(name = "venta_id")
     private Venta venta;
+
 
     @ManyToOne
     @JoinColumn(name = "producto_id")

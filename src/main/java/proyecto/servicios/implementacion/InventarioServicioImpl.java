@@ -5,10 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import proyecto.dto.InventarioDTO;
 import proyecto.dto.MovimientoInventarioDTO;
-import proyecto.entidades.Inventario;
-import proyecto.entidades.MovimientoInventario;
-import proyecto.entidades.Producto;
-import proyecto.entidades.Sede;
+import proyecto.entidades.*;
 import proyecto.repositorios.InventarioRepository;
 import proyecto.repositorios.MovimientoInventarioRepository;
 import proyecto.repositorios.ProductoRepository;
@@ -55,17 +52,28 @@ public class InventarioServicioImpl implements InventarioServicio {
     }
 
     @Override
-    public void registrarSalida(Long productoId, Long sedeId, Integer cantidad) {
+    @Transactional
+    public void registrarSalida(Long productoId, Long sedeId, Integer cantidad, String observacion) {
+
         Inventario inventario = obtenerOcrearInventario(productoId, sedeId);
 
         if (inventario.getStockActual() < cantidad) {
-            throw new RuntimeException("Stock insuficiente");
+            throw new RuntimeException("Stock insuficiente para el producto");
         }
 
         inventario.setSalidas(inventario.getSalidas() + cantidad);
         inventario.setStockActual(inventario.getStockActual() - cantidad);
 
         inventarioRepository.save(inventario);
+
+        MovimientoInventario movimiento = new MovimientoInventario();
+        movimiento.setProducto(inventario.getProducto());
+        movimiento.setSede(inventario.getSede());
+        movimiento.setTipo(TipoMovimiento.SALIDA);
+        movimiento.setCantidad(cantidad);
+        movimiento.setObservacion("Venta de producto");
+
+        movimientoRepository.save(movimiento);
     }
 
     @Override
@@ -149,7 +157,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         // 2. Reutilizar tu lógica existente
         switch (dto.tipo()) {
             case ENTRADA -> registrarEntrada(dto.productoId(), dto.sedeId(), dto.cantidad());
-            case SALIDA -> registrarSalida(dto.productoId(), dto.sedeId(), dto.cantidad());
+            case SALIDA -> registrarSalida(dto.productoId(), dto.sedeId(), dto.cantidad(), "Aquí va la observación");
             case PERDIDA -> registrarPerdida(dto.productoId(), dto.sedeId(), dto.cantidad());
         }
     }

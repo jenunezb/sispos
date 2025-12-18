@@ -16,7 +16,7 @@ public interface InventarioServicio {
 
     void registrarEntrada(Long productoId, Long sedeId, Integer cantidad);
 
-    void registrarSalida(Long productoId, Long sedeId, Integer cantidad);
+    void registrarSalida(Long productoId, Long sedeId, Integer cantidad, String observacion);
 
     void registrarPerdida(Long productoId, Long sedeId, Integer cantidad);
 
