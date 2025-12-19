@@ -39,4 +39,31 @@ LEFT JOIN Inventario i
 """)
     List<InventarioDTO> listarInventarioCompletoPorSede(@Param("sedeId") Long sedeId);
 
+    @Query("""
+        SELECT COALESCE(SUM(i.stockActual), 0)
+        FROM Inventario i
+    """)
+    Integer stockTotal();
+
+    @Query("""
+        SELECT COALESCE(SUM(i.stockActual * p.precioProduccion), 0)
+        FROM Inventario i
+        JOIN i.producto p
+    """)
+    Double valorInventario();
+
+    @Query("""
+        SELECT COALESCE(SUM(i.stockActual), 0)
+        FROM Inventario i
+        WHERE i.sede.id = :sedeId
+    """)
+    Integer stockPorSede(@Param("sedeId") Long sedeId);
+
+    @Query("""
+        SELECT COALESCE(SUM(i.stockActual * p.precioProduccion), 0)
+        FROM Inventario i
+        JOIN i.producto p
+        WHERE i.sede.id = :sedeId
+    """)
+    Double valorInventarioPorSede(@Param("sedeId") Long sedeId);
 }
