@@ -36,7 +36,7 @@ public class VentaServicioImpl implements VentaServicio{
             Vendedor vendedor = vendedorRepository.findById(dto.vendedorId())
                     .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
 
-            Sede sede = sedeRepository.findById(dto.vendedorId())
+            Sede sede = sedeRepository.findById(dto.sedeId())
                     .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
             Venta venta = new Venta();
