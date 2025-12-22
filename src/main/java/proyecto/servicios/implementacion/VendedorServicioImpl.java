@@ -44,4 +44,10 @@ public class VendedorServicioImpl implements VendedorServicio {
                 .toList();
     }
 
+    public Vendedor obtenerVendedorPorCorreo(String correo) {
+        return vendedorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException(
+                        "Vendedor no encontrado con correo: " + correo
+                ));
+    }
 }
