@@ -1,14 +1,31 @@
-# Imagen Java 17 (compatible con Spring Boot 3)
-FROM eclipse-temurin:17-jre
+# =========================
+# STAGE 1: BUILD
+# =========================
+FROM eclipse-temurin:17-jdk AS build
 
-# Directorio de trabajo
 WORKDIR /app
 
-# Copiamos el JAR generado por Gradle
-COPY build/libs/pos-1.0.0.jar app.jar
+# Copiamos archivos necesarios para Gradle
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+COPY src src
 
-# Puerto (Railway usa PORT internamente)
+# Permisos y build
+RUN chmod +x gradlew
+RUN ./gradlew clean bootJar -x test
+
+# =========================
+# STAGE 2: RUNTIME
+# =========================
+FROM eclipse-temurin:17-jre
+
+WORKDIR /app
+
+# Copiamos el JAR generado
+COPY --from=build /app/build/libs/pos-1.0.0.jar app.jar
+
 EXPOSE 8080
 
-# Comando de arranque
 ENTRYPOINT ["java", "-jar", "app.jar"]
