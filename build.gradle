@@ -8,20 +8,8 @@ group = 'co.com.dominiodigital'
 version = '1.0-SNAPSHOT'
 description = 'Sistema POS para inventario de productos'
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
-
 repositories {
     mavenCentral()
-}
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
 }
 
 dependencies {
