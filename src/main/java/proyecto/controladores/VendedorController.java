@@ -6,6 +6,7 @@ import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.InventarioDTO;
+import proyecto.dto.InventarioVendedorResponseDTO;
 import proyecto.entidades.Usuario;
 import proyecto.entidades.Vendedor;
 import proyecto.servicios.interfaces.InventarioServicio;
@@ -23,13 +24,17 @@ public class VendedorController {
     private VendedorServicio vendedorServicio;
 
     @GetMapping("/inventario")
-    public List<InventarioDTO> inventarioVendedor(
+    public InventarioVendedorResponseDTO inventarioVendedor(
             @RequestParam("correo") String correo) {
 
         Vendedor vendedor = vendedorServicio.obtenerVendedorPorCorreo(correo);
         Long sedeId = vendedor.getSede().getId();
 
-        return inventarioServicio.listarPorSede(sedeId);
-    }
+        List<InventarioDTO> inventario = inventarioServicio.listarPorSede(sedeId);
 
+        return new InventarioVendedorResponseDTO(sedeId, inventario);
+    }
 }
+
+
+
