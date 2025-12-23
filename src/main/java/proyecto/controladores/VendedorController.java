@@ -4,10 +4,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
 import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import proyecto.dto.InventarioDTO;
 import proyecto.entidades.Usuario;
 import proyecto.entidades.Vendedor;
@@ -27,10 +24,11 @@ public class VendedorController {
 
     @GetMapping("/inventario")
     public List<InventarioDTO> inventarioVendedor(
-            String correo) {
+            @RequestParam("correo") String correo) {
 
-        Vendedor vendedor =vendedorServicio.obtenerVendedorPorCorreo(correo);
+        Vendedor vendedor = vendedorServicio.obtenerVendedorPorCorreo(correo);
         Long sedeId = vendedor.getSede().getId();
+
         return inventarioServicio.listarPorSede(sedeId);
     }
 
