@@ -9,4 +9,6 @@ public interface AdministradorServicio {
 
     int crearAdministrador(AdministradorDTO administradorDTO) throws Exception;
 
+    void editarVendedor(UsuarioDTO usuarioDTO);
+
 }
