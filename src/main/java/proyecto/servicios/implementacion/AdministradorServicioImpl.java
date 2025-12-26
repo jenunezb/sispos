@@ -1,5 +1,6 @@
 package proyecto.servicios.implementacion;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -89,4 +90,26 @@ public class AdministradorServicioImpl implements AdministradorServicio {
 
         return administradorNuevo.getCodigo();
     }
+
+    @Override
+    public void editarVendedor(UsuarioDTO dto) {
+
+        Vendedor vendedor = vendedorRepository.findByCedula(dto.cedula())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Vendedor no encontrado")
+                );
+
+        vendedor.setNombre(dto.nombre());
+        vendedor.setCorreo(dto.correo());
+        vendedor.setTelefono(dto.telefono());
+        vendedor.setEstado(dto.estado());
+
+        if (dto.password() != null && !dto.password().isBlank()) {
+            vendedor.setPassword(passwordEncoder.encode(dto.password()));
+        }
+
+        vendedorRepository.save(vendedor);
+    }
+
+
 }

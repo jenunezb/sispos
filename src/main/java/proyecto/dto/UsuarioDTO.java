@@ -6,6 +6,7 @@ String nombre,
 String ciudad,
 String telefono,
 String password,
-String correo
+String correo,
+boolean estado
 ) {
 }

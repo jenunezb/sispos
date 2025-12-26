@@ -109,4 +109,16 @@ public class AdministradorController {
                 new MensajeDTO<>(false, productoDTOS)
         );
     }
+
+    @PutMapping("/editarVendedor")
+    public ResponseEntity<MensajeDTO> editarVendedor(
+            @Valid @RequestBody UsuarioDTO dto) throws Exception {
+
+        administradorServicio.editarVendedor(dto);
+
+        return ResponseEntity.ok(
+                new MensajeDTO(false, "Vendedor actualizado correctamente")
+        );
+    }
+
 }
