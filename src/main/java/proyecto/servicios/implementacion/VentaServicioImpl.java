@@ -16,6 +16,8 @@ import proyecto.servicios.interfaces.InventarioServicio;
 import proyecto.servicios.interfaces.VentaServicio;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +42,7 @@ public class VentaServicioImpl implements VentaServicio{
                     .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
             Venta venta = new Venta();
-            venta.setFecha(LocalDateTime.now());
+            venta.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
             venta.setVendedor(vendedor);
             venta.setSede(sede);
 
