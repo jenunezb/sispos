@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import proyecto.dto.AdministradorDTO;
+import proyecto.dto.InventarioFinalDTO;
+import proyecto.dto.InventarioFinalProjection;
 import proyecto.dto.UsuarioDTO;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.Cuenta;
@@ -15,6 +17,9 @@ import proyecto.repositorios.CuentaRepo;
 import proyecto.repositorios.VendedorRepository;
 import proyecto.servicios.interfaces.AdministradorServicio;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -111,5 +116,32 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         vendedorRepository.save(vendedor);
     }
 
+    @Override
+    public List<InventarioFinalDTO> obtenerInventarioFinal(
+            Long sedeId,
+            LocalDate fechaInicio,
+            LocalDate fechaFin
+    ) {
 
+        LocalDateTime inicio = fechaInicio.atStartOfDay();
+        LocalDateTime fin = fechaFin.atTime(23, 59, 59);
+
+        return administradorRepository
+                .obtenerInventarioFinal(sedeId, inicio, fin)
+                .stream()
+                .map(p -> new InventarioFinalDTO(
+                        p.getSedeId(),
+                        p.getProductoNombre(),
+                        p.getInventarioInicial(),
+                        p.getEntradas(),
+                        p.getTotal(),
+                        p.getInventarioFinal(),
+                        p.getCantVendida(),
+                        p.getPrecio(),
+                        p.getTotalVendido()
+                ))
+                .toList();
+    }
 }
+
+

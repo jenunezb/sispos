@@ -3,6 +3,7 @@ package proyecto.controladores;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.*;
@@ -10,6 +11,7 @@ import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -121,4 +123,24 @@ public class AdministradorController {
         );
     }
 
+    @GetMapping("/final/{sedeId}")
+    public ResponseEntity<List<InventarioFinalDTO>> obtenerInventarioFinal(
+            @PathVariable Long sedeId,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fechaInicio,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fechaFin
+    ) {
+
+        List<InventarioFinalDTO> resultado =
+                administradorServicio.obtenerInventarioFinal(
+                        sedeId, fechaInicio, fechaFin
+                );
+
+        return ResponseEntity.ok(resultado);
+    }
 }
