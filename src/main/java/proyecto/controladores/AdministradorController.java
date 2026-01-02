@@ -84,8 +84,7 @@ public class AdministradorController {
      * Eliminar producto
      */
     @PutMapping("/productos/{codigo}/desactivar")
-    public ResponseEntity<MensajeDTO> desactivarProducto(
-            @PathVariable Long codigo) {
+    public ResponseEntity<MensajeDTO> desactivarProducto(@PathVariable Long codigo) {
         productoService.eliminarProducto(codigo);
         return ResponseEntity.ok(
                 new MensajeDTO(false, "Producto desactivado correctamente")
@@ -113,8 +112,7 @@ public class AdministradorController {
     }
 
     @PutMapping("/editarVendedor")
-    public ResponseEntity<MensajeDTO> editarVendedor(
-            @Valid @RequestBody UsuarioDTO dto) throws Exception {
+    public ResponseEntity<MensajeDTO> editarVendedor(@Valid @RequestBody UsuarioDTO dto) throws Exception {
 
         administradorServicio.editarVendedor(dto);
 
@@ -124,10 +122,8 @@ public class AdministradorController {
     }
 
     @GetMapping("/final/{sedeId}")
-    public ResponseEntity<List<InventarioFinalDTO>> obtenerInventarioFinal(
-            @PathVariable Long sedeId,
-
-            @RequestParam
+    public ResponseEntity<List<InventarioFinalDTO>> obtenerInventarioFinal(@PathVariable Long sedeId,
+                                                                           @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate fechaInicio,
 
@@ -143,4 +139,23 @@ public class AdministradorController {
 
         return ResponseEntity.ok(resultado);
     }
+
+    @PutMapping("/cuentas/{correo}")
+    public ResponseEntity<MensajeDTO<String>> cambiarPassword(
+            @PathVariable String correo,
+            @RequestBody CambioPasswordDTO dto
+    ) throws Exception {
+
+        administradorServicio.cambiarPassword(
+                correo,
+                dto.passwordActual(),
+                dto.passwordNueva()
+        );
+
+        return ResponseEntity.ok(
+                new MensajeDTO<>(false, "Contraseña actualizada correctamente")
+        );
+    }
+
+
 }

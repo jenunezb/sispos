@@ -87,10 +87,25 @@ public class AdministradorServicioImpl implements AdministradorServicio {
             throw new Exception("El correo ya se encuentra registrado");
         }
 
+        if (administradorDTO.password() == null || administradorDTO.password().isEmpty()) {
+            throw new Exception("La contraseña es obligatoria");
+        }
+
+        // 🔐 Validación de contraseña
+        String regexPassword = "^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._#\\-]).{8,}$";
+
+        if (!administradorDTO.password().matches(regexPassword)) {
+            throw new Exception(
+                    "La contraseña debe tener mínimo 8 caracteres, una letra mayúscula, un número y un signo especial"
+            );
+        }
+
         Administrador administrador = new Administrador();
         administrador.setCorreo(administradorDTO.correo());
+
         String passwordEncriptada = passwordEncoder.encode(administradorDTO.password());
         administrador.setPassword(passwordEncriptada);
+
         Administrador administradorNuevo = administradorRepository.save(administrador);
 
         return administradorNuevo.getCodigo();
@@ -142,6 +157,37 @@ public class AdministradorServicioImpl implements AdministradorServicio {
                 ))
                 .toList();
     }
+
+    @Override
+    public void cambiarPassword(String correo, String passwordActual, String passwordNueva) throws Exception {
+
+        Cuenta cuenta = cuentaRepo.findByCorreo(correo)
+                .orElseThrow(() -> new Exception("La cuenta no existe"));
+
+        // 🔐 Verificar contraseña actual
+        if (!passwordEncoder.matches(passwordActual, cuenta.getPassword())) {
+            throw new Exception("La contraseña actual es incorrecta");
+        }
+
+        // 🔎 Validar nueva contraseña
+        String regexPassword = "^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._#\\-]).{8,}$";
+
+        if (!passwordNueva.matches(regexPassword)) {
+            throw new Exception(
+                    "La nueva contraseña debe tener mínimo 8 caracteres, una mayúscula, un número y un carácter especial"
+            );
+        }
+
+        // 🚫 Evitar que sea la misma contraseña
+        if (passwordEncoder.matches(passwordNueva, cuenta.getPassword())) {
+            throw new Exception("La nueva contraseña no puede ser igual a la actual");
+        }
+
+        // 🔐 Encriptar y guardar
+        cuenta.setPassword(passwordEncoder.encode(passwordNueva));
+        cuentaRepo.save(cuenta);
+    }
+
 }
 
 
