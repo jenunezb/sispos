@@ -45,10 +45,16 @@ public class VentaServicioImpl implements VentaServicio{
             venta.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
             venta.setVendedor(vendedor);
             venta.setSede(sede);
+            venta.setModoPago(
+                    dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO
+            );
+
 
             double total = 0;
 
             List<DetalleVenta> detalles = new ArrayList<>();
+
+            venta = ventaRepository.save(venta);
 
             for (DetalleVentaDTO d : dto.detalles()) {
 

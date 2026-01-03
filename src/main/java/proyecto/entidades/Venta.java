@@ -25,4 +25,9 @@ public class Venta {
 
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL)
     private List<DetalleVenta> detalles;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "modo_pago", nullable = false)
+    private ModoPago modoPago;
+
 }
