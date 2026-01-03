@@ -6,6 +6,8 @@ public record BalanceGeneralDTO(
         Double utilidadBruta,
         Double valorInventario,
         Integer stockTotal,
-        Long cantidadVentas
+        Long cantidadVentas,
+        Double ventasEfectivo,
+        Double ventasTransferencia
 ) {
 }

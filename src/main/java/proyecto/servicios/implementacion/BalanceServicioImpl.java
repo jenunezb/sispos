@@ -36,6 +36,8 @@ public class BalanceServicioImpl implements BalanceServicio {
         Double ventas = ventaRepository.totalVentasEntreFechas(desde, hasta);
         Double costo = detalleVentaRepository.costoProduccionEntreFechas(desde, hasta);
         Long cantVentas = ventaRepository.cantidadVentasEntreFechas(desde, hasta);
+        Double ventasEfectivo = ventaRepository.totalVentasEntreFechasEfectivo(desde, hasta);
+        Double ventasTransferencia = ventaRepository.totalVentasEntreFechasTransferencia(desde, hasta);
 
         Double inventario = inventarioRepository.valorInventario();
         Integer stock = inventarioRepository.stockTotal();
@@ -43,6 +45,8 @@ public class BalanceServicioImpl implements BalanceServicio {
         ventas = ventas != null ? ventas : 0.0;
         costo = costo != null ? costo : 0.0;
         cantVentas = cantVentas != null ? cantVentas : 0L;
+        ventasEfectivo = ventasEfectivo != null ? ventasEfectivo : 0.0;
+        ventasTransferencia = ventasTransferencia != null ? ventasTransferencia : 0.0;
 
         return new BalanceGeneralDTO(
                 ventas,
@@ -50,7 +54,9 @@ public class BalanceServicioImpl implements BalanceServicio {
                 ventas - costo,
                 inventario,
                 stock,
-                cantVentas
+                cantVentas,
+                ventasEfectivo,
+                ventasTransferencia
         );
     }
 
@@ -90,6 +96,9 @@ public class BalanceServicioImpl implements BalanceServicio {
         Long cantVentas = ventaRepository.cantidadVentasEntreFechas(desde, hasta);
         Double inventario = inventarioRepository.valorInventario();
         Integer stock = inventarioRepository.stockTotal();
+        Double ventasEfectivo = ventaRepository.totalVentasEntreFechasEfectivo(desde, hasta);
+        Double ventasTransferencia = ventaRepository.totalVentasEntreFechasTransferencia(desde, hasta);
+
 
         return new BalanceGeneralDTO(
                 ventas,
@@ -97,7 +106,9 @@ public class BalanceServicioImpl implements BalanceServicio {
                 ventas - costo,
                 inventario,
                 stock,
-                cantVentas
+                cantVentas,
+                ventasEfectivo,
+                ventasTransferencia
         );
     }
 

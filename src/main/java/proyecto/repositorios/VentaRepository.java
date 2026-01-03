@@ -98,4 +98,27 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             @Param("hasta") LocalDateTime hasta
     );
 
+    @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
+    WHERE v.modoPago = 'EFECTIVO'
+      AND v.fecha BETWEEN :desde AND :hasta
+""")
+    Double totalVentasEntreFechasEfectivo(
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
+    WHERE v.modoPago = 'TRANSFERENCIA'
+      AND v.fecha BETWEEN :desde AND :hasta
+""")
+    Double totalVentasEntreFechasTransferencia(
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+
 }
