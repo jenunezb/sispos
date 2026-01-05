@@ -22,4 +22,6 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
     Vendedor findBycedula(@Param("cedula") String cedula);
 
     List<Vendedor> findAllByOrderByNombreAsc();
+
+
 }

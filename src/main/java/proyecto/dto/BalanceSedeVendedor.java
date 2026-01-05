@@ -2,16 +2,15 @@ package proyecto.dto;
 
 import lombok.Builder;
 
+import java.time.LocalDate;
+
 @Builder
-public record BalanceSedeDTO(
+public record BalanceSedeVendedor(
         Long sedeId,
         String sedeNombre,
         Double totalVentas,
-        Double costoProduccion,
-        Double utilidadBruta,
-        Double valorInventario,
-        Integer stockActual,
+        Double ventasEfectivo,
+        Double ventasTransferencia,
         Long cantidadVentas
-
 ) {
 }
