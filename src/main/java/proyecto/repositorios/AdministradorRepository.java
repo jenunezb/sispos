@@ -56,11 +56,12 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "        ), 0)\n" +
             "    ) AS total,\n" +
             "\n" +
-            "    /* Cantidad vendida (SALIDAS del período) */\n" +
+            "    /* Cantidad vendida (SOLO ventas reales) */\n" +
             "    COALESCE(SUM(\n" +
             "        CASE\n" +
             "            WHEN m.fecha BETWEEN :fechaInicio AND :fechaFin\n" +
             "                 AND m.tipo = 'SALIDA'\n" +
+            "                 AND m.observacion = 'Venta de producto'\n" +
             "            THEN m.cantidad\n" +
             "            ELSE 0\n" +
             "        END\n" +
@@ -97,15 +98,16 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "        ), 0)\n" +
             "    ) AS inventarioFinal,\n" +
             "\n" +
-            "    /* Precio de venta del producto */\n" +
+            "    /* Precio de venta */\n" +
             "    p.precio_venta AS precio,\n" +
             "\n" +
-            "    /* Total vendido */\n" +
+            "    /* Total vendido (SOLO ventas reales) */\n" +
             "    (\n" +
             "        COALESCE(SUM(\n" +
             "            CASE\n" +
             "                WHEN m.fecha BETWEEN :fechaInicio AND :fechaFin\n" +
             "                     AND m.tipo = 'SALIDA'\n" +
+            "                     AND m.observacion = 'Venta de producto'\n" +
             "                THEN m.cantidad\n" +
             "                ELSE 0\n" +
             "            END\n" +
@@ -117,7 +119,8 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "       ON m.producto_id = p.codigo\n" +
             "      AND m.sede_id = :sedeId\n" +
             "\n" +
-            "GROUP BY p.codigo, p.nombre, p.precio_venta;\n", nativeQuery = true)
+            "GROUP BY p.codigo, p.nombre, p.precio_venta;\n",
+            nativeQuery = true)
     List<InventarioFinalProjection> obtenerInventarioFinal(
             @Param("sedeId") Long sedeId,
             @Param("fechaInicio") LocalDateTime fechaInicio,
