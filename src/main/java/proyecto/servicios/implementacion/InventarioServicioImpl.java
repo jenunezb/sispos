@@ -144,7 +144,33 @@ public class InventarioServicioImpl implements InventarioServicio {
         Sede sede = sedeRepository.findById(dto.sedeId())
                 .orElseThrow(() -> new RuntimeException("Sede no existe"));
 
-        // 1. Guardar movimiento con observación
+        Inventario inventario = obtenerOcrearInventario(dto.productoId(), dto.sedeId());
+
+        // 1️⃣ Validaciones y ajuste de stock
+        switch (dto.tipo()) {
+            case ENTRADA -> {
+                inventario.setEntradas(inventario.getEntradas() + dto.cantidad());
+                inventario.setStockActual(inventario.getStockActual() + dto.cantidad());
+            }
+            case SALIDA -> {
+                if (inventario.getStockActual() < dto.cantidad()) {
+                    throw new RuntimeException("Stock insuficiente");
+                }
+                inventario.setSalidas(inventario.getSalidas() + dto.cantidad());
+                inventario.setStockActual(inventario.getStockActual() - dto.cantidad());
+            }
+            case PERDIDA -> {
+                if (inventario.getStockActual() < dto.cantidad()) {
+                    throw new RuntimeException("Stock insuficiente");
+                }
+                inventario.setPerdidas(inventario.getPerdidas() + dto.cantidad());
+                inventario.setStockActual(inventario.getStockActual() - dto.cantidad());
+            }
+        }
+
+        inventarioRepository.save(inventario);
+
+        // 2️⃣ Guardar UN SOLO movimiento
         MovimientoInventario mov = new MovimientoInventario();
         mov.setProducto(producto);
         mov.setSede(sede);
@@ -153,13 +179,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         mov.setObservacion(dto.observacion());
 
         movimientoRepository.save(mov);
-
-        // 2. Reutilizar tu lógica existente
-        switch (dto.tipo()) {
-            case ENTRADA -> registrarEntrada(dto.productoId(), dto.sedeId(), dto.cantidad());
-            case SALIDA -> registrarSalida(dto.productoId(), dto.sedeId(), dto.cantidad(), "Aquí va la observación");
-            case PERDIDA -> registrarPerdida(dto.productoId(), dto.sedeId(), dto.cantidad());
-        }
     }
+
 
 }
