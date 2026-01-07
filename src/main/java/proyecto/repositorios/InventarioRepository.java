@@ -5,8 +5,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import proyecto.dto.InventarioDTO;
+import proyecto.dto.PerdidasDetalleDTO;
 import proyecto.entidades.Inventario;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,4 +68,24 @@ LEFT JOIN Inventario i
         WHERE i.sede.id = :sedeId
     """)
     Double valorInventarioPorSede(@Param("sedeId") Long sedeId);
+
+    @Query("""
+    SELECT new proyecto.dto.PerdidasDetalleDTO(
+        m.fecha,
+        m.cantidad,
+        m.observacion
+    )
+    FROM MovimientoInventario m
+    WHERE m.tipo = 'PERDIDA'
+      AND m.sede.id = :sedeId
+      AND m.fecha BETWEEN :fechaInicio AND :fechaFin
+    ORDER BY m.fecha
+""")
+    List<PerdidasDetalleDTO> obtenerPerdidasDetalladasPorRango(
+            Long sedeId,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin
+    );
+
+
 }

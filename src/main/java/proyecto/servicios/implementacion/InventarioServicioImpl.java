@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import proyecto.dto.InventarioDTO;
 import proyecto.dto.MovimientoInventarioDTO;
+import proyecto.dto.PerdidasDetalleDTO;
 import proyecto.entidades.*;
 import proyecto.repositorios.InventarioRepository;
 import proyecto.repositorios.MovimientoInventarioRepository;
@@ -12,6 +13,7 @@ import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.InventarioServicio;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -180,6 +182,18 @@ public class InventarioServicioImpl implements InventarioServicio {
 
         movimientoRepository.save(mov);
     }
+
+    @Override
+    public List<PerdidasDetalleDTO> obtenerPerdidasDetalladasPorRango(
+            Long sedeId,
+            LocalDateTime inicio,
+            LocalDateTime fin
+    ) {
+        return inventarioRepository.obtenerPerdidasDetalladasPorRango(
+                sedeId, inicio, fin
+        );
+    }
+
 
 
 }

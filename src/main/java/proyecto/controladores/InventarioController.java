@@ -5,8 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.InventarioDTO;
 import proyecto.dto.MovimientoInventarioDTO;
+import proyecto.dto.PerdidasDetalleDTO;
 import proyecto.servicios.interfaces.InventarioServicio;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -93,5 +96,22 @@ public class InventarioController {
         inventarioServicio.registrarMovimiento(dto);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/perdidas/detalle")
+    public ResponseEntity<List<PerdidasDetalleDTO>> obtenerPerdidasDetalle(
+            @RequestParam Long sedeId,
+            @RequestParam String fechaInicio,
+            @RequestParam String fechaFin
+    ) {
+        LocalDateTime inicio = LocalDate.parse(fechaInicio).atStartOfDay();
+        LocalDateTime fin = LocalDate.parse(fechaFin).atTime(23, 59, 59);
+
+        return ResponseEntity.ok(
+                inventarioServicio.obtenerPerdidasDetalladasPorRango(
+                        sedeId, inicio, fin
+                )
+        );
+    }
+
 
 }
