@@ -131,7 +131,7 @@ public class BalanceServicioImpl implements BalanceServicio {
             Integer stock = inventarioRepository
                     .stockPorSede(sede.getId());
 
-            Long cantVentas = ventaRepository.cantidadVentasPorSede(sede.getId());
+            Long cantVentas = ventaRepository.cantidadVentasPorSedeEntreFechas(sede.getId(),desde,hasta);
 
 
             return new BalanceSedeDTO(
