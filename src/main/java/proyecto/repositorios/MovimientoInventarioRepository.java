@@ -13,9 +13,9 @@ public interface MovimientoInventarioRepository
     @Query("""
 SELECT 
     m.producto.id,
-    SUM(CASE WHEN m.tipo = 'SALIDA' AND UPPER(m.observacion) LIKE '%VENTA%' THEN m.cantidad ELSE 0 END),
+    SUM(CASE WHEN m.tipo = 'SALIDA' AND m.observacion IS NOT NULL AND UPPER(TRIM(m.observacion)) LIKE '%VENTA%' THEN m.cantidad ELSE 0 END),
     SUM(CASE WHEN m.tipo = 'PERDIDA' THEN m.cantidad ELSE 0 END),
-    SUM(CASE WHEN m.tipo = 'SALIDA' AND (m.observacion IS NULL OR UPPER(m.observacion) NOT LIKE '%VENTA%') THEN m.cantidad ELSE 0 END),
+    SUM(CASE WHEN m.tipo = 'SALIDA' AND (m.observacion IS NULL OR UPPER(TRIM(m.observacion)) NOT LIKE '%VENTA%') THEN m.cantidad ELSE 0 END),
     SUM(CASE WHEN m.tipo = 'ENTRADA' THEN m.cantidad ELSE 0 END)
 FROM MovimientoInventario m
 WHERE m.sede.id = :sedeId
@@ -28,4 +28,5 @@ ORDER BY m.producto.id ASC
             @Param("inicio") LocalDateTime inicio,
             @Param("fin") LocalDateTime fin
     );
+
 }

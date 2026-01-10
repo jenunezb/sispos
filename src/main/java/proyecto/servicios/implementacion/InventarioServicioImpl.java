@@ -14,6 +14,7 @@ import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.InventarioServicio;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -206,9 +207,9 @@ public class InventarioServicioImpl implements InventarioServicio {
         // 1️⃣ Inventario actual por sede
         List<Inventario> inventarios = inventarioRepository.findBySedeId(sedeId);
 
-        // 2️⃣ Rango del día
-        LocalDateTime inicio = fecha.toLocalDate().atStartOfDay();
-        LocalDateTime fin = fecha.toLocalDate().atTime(23, 59, 59);
+        LocalDate today = LocalDate.now();
+        LocalDateTime inicio = today.atStartOfDay();       // 00:00:00
+        LocalDateTime fin = today.atTime(23,59,59,999_999_999); // 23:59:59.999999999
 
         // 3️⃣ Movimientos del día
         List<Object[]> movimientos = movimientoRepository
