@@ -72,6 +72,7 @@ LEFT JOIN Inventario i
     @Query("""
     SELECT new proyecto.dto.PerdidasDetalleDTO(
         m.fecha,
+        m.producto.nombre,
         m.cantidad,
         m.observacion
     )
@@ -82,9 +83,9 @@ LEFT JOIN Inventario i
     ORDER BY m.fecha
 """)
     List<PerdidasDetalleDTO> obtenerPerdidasDetalladasPorRango(
-            Long sedeId,
-            LocalDateTime fechaInicio,
-            LocalDateTime fechaFin
+            @Param("sedeId") Long sedeId,
+            @Param("fechaInicio") LocalDateTime fechaInicio,
+            @Param("fechaFin") LocalDateTime fechaFin
     );
 
 
