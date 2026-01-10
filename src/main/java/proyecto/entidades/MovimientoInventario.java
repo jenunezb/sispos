@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Getter
 @Setter
@@ -38,7 +40,8 @@ public class MovimientoInventario {
 
     @PrePersist
     void prePersist() {
-        fecha = LocalDateTime.now();
+        ZonedDateTime nowColombia = ZonedDateTime.now(ZoneId.of("America/Bogota"));
+        fecha = nowColombia.toLocalDateTime();
     }
 
     // getters y setters
