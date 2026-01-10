@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.InventarioDTO;
+import proyecto.dto.InventarioDelDia;
 import proyecto.dto.MovimientoInventarioDTO;
 import proyecto.dto.PerdidasDetalleDTO;
 import proyecto.servicios.interfaces.InventarioServicio;
