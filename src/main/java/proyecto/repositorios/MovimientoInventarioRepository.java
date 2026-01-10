@@ -21,6 +21,7 @@ FROM MovimientoInventario m
 WHERE m.sede.id = :sedeId
   AND m.fecha BETWEEN :inicio AND :fin
 GROUP BY m.producto.id
+ORDER BY m.producto.id ASC
 """)
     List<Object[]> resumenMovimientosDelDia(
             @Param("sedeId") Long sedeId,
