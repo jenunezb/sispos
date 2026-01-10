@@ -113,5 +113,22 @@ public class InventarioController {
         );
     }
 
+    // ===============================
+    // INVENTARIO DEL DÍA
+    // ===============================
+    @GetMapping("/dia")
+    public ResponseEntity<List<InventarioDelDia>> obtenerInventarioDelDia(
+            @RequestParam Long sedeId,
+            @RequestParam String fecha
+    ) {
 
+        LocalDateTime fechaConsulta = LocalDate.parse(fecha).atStartOfDay();
+
+        return ResponseEntity.ok(
+                inventarioServicio.obtenerInventarioDia(
+                        sedeId,
+                        fechaConsulta
+                )
+        );
+    }
 }

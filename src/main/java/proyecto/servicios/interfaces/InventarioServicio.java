@@ -1,6 +1,7 @@
 package proyecto.servicios.interfaces;
 
 import proyecto.dto.InventarioDTO;
+import proyecto.dto.InventarioDelDia;
 import proyecto.dto.MovimientoInventarioDTO;
 import proyecto.dto.PerdidasDetalleDTO;
 
@@ -29,6 +30,11 @@ public interface InventarioServicio {
             Long sedeId,
             LocalDateTime inicio,
             LocalDateTime fin
+    );
+
+    List<InventarioDelDia> obtenerInventarioDia(
+            Long sedeId,
+            LocalDateTime fecha
     );
 
 }
