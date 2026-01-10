@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.InventarioDTO;
+import proyecto.dto.InventarioDelDia;
 import proyecto.dto.MovimientoInventarioDTO;
 import proyecto.dto.PerdidasDetalleDTO;
 import proyecto.servicios.interfaces.InventarioServicio;
@@ -112,6 +113,26 @@ public class InventarioController {
                 )
         );
     }
+
+    // ===============================
+    // INVENTARIO DEL DÍA
+    // ===============================
+    @GetMapping("/dia")
+    public ResponseEntity<List<InventarioDelDia>> obtenerInventarioDelDia(
+            @RequestParam Long sedeId,
+            @RequestParam String fecha
+    ) {
+
+        LocalDateTime fechaConsulta = LocalDate.parse(fecha).atStartOfDay();
+
+        return ResponseEntity.ok(
+                inventarioServicio.obtenerInventarioDia(
+                        sedeId,
+                        fechaConsulta
+                )
+        );
+    }
+
 
 
 }

@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import proyecto.dto.InventarioDTO;
+import proyecto.dto.InventarioDelDia;
 import proyecto.dto.MovimientoInventarioDTO;
 import proyecto.dto.PerdidasDetalleDTO;
 import proyecto.entidades.*;
@@ -14,7 +15,9 @@ import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.InventarioServicio;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -194,6 +197,78 @@ public class InventarioServicioImpl implements InventarioServicio {
         );
     }
 
+    @Override
+    public List<InventarioDelDia> obtenerInventarioDia(
+            Long sedeId,
+            LocalDateTime fecha
+    ) {
+
+        // 1️⃣ Inventario actual por sede
+        List<Inventario> inventarios = inventarioRepository.findBySedeId(sedeId);
+
+        // 2️⃣ Rango del día
+        LocalDateTime inicio = fecha.toLocalDate().atStartOfDay();
+        LocalDateTime fin = fecha.toLocalDate().atTime(23, 59, 59);
+
+        // 3️⃣ Movimientos del día
+        List<Object[]> movimientos = movimientoRepository
+                .resumenMovimientosDelDia(sedeId, inicio, fin);
+
+        // 4️⃣ Mapear movimientos por producto
+        Map<Long, int[]> movimientosMap = new HashMap<>();
+
+        for (Object[] row : movimientos) {
+            Long productoId = (Long) row[0];
+
+            int ventas = ((Number) row[1]).intValue();
+            int perdidas = ((Number) row[2]).intValue();
+            int salidasManuales = ((Number) row[3]).intValue();
+            int entradas = ((Number) row[4]).intValue();
+
+            movimientosMap.put(
+                    productoId,
+                    new int[]{ventas, perdidas, salidasManuales, entradas}
+            );
+        }
+
+        // 5️⃣ Construir respuesta
+        return inventarios.stream().map(inv -> {
+
+            Long productoId = inv.getProducto().getCodigo(); // ✅ CORRECTO
+
+            int[] datos = movimientosMap.getOrDefault(
+                    productoId,
+                    new int[]{0, 0, 0, 0}
+            );
+
+            int ventas = datos[0];
+            int perdidas = datos[1];
+            int salidasManuales = datos[2];
+            int entradas = datos[3];
+
+            int stockActual = inv.getStockActual();
+
+            int stockInicial = stockActual
+                    + ventas
+                    + perdidas
+                    + salidasManuales;
+
+            double precio = inv.getProducto().getPrecioVenta();
+            double total = ventas * precio;
+
+            return new InventarioDelDia(
+                    productoId,
+                    inv.getProducto().getNombre(),
+                    stockInicial,
+                    entradas,
+                    ventas,
+                    stockActual,
+                    precio,
+                    total
+            );
+
+        }).toList();
+    }
 
 
 }
