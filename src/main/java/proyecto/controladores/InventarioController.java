@@ -11,6 +11,8 @@ import proyecto.servicios.interfaces.InventarioServicio;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @RestController
@@ -123,13 +125,22 @@ public class InventarioController {
             @RequestParam String fecha
     ) {
 
-        LocalDateTime fechaConsulta = LocalDate.parse(fecha).atStartOfDay();
+        // Parseamos la fecha y usamos la zona horaria de Bogotá
+        LocalDate localDate = LocalDate.parse(fecha);
+        ZonedDateTime inicioBogota = localDate.atStartOfDay(ZoneId.of("America/Bogota"));
+        ZonedDateTime finBogota = localDate.atTime(23, 59, 59).atZone(ZoneId.of("America/Bogota"));
+
+        // Convertimos a LocalDateTime si tu servicio espera LocalDateTime
+        LocalDateTime inicio = inicioBogota.toLocalDateTime();
+        LocalDateTime fin = finBogota.toLocalDateTime();
 
         return ResponseEntity.ok(
                 inventarioServicio.obtenerInventarioDia(
                         sedeId,
-                        fechaConsulta
+                        inicio,
+                        fin
                 )
         );
     }
+
 }
