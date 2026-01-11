@@ -199,60 +199,38 @@ public class InventarioServicioImpl implements InventarioServicio {
     }
 
     @Override
-    public List<InventarioDelDia> obtenerInventarioDia(
-            Long sedeId,
-            LocalDateTime fecha
-    ) {
+    public List<InventarioDelDia> obtenerInventarioDia(Long sedeId, LocalDateTime inicio, LocalDateTime fin) {
 
         // 1️⃣ Inventario actual por sede
         List<Inventario> inventarios = inventarioRepository.findBySedeId(sedeId);
 
-        LocalDate today = LocalDate.now();
-        LocalDateTime inicio = today.atStartOfDay();       // 00:00:00
-        LocalDateTime fin = today.atTime(23,59,59,999_999_999); // 23:59:59.999999999
+        // 2️⃣ Movimientos del día (ya con rango)
+        List<Object[]> movimientos = movimientoRepository.resumenMovimientosDelDia(sedeId, inicio, fin);
 
-        // 3️⃣ Movimientos del día
-        List<Object[]> movimientos = movimientoRepository
-                .resumenMovimientosDelDia(sedeId, inicio, fin);
-
-        // 4️⃣ Mapear movimientos por producto
+        // 3️⃣ Mapear movimientos por producto
         Map<Long, int[]> movimientosMap = new HashMap<>();
-
         for (Object[] row : movimientos) {
             Long productoId = (Long) row[0];
-
             int ventas = ((Number) row[1]).intValue();
             int perdidas = ((Number) row[2]).intValue();
             int salidasManuales = ((Number) row[3]).intValue();
             int entradas = ((Number) row[4]).intValue();
 
-            movimientosMap.put(
-                    productoId,
-                    new int[]{ventas, perdidas, salidasManuales, entradas}
-            );
+            movimientosMap.put(productoId, new int[]{ventas, perdidas, salidasManuales, entradas});
         }
 
-        // 5️⃣ Construir respuesta
+        // 4️⃣ Construir respuesta
         return inventarios.stream().map(inv -> {
+            Long productoId = inv.getProducto().getCodigo();
 
-            Long productoId = inv.getProducto().getCodigo(); // ✅ CORRECTO
-
-            int[] datos = movimientosMap.getOrDefault(
-                    productoId,
-                    new int[]{0, 0, 0, 0}
-            );
-
+            int[] datos = movimientosMap.getOrDefault(productoId, new int[]{0, 0, 0, 0});
             int ventas = datos[0];
             int perdidas = datos[1];
             int salidasManuales = datos[2];
             int entradas = datos[3];
 
             int stockActual = inv.getStockActual();
-
-            int stockInicial = stockActual
-                    + ventas
-                    + perdidas
-                    + salidasManuales;
+            int stockInicial = stockActual + ventas + perdidas + salidasManuales;
 
             double precio = inv.getProducto().getPrecioVenta();
             double total = ventas * precio;
@@ -267,7 +245,6 @@ public class InventarioServicioImpl implements InventarioServicio {
                     precio,
                     total
             );
-
         }).toList();
     }
 

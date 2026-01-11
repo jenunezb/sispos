@@ -34,7 +34,8 @@ public interface InventarioServicio {
 
     List<InventarioDelDia> obtenerInventarioDia(
             Long sedeId,
-            LocalDateTime fecha
+            LocalDateTime inicio,
+            LocalDateTime fin
     );
 
 }
