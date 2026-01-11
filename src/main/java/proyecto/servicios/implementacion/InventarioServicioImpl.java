@@ -247,6 +247,8 @@ public class InventarioServicioImpl implements InventarioServicio {
                     p.getNombre(),
                     stockInicial,
                     entradas,
+                    salidasManuales,
+                    perdidas,
                     ventas,
                     stockActual,
                     precio,

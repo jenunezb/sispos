@@ -23,6 +23,8 @@ public class VentaServicioImpl implements VentaServicio {
     private final VendedorRepository vendedorRepository;
     private final SedeRepository sedeRepository;
     private final MateriaPrimaSedeRepository materiaPrimaSedeRepository;
+    private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final InventarioRepository inventarioRepository;
 
     @Transactional
     public Venta crearVenta(VentaRecuestDTO dto) {
@@ -46,15 +48,42 @@ public class VentaServicioImpl implements VentaServicio {
             Producto producto = productoRepository.findById(d.productoId())
                     .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
+            // 🔹 Obtener inventario del producto en la sede
+            Inventario inventario = inventarioRepository
+                    .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "No hay inventario para " + producto.getNombre() + " en esta sede"
+                    ));
+
+            // 🔹 Verificar stock suficiente
+            if (inventario.getStockActual() < d.cantidad()) {
+                throw new RuntimeException("Stock insuficiente para " + producto.getNombre());
+            }
+
+            // 🔹 Descontar stock
+            inventario.setStockActual(inventario.getStockActual() - d.cantidad());
+            inventarioRepository.save(inventario);
+
+            // 🔹 Crear detalle de venta
             DetalleVenta detalle = new DetalleVenta();
             detalle.setProducto(producto);
             detalle.setCantidad(d.cantidad());
             detalle.setPrecioUnitario(producto.getPrecioVenta());
             detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
-            detalle.setVenta(venta); // Muy importante
+            detalle.setVenta(venta);
             detalles.add(detalle);
 
             total += detalle.getSubtotal();
+
+            // 🔹 Registrar movimiento de inventario SALIDA
+            MovimientoInventario movimiento = new MovimientoInventario();
+            movimiento.setProducto(producto);
+            movimiento.setSede(sede);
+            movimiento.setTipo(TipoMovimiento.SALIDA);
+            movimiento.setCantidad(d.cantidad());
+            movimiento.setObservacion("Venta de producto");
+            movimiento.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
+            movimientoInventarioRepository.save(movimiento);
 
             // 🔹 Descontar materia prima si aplica
             if (!producto.getMateriasPrimas().isEmpty()) {
@@ -86,6 +115,8 @@ public class VentaServicioImpl implements VentaServicio {
 
         return ventaRepository.save(venta);
     }
+
+
 
 
 

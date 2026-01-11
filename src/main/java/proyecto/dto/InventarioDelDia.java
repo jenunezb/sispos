@@ -5,6 +5,8 @@ public record InventarioDelDia(
         String productoNombre,
         Integer stockInicial,
         Integer entradas,
+        Integer salidas,
+        Integer perdidas,
         Integer ventasDelDia,
         Integer stockActual,
         Double precio,
