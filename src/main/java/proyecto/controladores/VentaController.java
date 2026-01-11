@@ -21,9 +21,7 @@ public class VentaController {
     private final VentaServicio ventaService;
 
     @PostMapping
-    public ResponseEntity<VentaResponseDTO> crearVenta(
-            @RequestBody VentaRecuestDTO dto
-    ) {
+    public ResponseEntity<VentaResponseDTO> crearVenta(@RequestBody VentaRecuestDTO dto) {
         Venta venta = ventaService.crearVenta(dto);
 
         VentaResponseDTO response = mapToResponse(venta);
@@ -76,9 +74,7 @@ public class VentaController {
 
     // 🔹 Ventas por sede (ADMIN)
     @GetMapping("/sede/{sedeId}")
-    public ResponseEntity<List<VentaResponseDTO>> ventasPorSede(
-            @PathVariable Long sedeId
-    ) {
+    public ResponseEntity<List<VentaResponseDTO>> ventasPorSede(@PathVariable Long sedeId) {
         return ResponseEntity.ok(
                 ventaService.listarVentasPorSede(sedeId)
         );
@@ -86,11 +82,7 @@ public class VentaController {
 
     // 🔹 Ventas por sede y fecha (ADMIN)
     @GetMapping("/sede/{sedeId}/rango")
-    public ResponseEntity<List<VentaResponseDTO>> ventasPorSedePorFecha(
-            @PathVariable Long sedeId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta
-    ) {
+    public ResponseEntity<List<VentaResponseDTO>> ventasPorSedePorFecha(@PathVariable Long sedeId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
         return ResponseEntity.ok(
                 ventaService.listarVentasPorSedeEntreFechas(
                         sedeId, desde, hasta

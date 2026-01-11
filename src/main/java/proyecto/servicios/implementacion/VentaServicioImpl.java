@@ -3,16 +3,9 @@ package proyecto.servicios.implementacion;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import proyecto.dto.DetalleVentaDTO;
-import proyecto.dto.DetalleVentaResponseDTO;
-import proyecto.dto.VentaRecuestDTO;
-import proyecto.dto.VentaResponseDTO;
+import proyecto.dto.*;
 import proyecto.entidades.*;
-import proyecto.repositorios.ProductoRepository;
-import proyecto.repositorios.SedeRepository;
-import proyecto.repositorios.VendedorRepository;
-import proyecto.repositorios.VentaRepository;
-import proyecto.servicios.interfaces.InventarioServicio;
+import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.VentaServicio;
 
 import java.time.LocalDateTime;
@@ -23,76 +16,82 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class VentaServicioImpl implements VentaServicio{
+public class VentaServicioImpl implements VentaServicio {
 
-        private final VentaRepository ventaRepository;
-        private final ProductoRepository productoRepository;
-        private final VendedorRepository vendedorRepository;
-        private final SedeRepository sedeRepository;
-        private final InventarioServicio inventarioServicio;
+    private final VentaRepository ventaRepository;
+    private final ProductoRepository productoRepository;
+    private final VendedorRepository vendedorRepository;
+    private final SedeRepository sedeRepository;
+    private final MateriaPrimaSedeRepository materiaPrimaSedeRepository;
 
+    @Transactional
+    public Venta crearVenta(VentaRecuestDTO dto) {
 
-        @Transactional
-        public Venta crearVenta(VentaRecuestDTO dto) {
+        Vendedor vendedor = vendedorRepository.findById(dto.vendedorId())
+                .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
 
-            Vendedor vendedor = vendedorRepository.findById(dto.vendedorId())
-                    .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+        Sede sede = sedeRepository.findById(dto.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
-            Sede sede = sedeRepository.findById(dto.sedeId())
-                    .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+        Venta venta = new Venta();
+        venta.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
+        venta.setVendedor(vendedor);
+        venta.setSede(sede);
+        venta.setModoPago(dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO);
 
-            Venta venta = new Venta();
-            venta.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
-            venta.setVendedor(vendedor);
-            venta.setSede(sede);
-            venta.setModoPago(
-                    dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO
-            );
+        double total = 0;
+        List<DetalleVenta> detalles = new ArrayList<>();
 
+        for (DetalleVentaDTO d : dto.detalles()) {
+            Producto producto = productoRepository.findById(d.productoId())
+                    .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-            double total = 0;
+            DetalleVenta detalle = new DetalleVenta();
+            detalle.setProducto(producto);
+            detalle.setCantidad(d.cantidad());
+            detalle.setPrecioUnitario(producto.getPrecioVenta());
+            detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
+            detalle.setVenta(venta); // Muy importante
+            detalles.add(detalle);
 
-            List<DetalleVenta> detalles = new ArrayList<>();
+            total += detalle.getSubtotal();
 
-            venta = ventaRepository.save(venta);
+            // 🔹 Descontar materia prima si aplica
+            if (!producto.getMateriasPrimas().isEmpty()) {
+                for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+                    MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                            .findByMateriaPrima_CodigoAndSede_Id(
+                                    pmp.getMateriaPrima().getCodigo(),
+                                    sede.getId())
+                            .orElseThrow(() -> new RuntimeException(
+                                    "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
+                            ));
 
-            for (DetalleVentaDTO d : dto.detalles()) {
+                    double mlNecesarios = pmp.getMlConsumidos() * d.cantidad();
 
-                Producto producto = productoRepository.findById(d.productoId())
-                        .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                    if (mpSede.getCantidadActualMl() < mlNecesarios) {
+                        throw new RuntimeException(
+                                "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
+                        );
+                    }
 
-                double precio = producto.getPrecioVenta();
-                double subtotal = precio * d.cantidad();
-
-                DetalleVenta detalle = new DetalleVenta();
-                detalle.setProducto(producto);
-                detalle.setCantidad(d.cantidad());
-                detalle.setPrecioUnitario(precio);
-                detalle.setSubtotal(subtotal);
-                detalle.setVenta(venta);
-
-                detalles.add(detalle);
-                total += subtotal;
-
-                // 🔻 Descontar inventario
-                inventarioServicio.registrarSalida(
-                        producto.getCodigo(),
-                        sede.getId(),
-                        d.cantidad(),
-                        "Venta #" + venta.getId()
-                );
+                    mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
+                    materiaPrimaSedeRepository.save(mpSede);
+                }
             }
-
-            venta.setDetalles(detalles);
-            venta.setTotal(total);
-
-            return ventaRepository.save(venta);
         }
+
+        venta.setDetalles(detalles);
+        venta.setTotal(total);
+
+        return ventaRepository.save(venta);
+    }
+
+
 
     @Override
     @Transactional
     public List<VentaResponseDTO> listarVentasPorVendedor(Long vendedorId) {
-
         return ventaRepository.findByVendedorCodigo(vendedorId)
                 .stream()
                 .map(this::toResponseDTO)
@@ -113,29 +112,9 @@ public class VentaServicioImpl implements VentaServicio{
                 .toList();
     }
 
-    private VentaResponseDTO toResponseDTO(Venta venta) {
-        return new VentaResponseDTO(
-                venta.getId(),
-                venta.getFecha(),
-                venta.getTotal(),
-                venta.getVendedor().getNombre(),
-                venta.getSede().getNombre(),
-                venta.getDetalles().stream()
-                        .map(d -> new DetalleVentaResponseDTO(
-                                d.getProducto().getCodigo(),
-                                d.getProducto().getNombre(),
-                                d.getCantidad(),
-                                d.getPrecioUnitario(),
-                                d.getSubtotal()
-                        ))
-                        .toList()
-        );
-    }
-
     @Override
     @Transactional
     public List<VentaResponseDTO> listarVentasPorSede(Long sedeId) {
-
         return ventaRepository.findBySedeId(sedeId)
                 .stream()
                 .map(this::toResponseDTO)
@@ -156,4 +135,23 @@ public class VentaServicioImpl implements VentaServicio{
                 .toList();
     }
 
+    // 🔹 Método helper para convertir a DTO de respuesta
+    private VentaResponseDTO toResponseDTO(Venta venta) {
+        return new VentaResponseDTO(
+                venta.getId(),
+                venta.getFecha(),
+                venta.getTotal(),
+                venta.getVendedor().getNombre(),
+                venta.getSede().getNombre(),
+                venta.getDetalles().stream()
+                        .map(d -> new DetalleVentaResponseDTO(
+                                d.getProducto().getCodigo(),
+                                d.getProducto().getNombre(),
+                                d.getCantidad(),
+                                d.getPrecioUnitario(),
+                                d.getSubtotal()
+                        ))
+                        .toList()
+        );
+    }
 }

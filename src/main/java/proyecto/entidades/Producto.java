@@ -4,21 +4,24 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter @Setter @NoArgsConstructor @ToString
 @Entity
-public class Producto {
+public class Producto implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long codigo; // autoincrementable
+    private Long codigo;
 
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(nullable = true, length = 255)
+    @Column(length = 255)
     private String descripcion;
 
-    @Column(nullable = true)
     @PositiveOrZero
     private Double precioProduccion;
 
@@ -30,4 +33,11 @@ public class Producto {
 
     @Column(nullable = false)
     private Boolean estado = true;
+
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductoMateriaPrima> materiasPrimas = new ArrayList<>();
+
+
+
+
 }

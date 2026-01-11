@@ -2,6 +2,8 @@ package proyecto.entidades;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @ToString
@@ -21,4 +23,6 @@ public class Sede {
     @OneToMany(mappedBy = "sede")
     private List<Vendedor> vendedores;
 
+    @OneToMany(mappedBy = "sede")
+    private List<MateriaPrimaSede> materiasPrimas = new ArrayList<>();
 }
