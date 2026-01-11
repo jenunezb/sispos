@@ -4,10 +4,13 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import proyecto.dto.MateriaPrimaRequestDTO;
+import proyecto.dto.MateriaPrimaSedeDTO;
 import proyecto.dto.ProductoMateriaPrimaRequestDTO;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.MateriaPrimaSedeService;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -115,6 +118,27 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 mlConsumidos
         );
     }
+
+    @Override
+    public List<MateriaPrimaSedeDTO> listarTodas() {
+        return materiaPrimaSedeRepository.findAll()
+                .stream()
+                .map(mp -> new MateriaPrimaSedeDTO(
+                        mp.getId(),
+                        mp.getMateriaPrima().getCodigo(),
+                        mp.getMateriaPrima().getNombre(),
+                        mp.getMateriaPrima().isActiva(),
+
+                        mp.getSede().getId(),
+                        mp.getSede().getNombre(),
+
+                        mp.getCantidadActualMl(),
+                        mp.getMlPorVaso(),
+                        mp.isActiva()
+                ))
+                .toList();
+    }
+
 }
 
 

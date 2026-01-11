@@ -1,6 +1,10 @@
 package proyecto.servicios.interfaces;
 
+import proyecto.dto.MateriaPrimaSedeDTO;
 import proyecto.dto.ProductoMateriaPrimaRequestDTO;
+import proyecto.entidades.MateriaPrimaSede;
+
+import java.util.List;
 
 public interface MateriaPrimaSedeService {
 
@@ -20,6 +24,8 @@ public interface MateriaPrimaSedeService {
     void ajustarCantidad(Long materiaPrimaId, Long sedeId, double ml);
 
     ProductoMateriaPrimaRequestDTO vincularMateriaPrima(Long productoId, Long materiaPrimaId, double mlConsumidos);
+
+    List<MateriaPrimaSedeDTO> listarTodas();
 
 }
 

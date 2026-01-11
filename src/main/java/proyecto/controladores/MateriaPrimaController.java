@@ -6,10 +6,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.MateriaPrimaRequestDTO;
+import proyecto.dto.MateriaPrimaSedeDTO;
 import proyecto.dto.ProductoMateriaPrimaRequestDTO;
 import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.ProductoMateriaPrima;
 import proyecto.servicios.implementacion.MateriaPrimaSedeServiceImpl;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/materias-primas")
@@ -25,6 +28,11 @@ public class MateriaPrimaController {
     public ResponseEntity<MateriaPrima> crear( @Valid @RequestBody MateriaPrimaRequestDTO dto, @RequestParam Long sedeId) {
         MateriaPrima materiaPrima = materiaPrimaSedeService.crearMateriaPrima(dto, sedeId);
         return ResponseEntity.status(HttpStatus.CREATED).body(materiaPrima);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<MateriaPrimaSedeDTO>> listarTodas() {
+        return ResponseEntity.ok(materiaPrimaSedeService.listarTodas());
     }
 
     /**
