@@ -117,6 +117,12 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         MateriaPrima materiaPrima = materiaPrimaRepository.findById(materiaPrimaId)
                 .orElseThrow(() -> new RuntimeException("Materia prima no encontrada"));
 
+        // 🔒 Verificar duplicado antes de guardar
+        boolean existe = productoMateriaPrimaRepository.existsByProductoAndMateriaPrima(producto, materiaPrima);
+        if (existe) {
+            throw new RuntimeException("La materia prima ya está vinculada a este producto");
+        }
+
         // Crear la relación
         ProductoMateriaPrima pmp = new ProductoMateriaPrima();
         pmp.setProducto(producto);
@@ -133,6 +139,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 mlConsumidos
         );
     }
+
     @Override
     public List<MateriaPrimaSedeDTO> listarTodas() {
         return materiaPrimaSedeRepository.findAll()
