@@ -1,13 +1,16 @@
 package proyecto.servicios.interfaces;
 
+import proyecto.dto.CrearMateriaPrimaDTO;
 import proyecto.dto.MateriaPrimaSedeDTO;
 import proyecto.dto.ProductoMateriaPrimaRequestDTO;
+import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.MateriaPrimaSede;
 
 import java.util.List;
 
 public interface MateriaPrimaSedeService {
 
+    public void crearMateriaPrima(CrearMateriaPrimaDTO crearMateriaPrimaDTO);
     /**
      * Calcula cuántos vasos se pueden hacer con la materia prima en una sede.
      */

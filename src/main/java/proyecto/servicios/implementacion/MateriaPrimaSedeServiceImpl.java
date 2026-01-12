@@ -3,6 +3,7 @@ package proyecto.servicios.implementacion;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import proyecto.dto.CrearMateriaPrimaDTO;
 import proyecto.dto.MateriaPrimaRequestDTO;
 import proyecto.dto.MateriaPrimaSedeDTO;
 import proyecto.dto.ProductoMateriaPrimaRequestDTO;
@@ -19,37 +20,26 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
 
     private final MateriaPrimaSedeRepository materiaPrimaSedeRepository;
     private final MateriaPrimaRepository materiaPrimaRepository;
-    private final SedeRepository sedeRepository;
     private final ProductoRepository productoRepository;
     private final ProductoMateriaPrimaRepository productoMateriaPrimaRepository;
 
 
+    @Override
+    public void crearMateriaPrima(CrearMateriaPrimaDTO crearMateriaPrimaDTO) {
 
-    public MateriaPrima crearMateriaPrima(MateriaPrimaRequestDTO dto, Long sedeId) {
+        if (materiaPrimaRepository.existsByNombreIgnoreCase(crearMateriaPrimaDTO.nombre())) {
+            throw new IllegalArgumentException("La materia prima ya existe");
+        }
 
         // 1️⃣ Crear materia prima
         MateriaPrima materiaPrima = new MateriaPrima();
-        materiaPrima.setNombre(dto.nombre());
-        materiaPrima.setActiva(dto.activa());
+        materiaPrima.setNombre(crearMateriaPrimaDTO.nombre());
+        materiaPrima.setActiva(crearMateriaPrimaDTO.activa());
 
-        materiaPrima = materiaPrimaRepository.save(materiaPrima);
+        materiaPrimaRepository.save(materiaPrima);
 
-        // 2️⃣ Asociar a la sede con cantidad y mlPorVaso
-        Sede sede = sedeRepository.findById(sedeId)
-                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
-
-        MateriaPrimaSede mpSede = new MateriaPrimaSede();
-        mpSede.setMateriaPrima(materiaPrima);
-        mpSede.setSede(sede);
-        mpSede.setCantidadActualMl(dto.cantidadInicialMl());
-        mpSede.setMlPorVaso(dto.mlPorVaso());
-        mpSede.setActiva(true);
-
-        materiaPrimaSedeRepository.save(mpSede);
-
-        return materiaPrima;
     }
-
+    @Override
     public int calcularVasosDisponibles(Long materiaPrimaId, Long sedeId) {
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository
                 .findByMateriaPrima_CodigoAndSede_Id(materiaPrimaId, sedeId)
@@ -58,7 +48,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 ));
         return (int) (mpSede.getCantidadActualMl() / mpSede.getMlPorVaso());
     }
-
+    @Override
     public void descontarPorVenta(Long materiaPrimaId, Long sedeId, int vasosVendidos) {
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository
                 .findByMateriaPrima_CodigoAndSede_Id(materiaPrimaId, sedeId)
@@ -77,7 +67,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlADescontar);
         materiaPrimaSedeRepository.save(mpSede);
     }
-
+    @Override
     public void ajustarCantidad(Long materiaPrimaId, Long sedeId, double ml) {
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository
                 .findByMateriaPrima_CodigoAndSede_Id(materiaPrimaId, sedeId)
@@ -93,7 +83,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         mpSede.setCantidadActualMl(nuevaCantidad);
         materiaPrimaSedeRepository.save(mpSede);
     }
-
+    @Override
     public ProductoMateriaPrimaRequestDTO vincularMateriaPrima(Long productoId, Long materiaPrimaId, double mlConsumidos) {
 
         Producto producto = productoRepository.findById(productoId)
@@ -118,7 +108,6 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 mlConsumidos
         );
     }
-
     @Override
     public List<MateriaPrimaSedeDTO> listarTodas() {
         return materiaPrimaSedeRepository.findAll()
