@@ -22,6 +22,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     private final MateriaPrimaRepository materiaPrimaRepository;
     private final ProductoRepository productoRepository;
     private final ProductoMateriaPrimaRepository productoMateriaPrimaRepository;
+    private final SedeRepository sedeRepository;
 
 
     @Override
@@ -38,6 +39,30 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
 
         materiaPrimaRepository.save(materiaPrima);
 
+    }
+    @Override
+    @Transactional
+    public void materiaPrimaSede(Long codigoMateriaPrima, Long codigoSede) {
+
+        MateriaPrima materiaPrima = materiaPrimaRepository.findById(codigoMateriaPrima)
+                .orElseThrow(() -> new RuntimeException("Materia prima no encontrada"));
+
+        Sede sede = sedeRepository.findById(codigoSede)
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        // 🔒 Evitar duplicados
+        if (materiaPrimaSedeRepository
+                .existsByMateriaPrimaAndSede(materiaPrima, sede)) {
+            throw new RuntimeException("La materia prima ya está asociada a esta sede");
+        }
+
+        // 🧩 Crear relación
+        MateriaPrimaSede mps = new MateriaPrimaSede();
+        mps.setMateriaPrima(materiaPrima);
+        mps.setSede(sede);
+        mps.setCantidadActualMl(0); // inicial
+
+        materiaPrimaSedeRepository.save(mps);
     }
     @Override
     public int calcularVasosDisponibles(Long materiaPrimaId, Long sedeId) {

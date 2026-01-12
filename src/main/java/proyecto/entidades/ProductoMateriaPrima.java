@@ -30,4 +30,3 @@ public class ProductoMateriaPrima {
     @Column(name = "ml_consumidos", nullable = false)
     private double mlConsumidos;
 }
-

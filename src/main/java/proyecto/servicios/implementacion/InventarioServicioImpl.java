@@ -75,6 +75,7 @@ public class InventarioServicioImpl implements InventarioServicio {
     // SALIDAS / VENTAS
     // ===============================
 
+    @Transactional
     @Override
     public void registrarSalida(Long productoId, Long sedeId, Integer cantidad, String observacion) {
         Producto producto = productoRepository.findById(productoId)
@@ -97,10 +98,26 @@ public class InventarioServicioImpl implements InventarioServicio {
                 }
             }
             for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+
                 MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede).get();
-                mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - pmp.getMlConsumidos() * cantidad);
+                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
+                        .orElseThrow(() -> new RuntimeException(
+                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
+                        ));
+
+                double mlNecesarios = pmp.getMlConsumidos() * cantidad;
+
+                if (mpSede.getCantidadActualMl() < mlNecesarios) {
+                    throw new RuntimeException(
+                            "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
+                    );
+                }
+
+                mpSede.setCantidadActualMl(
+                        mpSede.getCantidadActualMl() - mlNecesarios
+                );
             }
+
             inventario.setSalidas(inventario.getSalidas() + cantidad);
         } else {
             if (inventario.getStockActual() < cantidad) {

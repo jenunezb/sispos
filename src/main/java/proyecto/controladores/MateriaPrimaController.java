@@ -14,6 +14,7 @@ import proyecto.entidades.ProductoMateriaPrima;
 import proyecto.servicios.implementacion.MateriaPrimaSedeServiceImpl;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/materias-primas")
@@ -29,6 +30,22 @@ public class MateriaPrimaController {
     public ResponseEntity<Void> crear(@Valid @RequestBody CrearMateriaPrimaDTO dto) {
         materiaPrimaSedeService.crearMateriaPrima(dto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /**
+     * Vincula una materia prima con una sede
+     */
+    @PostMapping("/{materiaPrimaId}/sedes/{sedeId}")
+    public ResponseEntity<Map<String, String>> vincularMateriaPrimaSede(
+            @PathVariable Long materiaPrimaId,
+            @PathVariable Long sedeId) {
+
+        materiaPrimaSedeService.materiaPrimaSede(materiaPrimaId, sedeId);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of(
+                        "mensaje", "Materia prima vinculada correctamente a la sede"
+                ));
     }
 
     @GetMapping

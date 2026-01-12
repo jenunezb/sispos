@@ -11,6 +11,8 @@ import java.util.List;
 public interface MateriaPrimaSedeService {
 
     public void crearMateriaPrima(CrearMateriaPrimaDTO crearMateriaPrimaDTO);
+
+    public void materiaPrimaSede(Long codigoMateriaPrima, Long cogigoSede);
     /**
      * Calcula cuántos vasos se pueden hacer con la materia prima en una sede.
      */
