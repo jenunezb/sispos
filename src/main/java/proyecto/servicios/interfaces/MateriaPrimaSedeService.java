@@ -1,8 +1,7 @@
 package proyecto.servicios.interfaces;
 
-import proyecto.dto.CrearMateriaPrimaDTO;
-import proyecto.dto.MateriaPrimaSedeDTO;
-import proyecto.dto.ProductoMateriaPrimaRequestDTO;
+import jakarta.validation.Valid;
+import proyecto.dto.*;
 import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.MateriaPrimaSede;
 
@@ -13,6 +12,9 @@ public interface MateriaPrimaSedeService {
     public void crearMateriaPrima(CrearMateriaPrimaDTO crearMateriaPrimaDTO);
 
     public void materiaPrimaSede(Long codigoMateriaPrima, Long cogigoSede);
+
+    public MateriaPrimaSedeResponseDTO crearYVincular(@Valid CrearMateriaPrimaSedeDTO dto);
+
     /**
      * Calcula cuántos vasos se pueden hacer con la materia prima en una sede.
      */

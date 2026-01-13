@@ -1,12 +1,10 @@
 package proyecto.servicios.implementacion;
 
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import proyecto.dto.CrearMateriaPrimaDTO;
-import proyecto.dto.MateriaPrimaRequestDTO;
-import proyecto.dto.MateriaPrimaSedeDTO;
-import proyecto.dto.ProductoMateriaPrimaRequestDTO;
+import proyecto.dto.*;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.MateriaPrimaSedeService;
@@ -64,6 +62,45 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
 
         materiaPrimaSedeRepository.save(mps);
     }
+
+    @Transactional
+    public MateriaPrimaSedeResponseDTO crearYVincular(@Valid CrearMateriaPrimaSedeDTO dto) {
+
+        MateriaPrima materiaPrima = materiaPrimaRepository
+                .findByNombreIgnoreCase(dto.nombre())
+                .orElseGet(() -> {
+                    MateriaPrima mp = new MateriaPrima();
+                    mp.setNombre(dto.nombre());
+                    mp.setActiva(dto.activa());
+                    return materiaPrimaRepository.save(mp);
+                });
+
+        if (materiaPrimaSedeRepository.existsByMateriaPrimaAndSedeId(
+                materiaPrima, dto.sedeId())) {
+            throw new RuntimeException("La materia prima ya está vinculada a esta sede");
+        }
+
+        Sede sede = sedeRepository.findById(dto.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        MateriaPrimaSede mpSede = new MateriaPrimaSede();
+        mpSede.setMateriaPrima(materiaPrima);
+        mpSede.setSede(sede);
+        mpSede.setCantidadActualMl(dto.cantidadInicialMl());
+        mpSede.setMlPorVaso(dto.mlPorVaso());
+        mpSede.setActiva(true);
+
+        materiaPrimaSedeRepository.save(mpSede);
+
+        return new MateriaPrimaSedeResponseDTO(
+                materiaPrima.getCodigo(),
+                materiaPrima.getNombre(),
+                sede.getId(),
+                "Materia prima creada y vinculada correctamente"
+        );
+    }
+
+
     @Override
     public int calcularVasosDisponibles(Long materiaPrimaId, Long sedeId) {
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository
