@@ -130,22 +130,6 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         materiaPrimaSedeRepository.save(mpSede);
     }
     @Override
-    public void ajustarCantidad(Long materiaPrimaId, Long sedeId, double ml) {
-        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                .findByMateriaPrima_CodigoAndSede_Id(materiaPrimaId, sedeId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Materia prima no configurada en esta sede"
-                ));
-
-        double nuevaCantidad = mpSede.getCantidadActualMl() + ml;
-        if (nuevaCantidad < 0) {
-            throw new IllegalStateException("La cantidad no puede ser negativa");
-        }
-
-        mpSede.setCantidadActualMl(nuevaCantidad);
-        materiaPrimaSedeRepository.save(mpSede);
-    }
-    @Override
     public ProductoMateriaPrimaRequestDTO vincularMateriaPrima(Long productoId, Long materiaPrimaId, double mlConsumidos) {
 
         Producto producto = productoRepository.findById(productoId)
@@ -176,7 +160,6 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 mlConsumidos
         );
     }
-
     @Override
     public List<MateriaPrimaSedeDTO> listarTodas() {
         return materiaPrimaSedeRepository.findAll()
@@ -196,6 +179,52 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 ))
                 .toList();
     }
+
+    /**
+     * Actualizar cantidad, ml por vaso y estado activo/inactivo
+     */
+    public void actualizarMateriaPrimaSede(Long id, MateriaPrimaSedeUpdate dto) {
+        MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Materia prima en sede no encontrada"
+                ));
+
+        mpSede.setCantidadActualMl(dto.cantidad());
+        mpSede.setMlPorVaso(dto.mlPorVaso());
+        mpSede.setActiva(dto.activa());
+
+        materiaPrimaSedeRepository.save(mpSede);
+    }
+
+    /**
+     * Vincular un producto a una materia prima en una sede
+     */
+    public void vincularProducto(VincularProductoDTO dto) {
+        // Validar que no exista ya
+        boolean existe = productoMateriaPrimaRepository.existsByMateriaPrimaIdAndProductoId(
+                dto.materiaPrimaSedeId(), dto.productoId()
+        );
+
+        if (existe) {
+            throw new IllegalStateException("El producto ya está vinculado a esta materia prima");
+        }
+
+        // Traer las entidades
+        Producto producto = productoRepository.findById(dto.productoId())
+                .orElseThrow(() -> new IllegalStateException("Producto no encontrado"));
+
+        MateriaPrima materiaPrima = materiaPrimaRepository.findById(dto.materiaPrimaSedeId())
+                .orElseThrow(() -> new IllegalStateException("Materia prima no encontrada"));
+
+        // Crear nueva relación
+        ProductoMateriaPrima nueva = new ProductoMateriaPrima();
+        nueva.setProducto(producto);
+        nueva.setMateriaPrima(materiaPrima);
+        nueva.setMlConsumidos(dto.mlConsumidos());
+
+        productoMateriaPrimaRepository.save(nueva);
+    }
+
 
 }
 

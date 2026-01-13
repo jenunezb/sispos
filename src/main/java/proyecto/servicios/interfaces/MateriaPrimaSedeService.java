@@ -25,14 +25,13 @@ public interface MateriaPrimaSedeService {
      */
     void descontarPorVenta(Long materiaPrimaId, Long sedeId, int vasosVendidos);
 
-    /**
-     * Ajusta la cantidad de materia prima de una sede (entrada o corrección manual).
-     */
-    void ajustarCantidad(Long materiaPrimaId, Long sedeId, double ml);
-
     ProductoMateriaPrimaRequestDTO vincularMateriaPrima(Long productoId, Long materiaPrimaId, double mlConsumidos);
 
     List<MateriaPrimaSedeDTO> listarTodas();
+
+    void actualizarMateriaPrimaSede(Long id, MateriaPrimaSedeUpdate dto);
+
+    void vincularProducto(VincularProductoDTO dto);
 
 }
 

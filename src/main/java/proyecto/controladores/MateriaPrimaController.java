@@ -66,11 +66,25 @@ public class MateriaPrimaController {
     }
 
     /**
-     * Ajustar cantidad de materia prima en una sede
+     * Actualizar cantidad, ml por vaso y estado activo/inactivo
      */
-    @PostMapping("/{materiaPrimaId}/sede/{sedeId}/ajustar")
-    public ResponseEntity<String> ajustarCantidad( @PathVariable Long materiaPrimaId, @PathVariable Long sedeId,@RequestParam double ml) {
-        materiaPrimaSedeService.ajustarCantidad(materiaPrimaId, sedeId, ml);
-        return ResponseEntity.ok("Cantidad ajustada correctamente");
+    @PutMapping("/{id}")
+    public ResponseEntity<String> actualizarMateriaPrimaSede(
+            @PathVariable Long id,
+            @RequestBody MateriaPrimaSedeUpdate dto
+    ) {
+        materiaPrimaSedeService.actualizarMateriaPrimaSede(id, dto);
+        return ResponseEntity.ok("Materia prima actualizada correctamente");
+    }
+
+    /**
+     * Vincular un producto a una materia prima en una sede
+     */
+    @PostMapping("/vincular-producto")
+    public ResponseEntity<String> vincularProducto(
+            @RequestBody VincularProductoDTO dto
+    ) {
+        materiaPrimaSedeService.vincularProducto(dto);
+        return ResponseEntity.ok("Producto vinculado correctamente");
     }
 }
