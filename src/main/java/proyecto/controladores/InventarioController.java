@@ -1,6 +1,7 @@
 package proyecto.controladores;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.InventarioDTO;
@@ -120,16 +121,19 @@ public class InventarioController {
     @GetMapping("/dia")
     public ResponseEntity<List<InventarioDelDia>> obtenerInventarioDelDia(
             @RequestParam Long sedeId,
-            @RequestParam String fecha
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
     ) {
 
-        LocalDateTime fechaConsulta = LocalDate.parse(fecha).atStartOfDay();
+        LocalDateTime inicio = fecha.atStartOfDay();
+        LocalDateTime fin = fecha.atTime(23, 59, 59);
 
         return ResponseEntity.ok(
                 inventarioServicio.obtenerInventarioDia(
                         sedeId,
-                        fechaConsulta
+                        inicio,
+                        fin
                 )
         );
     }
+
 }

@@ -10,8 +10,6 @@ import proyecto.dto.PerdidasDetalleDTO;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.InventarioServicio;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -231,13 +229,13 @@ public class InventarioServicioImpl implements InventarioServicio {
     // ===============================
 
     @Override
-    public List<InventarioDelDia> obtenerInventarioDia(Long sedeId, LocalDateTime fecha) {
+    public List<InventarioDelDia> obtenerInventarioDia(Long sedeId, LocalDateTime fechaInicio,
+                                                       LocalDateTime fechaFin) {
         List<Inventario> inventarios = inventarioRepository.findBySedeId(sedeId);
-        LocalDate today = LocalDate.now();
-        LocalDateTime inicio = today.atStartOfDay();
-        LocalDateTime fin = today.atTime(23, 59, 59, 999_999_999);
 
-        List<Object[]> movimientos = movimientoRepository.resumenMovimientosDelDia(sedeId, inicio, fin);
+        // 🔹 Usar la fecha que viene del frontend
+        List<Object[]> movimientos = movimientoRepository.resumenMovimientosDelDia(sedeId, fechaInicio, fechaFin);
+
         Map<Long, int[]> movimientosMap = new HashMap<>();
         for (Object[] row : movimientos) {
             movimientosMap.put((Long) row[0], new int[]{
