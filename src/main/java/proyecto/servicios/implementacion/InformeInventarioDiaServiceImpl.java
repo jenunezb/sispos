@@ -24,6 +24,10 @@ public class InformeInventarioDiaServiceImpl implements InformeInventarioDiaServ
 
     @Override
     public InformeInventarioDia guardarInforme(InformeInventarioDiaDTO dto) throws JsonProcessingException {
+        // ❌ Si totalVendido es 0, no guardamos nada
+        if (dto.totalVendido() == 0) {
+            return null; // o lanzar una excepción si quieres notificar al frontend
+        }
         InformeInventarioDia informe = new InformeInventarioDia();
         informe.setSedeId(dto.sedeId());
         informe.setFecha(dto.fecha());
