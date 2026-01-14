@@ -19,8 +19,8 @@ import java.util.List;
 @Transactional
 public class InformeInventarioDiaServiceImpl implements InformeInventarioDiaService {
 
-    private InformeInventarioDiaRepository repository;
-    private ObjectMapper objectMapper; // Jackson para convertir a JSON
+    private final InformeInventarioDiaRepository repository;
+    private final ObjectMapper objectMapper; // ✅ ahora Spring lo inyecta automáticamente
 
     @Override
     public InformeInventarioDia guardarInforme(InformeInventarioDiaDTO dto) throws JsonProcessingException {
