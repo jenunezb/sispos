@@ -1,13 +1,17 @@
 package proyecto.controladores;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.*;
+import proyecto.entidades.InformeInventarioDia;
 import proyecto.servicios.interfaces.AdministradorServicio;
+import proyecto.servicios.interfaces.InformeInventarioDiaService;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
 
@@ -157,5 +161,24 @@ public class AdministradorController {
         );
     }
 
+    private InformeInventarioDiaService service;
+
+    @PostMapping("/guardar")
+    public ResponseEntity<?> guardarInforme(@RequestBody InformeInventarioDiaDTO dto) {
+        try {
+            service.guardarInforme(dto);
+            return ResponseEntity.ok("Informe guardado correctamente");
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al guardar el informe");
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<InformeInventarioDia>> obtenerInformes(
+            @RequestParam Long sedeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        return ResponseEntity.ok(service.obtenerInformes(sedeId, fecha));
+    }
 
 }
