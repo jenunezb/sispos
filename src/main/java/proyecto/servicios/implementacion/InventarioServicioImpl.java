@@ -254,7 +254,7 @@ public class InventarioServicioImpl implements InventarioServicio {
             int perdidas = datos[1];
             int salidasManuales = datos[2];
             int entradas = datos[3];
-            int stockInicial = stockActual + ventas + perdidas + salidasManuales;
+            int stockInicial = stockActual - entradas + ventas + perdidas + salidasManuales;
             double precio = p.getPrecioVenta();
 
             return new InventarioDelDia(
