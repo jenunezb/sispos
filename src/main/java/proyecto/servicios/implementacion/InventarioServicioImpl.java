@@ -33,7 +33,7 @@ public class InventarioServicioImpl implements InventarioServicio {
 
     @Override
     public List<InventarioDTO> listarPorSede(Long sedeId) {
-        return inventarioRepository.findBySedeId(sedeId)
+        return inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId)
                 .stream()
                 .map(this::toDTO)
                 .toList();
@@ -231,7 +231,7 @@ public class InventarioServicioImpl implements InventarioServicio {
     @Override
     public List<InventarioDelDia> obtenerInventarioDia(Long sedeId, LocalDateTime fechaInicio,
                                                        LocalDateTime fechaFin) {
-        List<Inventario> inventarios = inventarioRepository.findBySedeId(sedeId);
+        List<Inventario> inventarios = inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId);
 
         // 🔹 Usar la fecha que viene del frontend
         List<Object[]> movimientos = movimientoRepository.resumenMovimientosDelDia(sedeId, fechaInicio, fechaFin);
