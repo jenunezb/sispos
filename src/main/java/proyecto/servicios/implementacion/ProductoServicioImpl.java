@@ -1,6 +1,7 @@
 package proyecto.servicios.implementacion;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import proyecto.dto.ProductoActualizarDTO;
 import proyecto.dto.ProductoCrearDTO;
@@ -57,11 +58,12 @@ public class ProductoServicioImpl implements ProductoServicio {
 
     @Override
     public List<ProductoDTO> listarProductos() {
-        return productoRepository.findAll()
+        return productoRepository.findAllByOrderByCodigoAsc()
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
+
 
     @Override
     public List<ProductoDTO> listarProductosActivos() {
