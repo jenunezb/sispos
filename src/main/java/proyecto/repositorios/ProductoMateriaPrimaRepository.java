@@ -7,6 +7,8 @@ import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.Producto;
 import proyecto.entidades.ProductoMateriaPrima;
 
+import java.util.List;
+
 public interface ProductoMateriaPrimaRepository
         extends JpaRepository<ProductoMateriaPrima, Long> {
 
@@ -19,7 +21,10 @@ public interface ProductoMateriaPrimaRepository
     boolean existsByMateriaPrimaIdAndProductoId(
             @Param("materiaPrimaId") Long materiaPrimaId,
             @Param("productoId") Long productoId
-    );}
+    );
+
+    List<ProductoMateriaPrima> findByProductoCodigo(Long productoCodigo);
+}
 
 
 

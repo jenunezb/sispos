@@ -81,10 +81,11 @@ public class MateriaPrimaController {
      * Vincular un producto a una materia prima en una sede
      */
     @PostMapping("/vincular-producto")
-    public ResponseEntity<String> vincularProducto(
+    public ResponseEntity<Map<String, String>> vincularProducto(
             @RequestBody VincularProductoDTO dto
     ) {
         materiaPrimaSedeService.vincularProducto(dto);
-        return ResponseEntity.ok("Producto vinculado correctamente");
+        return ResponseEntity.ok(Map.of("mensaje", "Producto vinculado correctamente"));
     }
+
 }

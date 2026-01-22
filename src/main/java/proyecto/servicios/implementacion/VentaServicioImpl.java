@@ -45,51 +45,17 @@ public class VentaServicioImpl implements VentaServicio {
         List<DetalleVenta> detalles = new ArrayList<>();
 
         for (DetalleVentaDTO d : dto.detalles()) {
+
             Producto producto = productoRepository.findById(d.productoId())
                     .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-            // 🔹 Obtener inventario del producto en la sede
-            Inventario inventario = inventarioRepository
-                    .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "No hay inventario para " + producto.getNombre() + " en esta sede"
-                    ));
-
-            // 🔹 Verificar stock suficiente
-            if (inventario.getStockActual() < d.cantidad()) {
-                throw new RuntimeException("Stock insuficiente para " + producto.getNombre());
-            }
-
-            // 🔹 Descontar stock
-            inventario.setStockActual(inventario.getStockActual() - d.cantidad());
-            inventarioRepository.save(inventario);
-
-            // 🔹 Crear detalle de venta
-            DetalleVenta detalle = new DetalleVenta();
-            detalle.setProducto(producto);
-            detalle.setCantidad(d.cantidad());
-            detalle.setPrecioUnitario(producto.getPrecioVenta());
-            detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
-            detalle.setVenta(venta);
-            detalles.add(detalle);
-
-            total += detalle.getSubtotal();
-
-            // 🔹 Registrar movimiento de inventario SALIDA
-            MovimientoInventario movimiento = new MovimientoInventario();
-            movimiento.setProducto(producto);
-            movimiento.setSede(sede);
-            movimiento.setTipo(TipoMovimiento.SALIDA);
-            movimiento.setCantidad(d.cantidad());
-            movimiento.setObservacion("Venta de producto");
-            movimiento.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
-            movimientoInventarioRepository.save(movimiento);
-
-            // 🔹 Descontar materia prima si aplica
+            // 🔹 SI TIENE RECETA → DESCONTAR MATERIA PRIMA
             if (!producto.getMateriasPrimas().isEmpty()) {
+
                 for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+
                     MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                            .findByMateriaPrima_CodigoAndSede_Id(
+                            .findByMateriaPrimaCodigoAndSedeId(
                                     pmp.getMateriaPrima().getCodigo(),
                                     sede.getId())
                             .orElseThrow(() -> new RuntimeException(
@@ -104,10 +70,54 @@ public class VentaServicioImpl implements VentaServicio {
                         );
                     }
 
-                    mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
+                    mpSede.setCantidadActualMl(
+                            mpSede.getCantidadActualMl() - mlNecesarios
+                    );
                     materiaPrimaSedeRepository.save(mpSede);
                 }
+
             }
+            // 🔹 SI NO TIENE RECETA → DESCONTAR INVENTARIO EN UNIDADES
+            else {
+
+                Inventario inventario = inventarioRepository
+                        .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                        .orElseThrow(() -> new RuntimeException(
+                                "No hay inventario para " + producto.getNombre() + " en esta sede"
+                        ));
+
+                if (inventario.getStockActual() < d.cantidad()) {
+                    throw new RuntimeException(
+                            "Stock insuficiente para " + producto.getNombre()
+                    );
+                }
+
+                inventario.setStockActual(
+                        inventario.getStockActual() - d.cantidad()
+                );
+                inventarioRepository.save(inventario);
+            }
+
+            // 🔹 CREAR MOVIMIENTO PARA TODOS LOS PRODUCTOS
+            MovimientoInventario movimiento = new MovimientoInventario();
+            movimiento.setProducto(producto);
+            movimiento.setSede(sede);
+            movimiento.setTipo(TipoMovimiento.SALIDA);
+            movimiento.setCantidad(d.cantidad());
+            movimiento.setObservacion("Venta de producto");
+            movimiento.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
+            movimientoInventarioRepository.save(movimiento);
+
+            // 🔹 DETALLE DE VENTA (SIEMPRE)
+            DetalleVenta detalle = new DetalleVenta();
+            detalle.setProducto(producto);
+            detalle.setCantidad(d.cantidad());
+            detalle.setPrecioUnitario(producto.getPrecioVenta());
+            detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
+            detalle.setVenta(venta);
+            detalles.add(detalle);
+
+            total += detalle.getSubtotal();
         }
 
         venta.setDetalles(detalles);
@@ -115,8 +125,6 @@ public class VentaServicioImpl implements VentaServicio {
 
         return ventaRepository.save(venta);
     }
-
-
 
 
 

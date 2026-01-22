@@ -118,9 +118,12 @@ public class InventarioServicioImpl implements InventarioServicio {
 
             inventario.setSalidas(inventario.getSalidas() + cantidad);
         } else {
-            if (inventario.getStockActual() < cantidad) {
+            int stockDisponible = calcularStockReal(inventario);
+
+            if (stockDisponible < cantidad) {
                 throw new RuntimeException("Stock insuficiente");
             }
+
             inventario.setSalidas(inventario.getSalidas() + cantidad);
             inventario.setStockActual(inventario.getStockActual() - cantidad);
         }
@@ -168,9 +171,12 @@ public class InventarioServicioImpl implements InventarioServicio {
             }
             inventario.setPerdidas(inventario.getPerdidas() + cantidad);
         } else {
-            if (inventario.getStockActual() < cantidad) {
-                throw new RuntimeException("Stock insuficiente para pérdida");
+            int stockDisponible = calcularStockReal(inventario);
+
+            if (stockDisponible < cantidad) {
+                throw new RuntimeException("Stock insuficiente");
             }
+
             inventario.setPerdidas(inventario.getPerdidas() + cantidad);
             inventario.setStockActual(inventario.getStockActual() - cantidad);
         }
@@ -248,14 +254,52 @@ public class InventarioServicioImpl implements InventarioServicio {
 
         return inventarios.stream().map(inv -> {
             Producto p = inv.getProducto();
-            int stockActual = calcularStockReal(inv);
-            int[] datos = movimientosMap.getOrDefault(p.getCodigo(), new int[]{0, 0, 0, 0});
-            int ventas = datos[0];
-            int perdidas = datos[1];
-            int salidasManuales = datos[2];
-            int entradas = datos[3];
-            int stockInicial = stockActual - entradas + ventas + perdidas + salidasManuales;
+            boolean tieneReceta = !p.getMateriasPrimas().isEmpty();
+
+            List<ProductoMateriaPrima> receta =
+                    productoMateriaPrimaRepository.findByProductoCodigo(p.getCodigo());
+
+            int stockActual;
+
+            if (!receta.isEmpty()) {
+                stockActual = calcularStockDesdeMateriaPrima(p, sedeId);
+            } else {
+                stockActual = calcularStockReal(inv);
+            }
+
+
+            int stockInicial;
+            int entradas = 0;
+            int salidasManuales = 0;
+            int perdidas = 0;
+            int ventas = 0;
+
+            if (!tieneReceta) {
+                // Producto normal
+                int[] datos = movimientosMap.getOrDefault(
+                        p.getCodigo(), new int[]{0,0,0,0});
+                ventas = datos[0];
+                perdidas = datos[1];
+                salidasManuales = datos[2];
+                entradas = datos[3];
+                stockInicial = stockActual - entradas + ventas + perdidas + salidasManuales;
+            } else {
+                // Producto con receta
+                int[] datos = movimientosMap.getOrDefault(
+                        p.getCodigo(), new int[]{0,0,0,0});
+                ventas = datos[0]; // <--- aquí agregas
+                perdidas = datos[1];
+                salidasManuales = datos[2];
+                entradas = datos[3];
+                stockInicial = stockActual + ventas + perdidas + salidasManuales - entradas;
+                // Ajusta según cómo quieras mostrar stock inicial
+            }
+
             double precio = p.getPrecioVenta();
+
+            System.out.println("🔍 Producto: " + p.getNombre());
+            System.out.println("🔍 Código producto: " + p.getCodigo());
+            System.out.println("🔍 Materias primas size: " + p.getMateriasPrimas().size());
 
             return new InventarioDelDia(
                     p.getCodigo(),
@@ -270,6 +314,7 @@ public class InventarioServicioImpl implements InventarioServicio {
                     ventas * precio
             );
         }).toList();
+
     }
 
     // ===============================
@@ -311,19 +356,42 @@ public class InventarioServicioImpl implements InventarioServicio {
 
     private int calcularStockReal(Inventario inv) {
         Producto p = inv.getProducto();
-        if (p.getMateriasPrimas().isEmpty()) return inv.getStockActual();
 
-        int maxUnidades = Integer.MAX_VALUE;
+        // 🔹 Si NO tiene receta → stock normal
+        if (p.getMateriasPrimas().isEmpty()) {
+            return inv.getStockActual();
+        }
+
         Sede sede = inv.getSede();
+        int maxUnidades = Integer.MAX_VALUE;
+
         for (ProductoMateriaPrima pmp : p.getMateriasPrimas()) {
+
             MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                    .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                    .orElseThrow();
+                    .findByMateriaPrimaCodigoAndSedeId(
+                            pmp.getMateriaPrima().getCodigo(),
+                            sede.getId()
+                    )
+                    .orElse(null);
+
+            if (mpSede == null) {
+                System.out.println(
+                        "❌ MP no encontrada en sede: "
+                                + pmp.getMateriaPrima().getNombre()
+                                + " | producto: " + p.getNombre()
+                );
+                return 0; // no se puede producir ni 1 unidad
+            }
+
             int posibles = (int) (mpSede.getCantidadActualMl() / pmp.getMlConsumidos());
             maxUnidades = Math.min(maxUnidades, posibles);
         }
+
         return maxUnidades;
     }
+
+
+
 
     // ===============================
     // REPORTES
@@ -333,5 +401,36 @@ public class InventarioServicioImpl implements InventarioServicio {
     public List<PerdidasDetalleDTO> obtenerPerdidasDetalladasPorRango(Long sedeId, LocalDateTime inicio, LocalDateTime fin) {
         return inventarioRepository.obtenerPerdidasDetalladasPorRango(sedeId, inicio, fin);
     }
+
+    private int calcularStockDesdeMateriaPrima(Producto producto, Long sedeId) {
+
+        List<ProductoMateriaPrima> receta =
+                productoMateriaPrimaRepository.findByProductoCodigo(producto.getCodigo());
+
+        int stock = Integer.MAX_VALUE;
+
+        for (ProductoMateriaPrima pmp : receta) {
+
+            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                    .findByMateriaPrimaCodigoAndSedeId(
+                            pmp.getMateriaPrima().getCodigo(),
+                            sedeId
+                    )
+                    .orElse(null);
+
+            if (mpSede == null) {
+                return 0;
+            }
+
+            int unidades = (int) Math.floor(
+                    mpSede.getCantidadActualMl() / pmp.getMlConsumidos()
+            );
+
+            stock = Math.min(stock, unidades);
+        }
+
+        return stock == Integer.MAX_VALUE ? 0 : stock;
+    }
+
 }
 

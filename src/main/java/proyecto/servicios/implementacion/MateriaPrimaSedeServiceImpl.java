@@ -104,7 +104,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     @Override
     public int calcularVasosDisponibles(Long materiaPrimaId, Long sedeId) {
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                .findByMateriaPrima_CodigoAndSede_Id(materiaPrimaId, sedeId)
+                .findByMateriaPrimaCodigoAndSedeId(materiaPrimaId, sedeId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Materia prima no configurada en esta sede"
                 ));
@@ -113,7 +113,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     @Override
     public void descontarPorVenta(Long materiaPrimaId, Long sedeId, int vasosVendidos) {
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                .findByMateriaPrima_CodigoAndSede_Id(materiaPrimaId, sedeId)
+                .findByMateriaPrimaCodigoAndSedeId(materiaPrimaId, sedeId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Materia prima no configurada en esta sede"
                 ));
@@ -200,7 +200,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
      * Vincular un producto a una materia prima en una sede
      */
     public void vincularProducto(VincularProductoDTO dto) {
-        // Validar que no exista ya
+        // 🔹 Validar que la relación no exista todavía
         boolean existe = productoMateriaPrimaRepository.existsByMateriaPrimaIdAndProductoId(
                 dto.materiaPrimaSedeId(), dto.productoId()
         );
@@ -209,21 +209,24 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
             throw new IllegalStateException("El producto ya está vinculado a esta materia prima");
         }
 
-        // Traer las entidades
+        // 🔹 Traer la materia prima de la sede correctamente
+        MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(dto.materiaPrimaSedeId())
+                .orElseThrow(() -> new IllegalStateException("Materia prima de la sede no encontrada"));
+
+        // 🔹 Traer el producto
         Producto producto = productoRepository.findById(dto.productoId())
                 .orElseThrow(() -> new IllegalStateException("Producto no encontrado"));
 
-        MateriaPrima materiaPrima = materiaPrimaRepository.findById(dto.materiaPrimaSedeId())
-                .orElseThrow(() -> new IllegalStateException("Materia prima no encontrada"));
-
-        // Crear nueva relación
+        // 🔹 Crear la relación ProductoMateriaPrima usando la materia prima de la sede
         ProductoMateriaPrima nueva = new ProductoMateriaPrima();
         nueva.setProducto(producto);
-        nueva.setMateriaPrima(materiaPrima);
+        nueva.setMateriaPrima(mpSede.getMateriaPrima()); // clave: usar la materia prima real
         nueva.setMlConsumidos(dto.mlConsumidos());
 
+        // 🔹 Guardar en base de datos
         productoMateriaPrimaRepository.save(nueva);
     }
+
 
 
 }

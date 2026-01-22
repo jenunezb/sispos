@@ -21,8 +21,10 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
             Sede sede
     );
 
-    // También útil si quieres buscar por IDs directamente
-    Optional<MateriaPrimaSede> findByMateriaPrima_CodigoAndSede_Id(Long materiaPrimaId, Long sedeId);
+    Optional<MateriaPrimaSede> findByMateriaPrimaCodigoAndSedeId(
+            Long materiaPrimaCodigo,
+            Long sedeId
+    );
 
     boolean existsByMateriaPrimaAndSedeId(MateriaPrima materiaPrima, Long sedeId);
 
