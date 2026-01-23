@@ -536,5 +536,40 @@ public class InventarioServicioImpl implements InventarioServicio {
         return totalConsumido;
     }
 
+    @Override
+    public void registrarMovimientoMateriaPrima(MovimientoMateriaPrimaDTO dto) {
+
+        if (dto.cantidad() <= 0) {
+            throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
+        }
+
+        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                .findByMateriaPrimaCodigoAndSedeId(
+                        dto.materiaPrimaId(),
+                        dto.sedeId()
+                )
+                .orElseThrow(() ->
+                        new RuntimeException("Materia prima no encontrada para la sede")
+                );
+
+        double stockActual = mpSede.getCantidadActualMl(); // ✅ AQUÍ
+
+        if ("ENTRADA".equals(dto.tipo())) {
+            mpSede.setCantidadActualMl(stockActual + dto.cantidad());
+        } else if ("SALIDA".equals(dto.tipo())) {
+
+            if (stockActual < dto.cantidad()) {
+                throw new RuntimeException("Stock insuficiente");
+            }
+
+            mpSede.setCantidadActualMl(stockActual - dto.cantidad());
+        } else {
+            throw new IllegalArgumentException("Tipo de movimiento inválido");
+        }
+
+        materiaPrimaSedeRepository.save(mpSede);
+    }
+
+
 }
 

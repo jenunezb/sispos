@@ -22,6 +22,7 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
             Sede sede
     );
 
+
     Optional<MateriaPrimaSede> findByMateriaPrimaCodigoAndSedeId(
             Long materiaPrimaCodigo,
             Long sedeId

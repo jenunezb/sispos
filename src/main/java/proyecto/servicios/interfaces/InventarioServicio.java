@@ -33,9 +33,11 @@ public interface InventarioServicio {
             LocalDateTime fechaFin
     );
 
-    public List<MateriaPrimaInventarioDTO> obtenerInventarioMateriaPrimaDia(
+    List<MateriaPrimaInventarioDTO> obtenerInventarioMateriaPrimaDia(
             Long sedeId,
             LocalDateTime inicio,
             LocalDateTime fin
     );
+
+    void registrarMovimientoMateriaPrima(MovimientoMateriaPrimaDTO dto);
 }

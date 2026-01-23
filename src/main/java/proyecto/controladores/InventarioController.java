@@ -148,4 +148,12 @@ public class InventarioController {
         );
     }
 
+    @PostMapping("/materia-prima/movimiento")
+    public ResponseEntity<Void> registrarMovimientoMateriaPrima(
+            @RequestBody MovimientoMateriaPrimaDTO dto
+    ) {
+        inventarioServicio.registrarMovimientoMateriaPrima(dto);
+        return ResponseEntity.ok().build();
+    }
+
 }
