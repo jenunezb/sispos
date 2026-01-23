@@ -232,67 +232,107 @@ public class InventarioServicioImpl implements InventarioServicio {
     // ===============================
 
     @Override
-    public List<InventarioDelDia> obtenerInventarioDia(Long sedeId, LocalDateTime fechaInicio,
-                                                       LocalDateTime fechaFin) {
-        List<Inventario> inventarios = inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId);
+    public List<InventarioDelDia> obtenerInventarioDia(
+            Long sedeId,
+            LocalDateTime fechaInicio,
+            LocalDateTime fechaFin
+    ) {
 
-        // 🔹 Usar la fecha que viene del frontend
-        List<Object[]> movimientos = movimientoRepository.resumenMovimientosDelDia(sedeId, fechaInicio, fechaFin);
+        // ===============================
+        // 1️⃣ INVENTARIO BASE POR SEDE
+        // ===============================
+        List<Inventario> inventarios =
+                inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId);
+
+        // ===============================
+        // 2️⃣ MOVIMIENTOS DEL DÍA
+        // [productoId, ventas, perdidas, salidasManuales, entradas]
+        // ===============================
+        List<Object[]> movimientos =
+                movimientoRepository.resumenMovimientosDelDia(
+                        sedeId, fechaInicio, fechaFin
+                );
 
         Map<Long, int[]> movimientosMap = new HashMap<>();
+
         for (Object[] row : movimientos) {
-            movimientosMap.put((Long) row[0], new int[]{
-                    ((Number) row[1]).intValue(),
-                    ((Number) row[2]).intValue(),
-                    ((Number) row[3]).intValue(),
-                    ((Number) row[4]).intValue()
-            });
+            movimientosMap.put(
+                    (Long) row[0],
+                    new int[]{
+                            ((Number) row[1]).intValue(), // ventas
+                            ((Number) row[2]).intValue(), // perdidas
+                            ((Number) row[3]).intValue(), // salidas manuales
+                            ((Number) row[4]).intValue()  // entradas
+                    }
+            );
         }
 
-        return inventarios.stream()
-                .filter(inv -> inv.getProducto().getMateriasPrimas().isEmpty())
-                .map(inv -> {
+        // ===============================
+        // 3️⃣ ARMAR INVENTARIO DEL DÍA
+        // ===============================
+        return inventarios.stream().map(inv -> {
 
-                    Producto p = inv.getProducto();
+            Producto producto = inv.getProducto();
+            Long codigoProducto = producto.getCodigo();
 
-            List<ProductoMateriaPrima> receta =
-                    productoMateriaPrimaRepository.findByProductoCodigo(p.getCodigo());
+            boolean tieneReceta = !producto.getMateriasPrimas().isEmpty();
 
+            // -------------------------------
+            // MOVIMIENTOS DEL PRODUCTO
+            // -------------------------------
+            int[] datos = movimientosMap.getOrDefault(
+                    codigoProducto,
+                    new int[]{0, 0, 0, 0}
+            );
+
+            int ventas = datos[0];
+            int perdidas = datos[1];
+            int salidasManuales = datos[2];
+            int entradas = datos[3];
+
+            // -------------------------------
+            // STOCK ACTUAL
+            // -------------------------------
             int stockActual;
 
-            if (!receta.isEmpty()) {
-                stockActual = calcularStockDesdeMateriaPrima(p, sedeId);
+            if (tieneReceta) {
+                stockActual = calcularStockDesdeMateriaPrima(
+                        producto, sedeId
+                );
             } else {
                 stockActual = calcularStockReal(inv);
             }
 
-
+            // -------------------------------
+            // STOCK INICIAL
+            // -------------------------------
             int stockInicial;
-            int entradas = 0;
-            int salidasManuales = 0;
-            int perdidas = 0;
-            int ventas = 0;
 
-                    int[] datos = movimientosMap.getOrDefault(
-                            p.getCodigo(), new int[]{0,0,0,0});
+            if (tieneReceta) {
+                // Producto elaborado
+                stockInicial = stockActual
+                        + ventas
+                        + perdidas
+                        + salidasManuales
+                        - entradas;
+            } else {
+                // Producto normal
+                stockInicial = stockActual
+                        - entradas
+                        + ventas
+                        + perdidas
+                        + salidasManuales;
+            }
 
-                    ventas = datos[0];
-                    perdidas = datos[1];
-                    salidasManuales = datos[2];
-                    entradas = datos[3];
-
-                    stockInicial = stockActual - entradas + ventas + perdidas + salidasManuales;
-
-
-                    double precio = p.getPrecioVenta();
-
-            System.out.println("🔍 Producto: " + p.getNombre());
-            System.out.println("🔍 Código producto: " + p.getCodigo());
-            System.out.println("🔍 Materias primas size: " + p.getMateriasPrimas().size());
+            // -------------------------------
+            // PRECIO Y TOTAL
+            // -------------------------------
+            double precio = producto.getPrecioVenta();
+            double totalVendido = ventas * precio;
 
             return new InventarioDelDia(
-                    p.getCodigo(),
-                    p.getNombre(),
+                    codigoProducto,
+                    producto.getNombre(),
                     stockInicial,
                     entradas,
                     salidasManuales,
@@ -300,11 +340,12 @@ public class InventarioServicioImpl implements InventarioServicio {
                     ventas,
                     stockActual,
                     precio,
-                    ventas * precio
+                    totalVendido
             );
-        }).toList();
 
+        }).toList();
     }
+
 
     // ===============================
     // MÉTODOS PRIVADOS
