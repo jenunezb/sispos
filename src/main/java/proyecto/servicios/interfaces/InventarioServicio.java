@@ -1,9 +1,6 @@
 package proyecto.servicios.interfaces;
 
-import proyecto.dto.InventarioDTO;
-import proyecto.dto.InventarioDelDia;
-import proyecto.dto.MovimientoInventarioDTO;
-import proyecto.dto.PerdidasDetalleDTO;
+import proyecto.dto.*;
 
 
 import java.math.BigDecimal;
@@ -36,4 +33,9 @@ public interface InventarioServicio {
             LocalDateTime fechaFin
     );
 
+    public List<MateriaPrimaInventarioDTO> obtenerInventarioMateriaPrimaDia(
+            Long sedeId,
+            LocalDateTime inicio,
+            LocalDateTime fin
+    );
 }

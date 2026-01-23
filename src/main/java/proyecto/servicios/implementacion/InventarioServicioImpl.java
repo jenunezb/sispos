@@ -3,10 +3,7 @@ package proyecto.servicios.implementacion;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import proyecto.dto.InventarioDTO;
-import proyecto.dto.InventarioDelDia;
-import proyecto.dto.MovimientoInventarioDTO;
-import proyecto.dto.PerdidasDetalleDTO;
+import proyecto.dto.*;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.InventarioServicio;
@@ -252,9 +249,11 @@ public class InventarioServicioImpl implements InventarioServicio {
             });
         }
 
-        return inventarios.stream().map(inv -> {
-            Producto p = inv.getProducto();
-            boolean tieneReceta = !p.getMateriasPrimas().isEmpty();
+        return inventarios.stream()
+                .filter(inv -> inv.getProducto().getMateriasPrimas().isEmpty())
+                .map(inv -> {
+
+                    Producto p = inv.getProducto();
 
             List<ProductoMateriaPrima> receta =
                     productoMateriaPrimaRepository.findByProductoCodigo(p.getCodigo());
@@ -274,28 +273,18 @@ public class InventarioServicioImpl implements InventarioServicio {
             int perdidas = 0;
             int ventas = 0;
 
-            if (!tieneReceta) {
-                // Producto normal
-                int[] datos = movimientosMap.getOrDefault(
-                        p.getCodigo(), new int[]{0,0,0,0});
-                ventas = datos[0];
-                perdidas = datos[1];
-                salidasManuales = datos[2];
-                entradas = datos[3];
-                stockInicial = stockActual - entradas + ventas + perdidas + salidasManuales;
-            } else {
-                // Producto con receta
-                int[] datos = movimientosMap.getOrDefault(
-                        p.getCodigo(), new int[]{0,0,0,0});
-                ventas = datos[0]; // <--- aquí agregas
-                perdidas = datos[1];
-                salidasManuales = datos[2];
-                entradas = datos[3];
-                stockInicial = stockActual + ventas + perdidas + salidasManuales - entradas;
-                // Ajusta según cómo quieras mostrar stock inicial
-            }
+                    int[] datos = movimientosMap.getOrDefault(
+                            p.getCodigo(), new int[]{0,0,0,0});
 
-            double precio = p.getPrecioVenta();
+                    ventas = datos[0];
+                    perdidas = datos[1];
+                    salidasManuales = datos[2];
+                    entradas = datos[3];
+
+                    stockInicial = stockActual - entradas + ventas + perdidas + salidasManuales;
+
+
+                    double precio = p.getPrecioVenta();
 
             System.out.println("🔍 Producto: " + p.getNombre());
             System.out.println("🔍 Código producto: " + p.getCodigo());
@@ -430,6 +419,80 @@ public class InventarioServicioImpl implements InventarioServicio {
         }
 
         return stock == Integer.MAX_VALUE ? 0 : stock;
+    }
+
+    @Override
+    public List<MateriaPrimaInventarioDTO> obtenerInventarioMateriaPrimaDia(
+            Long sedeId,
+            LocalDateTime inicio,
+            LocalDateTime fin
+    ) {
+
+        List<MateriaPrimaSede> materias = materiaPrimaSedeRepository.findBySedeId(sedeId);
+
+        return materias.stream().map(mpSede -> {
+
+            MateriaPrima mp = mpSede.getMateriaPrima();
+
+            double stockActual = mpSede.getCantidadActualMl();
+
+            double entradas = 0;   // aún no existen
+            double perdidas = 0;   // aún no existen
+
+            double vendidas = calcularConsumoPorVentas(
+                    mp.getCodigo(),
+                    sedeId,
+                    inicio,
+                    fin
+            );
+
+            double stockInicial = stockActual + vendidas;
+
+            return new MateriaPrimaInventarioDTO(
+                    mp.getCodigo(),
+                    mp.getNombre(),
+                    stockInicial,
+                    entradas,
+                    0,
+                    perdidas,
+                    vendidas,
+                    stockActual
+            );
+
+        }).toList();
+    }
+
+    private double calcularConsumoPorVentas(
+            Long materiaPrimaCodigo,
+            Long sedeId,
+            LocalDateTime inicio,
+            LocalDateTime fin
+    ) {
+
+        // 🔹 Traer ventas por producto en el día
+        List<Object[]> ventas = movimientoRepository
+                .resumenMovimientosDelDia(sedeId, inicio, fin);
+
+        double totalConsumido = 0;
+
+        for (Object[] row : ventas) {
+            Long productoId = (Long) row[0];
+            int cantidadVendida = ((Number) row[1]).intValue(); // ventas
+
+            if (cantidadVendida <= 0) continue;
+
+            // 🔹 Buscar receta del producto
+            List<ProductoMateriaPrima> receta =
+                    productoMateriaPrimaRepository.findByProductoCodigo(productoId);
+
+            for (ProductoMateriaPrima pmp : receta) {
+                if (pmp.getMateriaPrima().getCodigo().equals(materiaPrimaCodigo)) {
+                    totalConsumido += pmp.getMlConsumidos() * cantidadVendida;
+                }
+            }
+        }
+
+        return totalConsumido;
     }
 
 }

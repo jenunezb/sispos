@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import proyecto.dto.InventarioDTO;
-import proyecto.dto.InventarioDelDia;
-import proyecto.dto.MovimientoInventarioDTO;
-import proyecto.dto.PerdidasDetalleDTO;
+import proyecto.dto.*;
 import proyecto.servicios.interfaces.InventarioServicio;
 
 import java.time.LocalDate;
@@ -132,6 +129,21 @@ public class InventarioController {
                         sedeId,
                         inicio,
                         fin
+                )
+        );
+    }
+
+    @GetMapping("/materia-prima/dia")
+    public ResponseEntity<List<MateriaPrimaInventarioDTO>> inventarioMateriaPrimaDia(
+            @RequestParam Long sedeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        LocalDateTime inicio = fecha.atStartOfDay();
+        LocalDateTime fin = fecha.atTime(23, 59, 59);
+
+        return ResponseEntity.ok(
+                inventarioServicio.obtenerInventarioMateriaPrimaDia(
+                        sedeId, inicio, fin
                 )
         );
     }

@@ -5,6 +5,7 @@ import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.MateriaPrimaSede;
 import proyecto.entidades.Sede;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSede, Long> {
@@ -27,6 +28,8 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
     );
 
     boolean existsByMateriaPrimaAndSedeId(MateriaPrima materiaPrima, Long sedeId);
+
+    List<MateriaPrimaSede> findBySedeId(Long sedeId);
 
 }
 
