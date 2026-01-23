@@ -469,7 +469,7 @@ public class InventarioServicioImpl implements InventarioServicio {
             LocalDateTime fin
     ) {
 
-        List<MateriaPrimaSede> materias = materiaPrimaSedeRepository.findBySedeId(sedeId);
+        List<MateriaPrimaSede> materias = materiaPrimaSedeRepository.findBySedeIdOrderByIdAsc(sedeId);
 
         return materias.stream().map(mpSede -> {
 

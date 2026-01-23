@@ -30,7 +30,7 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
 
     boolean existsByMateriaPrimaAndSedeId(MateriaPrima materiaPrima, Long sedeId);
 
-    List<MateriaPrimaSede> findBySedeId(Long sedeId);
+    List<MateriaPrimaSede> findBySedeIdOrderByIdAsc(Long sedeId);
 
 }
 
