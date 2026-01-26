@@ -1,6 +1,7 @@
 package proyecto.servicios.implementacion;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -10,17 +11,16 @@ import proyecto.dto.InventarioFinalProjection;
 import proyecto.dto.UsuarioDTO;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.Cuenta;
+import proyecto.entidades.TokenValidacion;
 import proyecto.entidades.Vendedor;
-import proyecto.repositorios.AdministradorRepository;
-import proyecto.repositorios.CiudadRepo;
-import proyecto.repositorios.CuentaRepo;
-import proyecto.repositorios.VendedorRepository;
+import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.AdministradorServicio;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +31,8 @@ public class AdministradorServicioImpl implements AdministradorServicio {
     BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final CiudadRepo ciudadRepo;
     private final CuentaRepo cuentaRepo;
+    private final EmailService emailService;
+    private final TokenValidacionRepository tokenValidacionRepository;
 
     @Override
     public int crearVendedor(UsuarioDTO usuarioDTO) throws Exception {
@@ -73,43 +75,49 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         return cuenta.isPresent(); // Devuelve true si la cuenta está presente (correo repetido), false si no está presente
     }
 
+    @Transactional
     @Override
-    public int crearAdministrador(AdministradorDTO administradorDTO) throws Exception {
+    public int crearAdministrador(AdministradorDTO administradorDTO) {
 
-        if (administradorDTO == null) {
-            throw new IllegalArgumentException("El objeto administradorDTO no puede ser nulo");
-        }
-        if (administradorDTO.correo() == null || administradorDTO.correo().isEmpty()) {
-            throw new Exception("Por favor completa el campo de correo");
-        }
+        try {
+            // 1️⃣ Crear administrador (INACTIVO)
+            Administrador admin = new Administrador();
+            admin.setCorreo(administradorDTO.correo().toLowerCase().trim());
+            admin.setPassword(passwordEncoder.encode(administradorDTO.password()));
+            admin.setActivo(false);
 
-        if (estaRepetidoCorreo(administradorDTO.correo())) {
-            throw new Exception("El correo ya se encuentra registrado");
-        }
+            Administrador adminGuardado = administradorRepository.save(admin);
 
-        if (administradorDTO.password() == null || administradorDTO.password().isEmpty()) {
-            throw new Exception("La contraseña es obligatoria");
-        }
+            // 2️⃣ Generar token
+            String token = UUID.randomUUID().toString();
 
-        // 🔐 Validación de contraseña
-        String regexPassword = "^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&._#\\-]).{8,}$";
+            TokenValidacion tokenValidacion = new TokenValidacion();
+            tokenValidacion.setToken(token);
+            tokenValidacion.setAdministrador(adminGuardado);
+            tokenValidacion.setFechaExpiracion(LocalDateTime.now().plusHours(24));
 
-        if (!administradorDTO.password().matches(regexPassword)) {
-            throw new Exception(
-                    "La contraseña debe tener mínimo 8 caracteres, una letra mayúscula, un número y un signo especial"
+            tokenValidacionRepository.save(tokenValidacion);
+
+            //3️⃣ Enviar correo
+            String link = "http://localhost:8080/api/auth/confirmar?token=" + token;
+
+            emailService.enviarCorreo(
+                    adminGuardado.getCorreo(),
+                    "Confirmación de correo",
+                    "Haz clic para activar tu cuenta:\n\n" + link
+            );
+
+            return adminGuardado.getCodigo();
+
+        } catch (Exception e) {
+            // 🔥 Rollback automático
+            throw new RuntimeException(
+                    "Error creando el administrador o enviando el correo de confirmación"
             );
         }
-
-        Administrador administrador = new Administrador();
-        administrador.setCorreo(administradorDTO.correo());
-
-        String passwordEncriptada = passwordEncoder.encode(administradorDTO.password());
-        administrador.setPassword(passwordEncriptada);
-
-        Administrador administradorNuevo = administradorRepository.save(administrador);
-
-        return administradorNuevo.getCodigo();
     }
+
+
 
     @Override
     public void editarVendedor(UsuarioDTO dto) {

@@ -12,4 +12,7 @@ import java.io.Serializable;
 @Entity
 public class Administrador extends Cuenta implements Serializable {
 
+    @Column(nullable = false)
+    private boolean activo = false;
+
 }

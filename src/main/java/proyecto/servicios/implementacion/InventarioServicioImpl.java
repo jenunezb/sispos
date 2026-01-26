@@ -318,5 +318,10 @@ public class InventarioServicioImpl implements InventarioServicio {
     public List<PerdidasDetalleDTO> obtenerPerdidasDetalladasPorRango(Long sedeId, LocalDateTime inicio, LocalDateTime fin) {
         return inventarioRepository.obtenerPerdidasDetalladasPorRango(sedeId, inicio, fin);
     }
+
+    @Override
+    public List<InventarioDelDia> obtenerInventarioDia(Long sedeId, LocalDateTime inicio, LocalDateTime fin) {
+        return List.of();
+    }
 }
 
