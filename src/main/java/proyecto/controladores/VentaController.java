@@ -23,28 +23,8 @@ public class VentaController {
     @PostMapping
     public ResponseEntity<VentaResponseDTO> crearVenta(@RequestBody VentaRecuestDTO dto) {
         Venta venta = ventaService.crearVenta(dto);
-
-        VentaResponseDTO response = mapToResponse(venta);
-
-        return ResponseEntity.ok(response);
-    }
-
-    private VentaResponseDTO mapToResponse(Venta venta) {
-        return new VentaResponseDTO(
-                venta.getId(),
-                venta.getFecha(),
-                venta.getTotal(),
-                venta.getVendedor().getNombre(),
-                venta.getSede().getNombre(),
-                venta.getDetalles().stream()
-                        .map(d -> new DetalleVentaResponseDTO(
-                                d.getProducto().getCodigo(),
-                                d.getProducto().getNombre(),
-                                d.getCantidad(),
-                                d.getPrecioUnitario(),
-                                d.getSubtotal()
-                        ))
-                        .toList()
+        return ResponseEntity.ok(
+                ventaService.mapToResponse(venta)
         );
     }
 

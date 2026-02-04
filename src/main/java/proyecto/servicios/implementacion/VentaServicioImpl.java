@@ -46,79 +46,94 @@ public class VentaServicioImpl implements VentaServicio {
 
         for (DetalleVentaDTO d : dto.detalles()) {
 
-            Producto producto = productoRepository.findById(d.productoId())
-                    .orElseThrow(() -> new RuntimeException("Producto no existe"));
+            DetalleVenta detalle = new DetalleVenta();
+            detalle.setCantidad(d.cantidad());
+            detalle.setVenta(venta);
 
-            // 🔹 SI TIENE RECETA → DESCONTAR MATERIA PRIMA
-            if (!producto.getMateriasPrimas().isEmpty()) {
+            // ===============================
+            // 🔹 PRODUCTO NORMAL
+            // ===============================
+            if (d.productoId() != null) {
 
-                for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+                Producto producto = productoRepository.findById(d.productoId())
+                        .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-                    MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                            .findByMateriaPrimaCodigoAndSedeId(
-                                    pmp.getMateriaPrima().getCodigo(),
-                                    sede.getId())
-                            .orElseThrow(() -> new RuntimeException(
-                                    "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                            ));
+                // 🔹 CON RECETA → MATERIA PRIMA
+                if (!producto.getMateriasPrimas().isEmpty()) {
 
-                    double mlNecesarios = pmp.getMlConsumidos() * d.cantidad();
+                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
 
-                    if (mpSede.getCantidadActualMl() < mlNecesarios) {
-                        throw new RuntimeException(
-                                "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
-                        );
+                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                                .findByMateriaPrimaCodigoAndSedeId(
+                                        pmp.getMateriaPrima().getCodigo(),
+                                        sede.getId())
+                                .orElseThrow(() -> new RuntimeException(
+                                        "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
+                                ));
+
+                        double mlNecesarios = pmp.getMlConsumidos() * d.cantidad();
+
+                        if (mpSede.getCantidadActualMl() < mlNecesarios) {
+                            throw new RuntimeException(
+                                    "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
+                            );
+                        }
+
+                        mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
+                        materiaPrimaSedeRepository.save(mpSede);
                     }
 
-                    mpSede.setCantidadActualMl(
-                            mpSede.getCantidadActualMl() - mlNecesarios
-                    );
-                    materiaPrimaSedeRepository.save(mpSede);
+                }
+                // 🔹 SIN RECETA → INVENTARIO
+                else {
+
+                    Inventario inventario = inventarioRepository
+                            .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                            .orElseThrow(() -> new RuntimeException(
+                                    "No hay inventario para " + producto.getNombre()
+                            ));
+
+                    if (inventario.getStockActual() < d.cantidad()) {
+                        throw new RuntimeException("Stock insuficiente para " + producto.getNombre());
+                    }
+
+                    inventario.setStockActual(inventario.getStockActual() - d.cantidad());
+                    inventarioRepository.save(inventario);
                 }
 
+                // 🔹 MOVIMIENTO INVENTARIO
+                MovimientoInventario movimiento = new MovimientoInventario();
+                movimiento.setProducto(producto);
+                movimiento.setSede(sede);
+                movimiento.setTipo(TipoMovimiento.SALIDA);
+                movimiento.setCantidad(d.cantidad());
+                movimiento.setObservacion("Venta de producto");
+                movimiento.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
+                movimientoInventarioRepository.save(movimiento);
+
+                detalle.setProducto(producto);
+                detalle.setPrecioUnitario(producto.getPrecioVenta());
+                detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
             }
-            // 🔹 SI NO TIENE RECETA → DESCONTAR INVENTARIO EN UNIDADES
+
+            // ===============================
+            // ⚡ PRODUCTO RÁPIDO
+            // ===============================
             else {
 
-                Inventario inventario = inventarioRepository
-                        .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay inventario para " + producto.getNombre() + " en esta sede"
-                        ));
-
-                if (inventario.getStockActual() < d.cantidad()) {
-                    throw new RuntimeException(
-                            "Stock insuficiente para " + producto.getNombre()
-                    );
+                if (d.nombreLibre() == null || d.precioUnitario() == null) {
+                    throw new RuntimeException("Producto rápido inválido");
                 }
 
-                inventario.setStockActual(
-                        inventario.getStockActual() - d.cantidad()
-                );
-                inventarioRepository.save(inventario);
+                detalle.setNombreLibre(d.nombreLibre());
+                detalle.setPrecioUnitario(d.precioUnitario());
+                detalle.setSubtotal(d.precioUnitario() * d.cantidad());
             }
 
-            // 🔹 CREAR MOVIMIENTO PARA TODOS LOS PRODUCTOS
-            MovimientoInventario movimiento = new MovimientoInventario();
-            movimiento.setProducto(producto);
-            movimiento.setSede(sede);
-            movimiento.setTipo(TipoMovimiento.SALIDA);
-            movimiento.setCantidad(d.cantidad());
-            movimiento.setObservacion("Venta de producto");
-            movimiento.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
-            movimientoInventarioRepository.save(movimiento);
-
-            // 🔹 DETALLE DE VENTA (SIEMPRE)
-            DetalleVenta detalle = new DetalleVenta();
-            detalle.setProducto(producto);
-            detalle.setCantidad(d.cantidad());
-            detalle.setPrecioUnitario(producto.getPrecioVenta());
-            detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
-            detalle.setVenta(venta);
             detalles.add(detalle);
-
             total += detalle.getSubtotal();
         }
+
 
         venta.setDetalles(detalles);
         venta.setTotal(total);
@@ -133,7 +148,7 @@ public class VentaServicioImpl implements VentaServicio {
     public List<VentaResponseDTO> listarVentasPorVendedor(Long vendedorId) {
         return ventaRepository.findByVendedorCodigo(vendedorId)
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::mapToResponse)
                 .toList();
     }
 
@@ -147,7 +162,7 @@ public class VentaServicioImpl implements VentaServicio {
         return ventaRepository
                 .findByVendedorCodigoAndFechaBetween(vendedorId, desde, hasta)
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::mapToResponse)
                 .toList();
     }
 
@@ -156,7 +171,7 @@ public class VentaServicioImpl implements VentaServicio {
     public List<VentaResponseDTO> listarVentasPorSede(Long sedeId) {
         return ventaRepository.findBySedeId(sedeId)
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::mapToResponse)
                 .toList();
     }
 
@@ -170,12 +185,12 @@ public class VentaServicioImpl implements VentaServicio {
         return ventaRepository
                 .findBySedeIdAndFechaBetween(sedeId, desde, hasta)
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::mapToResponse)
                 .toList();
     }
 
     // 🔹 Método helper para convertir a DTO de respuesta
-    private VentaResponseDTO toResponseDTO(Venta venta) {
+    public VentaResponseDTO mapToResponse(Venta venta) {
         return new VentaResponseDTO(
                 venta.getId(),
                 venta.getFecha(),
@@ -184,13 +199,20 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getSede().getNombre(),
                 venta.getDetalles().stream()
                         .map(d -> new DetalleVentaResponseDTO(
-                                d.getProducto().getCodigo(),
-                                d.getProducto().getNombre(),
+                                d.getProducto() != null ? d.getProducto().getCodigo() : null,
+                                d.getProducto() != null ? d.getProducto().getNombre() : d.getNombreLibre(),
                                 d.getCantidad(),
                                 d.getPrecioUnitario(),
-                                d.getSubtotal()
+                                d.getSubtotal(),
+                                d.getNombreLibre() // solo para referencia, puede ser null si es normal
                         ))
                         .toList()
         );
     }
+
+
+
+
+
+
 }

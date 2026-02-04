@@ -37,7 +37,4 @@ public class Producto implements Serializable {
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductoMateriaPrima> materiasPrimas = new ArrayList<>();
 
-
-
-
 }

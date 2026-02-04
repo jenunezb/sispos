@@ -28,4 +28,5 @@ public interface VentaServicio {
             LocalDateTime hasta
     );
 
+    VentaResponseDTO mapToResponse(Venta venta);
 }

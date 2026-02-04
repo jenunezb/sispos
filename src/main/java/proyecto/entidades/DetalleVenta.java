@@ -21,6 +21,16 @@ public class DetalleVenta {
 
 
     @ManyToOne
-    @JoinColumn(name = "producto_id")
+    @JoinColumn(
+            name = "producto_id",
+            referencedColumnName = "codigo",
+            nullable = true
+    )
     private Producto producto;
+
+
+
+    @Column(nullable = true)
+    private String nombreLibre;
+
 }
