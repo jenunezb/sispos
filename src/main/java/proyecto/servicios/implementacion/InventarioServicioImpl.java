@@ -210,10 +210,73 @@ public class InventarioServicioImpl implements InventarioServicio {
                 inventario.setStockActual(inventario.getStockActual() - dto.cantidad());
             }
             case PERDIDA -> {
-                if (inventario.getStockActual() < dto.cantidad()) throw new RuntimeException("Stock insuficiente");
-                inventario.setPerdidas(inventario.getPerdidas() + dto.cantidad());
-                inventario.setStockActual(inventario.getStockActual() - dto.cantidad());
+
+                // 🔹 PRODUCTO CON RECETA (vasos, preparados, etc.)
+                if (!producto.getMateriasPrimas().isEmpty()) {
+
+                    // 1️⃣ Validar materia prima suficiente
+                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+
+                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                                .findByMateriaPrimaAndSede(
+                                        pmp.getMateriaPrima(),
+                                        sede
+                                )
+                                .orElseThrow(() -> new RuntimeException(
+                                        "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
+                                ));
+
+                        double mlNecesarios = pmp.getMlConsumidos() * dto.cantidad();
+
+                        if (mpSede.getCantidadActualMl() < mlNecesarios) {
+                            throw new RuntimeException(
+                                    "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
+                            );
+                        }
+                    }
+
+                    // 2️⃣ Descontar materia prima
+                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+
+                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                                .findByMateriaPrimaAndSede(
+                                        pmp.getMateriaPrima(),
+                                        sede
+                                )
+                                .get();
+
+                        double mlNecesarios = pmp.getMlConsumidos() * dto.cantidad();
+
+                        mpSede.setCantidadActualMl(
+                                mpSede.getCantidadActualMl() - mlNecesarios
+                        );
+                    }
+
+                    // 3️⃣ Registrar pérdida (solo histórico)
+                    inventario.setPerdidas(
+                            inventario.getPerdidas() + dto.cantidad()
+                    );
+
+                    // ❗ NO se toca stockActual
+
+                }
+                // 🔹 PRODUCTO NORMAL (sin receta)
+                else {
+
+                    if (inventario.getStockActual() < dto.cantidad()) {
+                        throw new RuntimeException("Stock insuficiente");
+                    }
+
+                    inventario.setPerdidas(
+                            inventario.getPerdidas() + dto.cantidad()
+                    );
+
+                    inventario.setStockActual(
+                            inventario.getStockActual() - dto.cantidad()
+                    );
+                }
             }
+
         }
 
         inventarioRepository.save(inventario);
