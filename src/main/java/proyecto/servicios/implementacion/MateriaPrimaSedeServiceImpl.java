@@ -21,6 +21,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     private final ProductoRepository productoRepository;
     private final ProductoMateriaPrimaRepository productoMateriaPrimaRepository;
     private final SedeRepository sedeRepository;
+    private final InventarioRepository inventarioRepository;
 
 
     @Override
@@ -199,36 +200,53 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     /**
      * Vincular un producto a una materia prima en una sede
      */
+    @Transactional
     public void vincularProducto(VincularProductoDTO dto) {
-        // 🔹 Validar que la relación no exista todavía
-        boolean existe = productoMateriaPrimaRepository.existsByMateriaPrimaIdAndProductoId(
-                dto.materiaPrimaSedeId(), dto.productoId()
-        );
+
+        boolean existe = productoMateriaPrimaRepository
+                .existsByMateriaPrimaIdAndProductoId(
+                        dto.materiaPrimaSedeId(),
+                        dto.productoId()
+                );
 
         if (existe) {
-            throw new IllegalStateException("El producto ya está vinculado a esta materia prima");
+            throw new IllegalStateException(
+                    "El producto ya está vinculado a esta materia prima"
+            );
         }
 
-        // 🔹 Traer la materia prima de la sede correctamente
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(dto.materiaPrimaSedeId())
-                .orElseThrow(() -> new IllegalStateException("Materia prima de la sede no encontrada"));
+                .orElseThrow(() ->
+                        new IllegalStateException("Materia prima de la sede no encontrada")
+                );
 
-        // 🔹 Traer el producto
         Producto producto = productoRepository.findById(dto.productoId())
-                .orElseThrow(() -> new IllegalStateException("Producto no encontrado"));
+                .orElseThrow(() ->
+                        new IllegalStateException("Producto no encontrado")
+                );
 
-        // 🔹 Crear la relación ProductoMateriaPrima usando la materia prima de la sede
+        // 🔹 Crear relación ProductoMateriaPrima
         ProductoMateriaPrima nueva = new ProductoMateriaPrima();
         nueva.setProducto(producto);
-        nueva.setMateriaPrima(mpSede.getMateriaPrima()); // clave: usar la materia prima real
+        nueva.setMateriaPrima(mpSede.getMateriaPrima());
         nueva.setMlConsumidos(dto.mlConsumidos());
 
-        // 🔹 Guardar en base de datos
         productoMateriaPrimaRepository.save(nueva);
+
+        // 🔥 NUEVA LÓGICA: INVENTARIO A CERO
+        inventarioRepository
+                .findByProductoCodigoAndSedeId(
+                        producto.getCodigo(),
+                        mpSede.getSede().getId()
+                )
+                .ifPresent(inventario -> {
+                    inventario.setStockActual(0);
+                    inventario.setEntradas(0);
+                    inventario.setSalidas(0);
+                    inventario.setPerdidas(0);
+                    inventarioRepository.save(inventario);
+                });
     }
-
-
-
 }
 
 
