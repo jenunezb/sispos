@@ -7,5 +7,6 @@ public record InformeInventarioDiaDTO(
         Long sedeId,
         LocalDate fecha,
         List<InventarioDelDia> inventarioDia,
+        List<MateriaPrimaInventarioDTO> materiaPrimaDia,
         double totalVendido
 ) {}
