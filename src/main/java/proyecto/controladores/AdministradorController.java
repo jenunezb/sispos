@@ -27,6 +27,8 @@ public class AdministradorController {
     private final AdministradorServicio administradorServicio;
     private final ProductoServicio productoService;
     private final VendedorServicio vendedorServicio;
+    private final InformeInventarioDiaService informeInventarioDiaService;
+
 
     @PostMapping("/agregarVendedor")
     public ResponseEntity<MensajeDTO> crearVendedor(@RequestBody UsuarioDTO dto) throws Exception {
@@ -145,28 +147,19 @@ public class AdministradorController {
     }
 
     @PutMapping("/cuentas/{correo}")
-    public ResponseEntity<MensajeDTO<String>> cambiarPassword(
-            @PathVariable String correo,
-            @RequestBody CambioPasswordDTO dto
-    ) throws Exception {
+    public ResponseEntity<MensajeDTO<String>> cambiarPassword( @PathVariable String correo, @RequestBody CambioPasswordDTO dto) throws Exception {
 
-        administradorServicio.cambiarPassword(
-                correo,
-                dto.passwordActual(),
-                dto.passwordNueva()
-        );
+        administradorServicio.cambiarPassword( correo, dto.passwordActual(), dto.passwordNueva());
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, "Contraseña actualizada correctamente")
         );
     }
 
-    private InformeInventarioDiaService service;
-
     @PostMapping("/guardar")
     public ResponseEntity<?> guardarInforme(@RequestBody InformeInventarioDiaDTO dto) {
         try {
-            service.guardarInforme(dto);
+            informeInventarioDiaService.guardarInforme(dto);
             return ResponseEntity.ok("Informe guardado correctamente");
         } catch (JsonProcessingException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -174,11 +167,16 @@ public class AdministradorController {
         }
     }
 
-    @GetMapping
+    @GetMapping("/informes")
     public ResponseEntity<List<InformeInventarioDia>> obtenerInformes(
             @RequestParam Long sedeId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-        return ResponseEntity.ok(service.obtenerInformes(sedeId, fecha));
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fecha) {
+
+        return ResponseEntity.ok(
+                informeInventarioDiaService.obtenerInformes(sedeId, fecha)
+        );
     }
 
 }
