@@ -30,4 +30,7 @@ public class Venta {
     @Column(name = "modo_pago", nullable = false)
     private ModoPago modoPago;
 
+    @Column(nullable = false)
+    private Boolean anulada = false;
+
 }

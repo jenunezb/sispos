@@ -210,9 +210,30 @@ public class VentaServicioImpl implements VentaServicio {
         );
     }
 
+    @Override
+    @Transactional
+    public void anularVenta(Long ventaId) {
 
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
 
+        if (venta.getAnulada()) {
+            throw new RuntimeException("La venta ya está anulada");
+        }
 
+        venta.setAnulada(true);
 
+        ventaRepository.save(venta);
+    }
+
+    @Override
+    @Transactional
+    public List<VentaResponseDTO> listarVentasAnuladas(Long sedeId) {
+        return ventaRepository
+                .findBySedeIdAndAnuladaTrue(sedeId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
 
 }

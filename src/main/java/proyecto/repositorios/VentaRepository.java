@@ -120,5 +120,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             @Param("hasta") LocalDateTime hasta
     );
 
+    List<Venta> findByVendedorCodigoAndAnuladaFalse(Long vendedorId);
+
+    List<Venta> findBySedeIdAndAnuladaTrue(Long sedeId);
 
 }

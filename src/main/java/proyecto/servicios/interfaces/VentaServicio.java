@@ -29,4 +29,8 @@ public interface VentaServicio {
     );
 
     VentaResponseDTO mapToResponse(Venta venta);
+
+    void anularVenta(Long ventaId);
+
+    List<VentaResponseDTO> listarVentasAnuladas(Long sedeId);
 }
