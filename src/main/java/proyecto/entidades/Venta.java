@@ -31,6 +31,6 @@ public class Venta {
     private ModoPago modoPago;
 
     @Column(nullable = false)
-    private Boolean anulada = false;
+    private Boolean anulado = false;
 
 }
