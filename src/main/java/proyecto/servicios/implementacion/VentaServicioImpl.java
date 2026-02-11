@@ -217,11 +217,11 @@ public class VentaServicioImpl implements VentaServicio {
         Venta venta = ventaRepository.findById(ventaId)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
 
-        if (venta.getAnulada()) {
+        if (venta.getAnulado()) {
             throw new RuntimeException("La venta ya está anulada");
         }
 
-        venta.setAnulada(true);
+        venta.setAnulado(true);
 
         ventaRepository.save(venta);
     }
@@ -230,7 +230,7 @@ public class VentaServicioImpl implements VentaServicio {
     @Transactional
     public List<VentaResponseDTO> listarVentasAnuladas(Long sedeId) {
         return ventaRepository
-                .findBySedeIdAndAnuladaTrue(sedeId)
+                .findBySedeIdAndAnuladoTrue(sedeId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
