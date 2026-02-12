@@ -7,6 +7,8 @@ public record BalanceSedeDTO(
         Long sedeId,
         String sedeNombre,
         Double totalVentas,
+        Double efectivo,
+        Double trasferencia,
         Double costoProduccion,
         Double utilidadBruta,
         Double valorInventario,

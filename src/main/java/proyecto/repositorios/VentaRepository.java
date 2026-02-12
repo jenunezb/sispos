@@ -120,6 +120,34 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             @Param("hasta") LocalDateTime hasta
     );
 
+    @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
+    WHERE v.sede.id = :sedeId
+    AND v.fecha BETWEEN :desde AND :hasta
+    AND v.modoPago = proyecto.entidades.ModoPago.EFECTIVO
+    AND v.anulado = false
+""")
+    Double totalVentasEfectivoPorSedeEntreFechas(
+            @Param("sedeId") Long sedeId,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
+    WHERE v.sede.id = :sedeId
+    AND v.fecha BETWEEN :desde AND :hasta
+    AND v.modoPago = proyecto.entidades.ModoPago.TRANSFERENCIA
+    AND v.anulado = false
+""")
+    Double totalVentasTransferenciaPorSedeEntreFechas(
+            @Param("sedeId") Long sedeId,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
     List<Venta> findByVendedorCodigoAndAnuladoFalse(Long vendedorId);
 
     List<Venta> findBySedeIdAndAnuladoTrue(Long sedeId);

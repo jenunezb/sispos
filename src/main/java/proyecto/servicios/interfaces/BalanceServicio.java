@@ -9,8 +9,6 @@ import java.util.List;
 public interface BalanceServicio {
     /* SIN FECHAS */
     BalanceGeneralDTO balanceDelDia();
-    List<BalanceSedeDTO> balancePorSede();
-
     /* CON FECHAS */
     BalanceGeneralDTO balanceGeneral(LocalDateTime desde, LocalDateTime hasta);
     List<BalanceSedeDTO> balancePorSede(LocalDateTime desde, LocalDateTime hasta);

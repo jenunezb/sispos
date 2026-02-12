@@ -60,34 +60,6 @@ public class BalanceServicioImpl implements BalanceServicio {
         );
     }
 
-
-    @Override
-    public List<BalanceSedeDTO> balancePorSede() {
-
-        List<Sede> sedes = sedeRepository.findAll();
-
-        return sedes.stream().map(sede -> {
-
-            Double ventas = ventaRepository.totalVentasPorSede(sede.getId());
-            Double costo = detalleVentaRepository.costoProduccionPorSede(sede.getId());
-            Double inventario = inventarioRepository.valorInventarioPorSede(sede.getId());
-            Integer stock = inventarioRepository.stockPorSede(sede.getId());
-            Long cantVentas = ventaRepository.cantidadVentasPorSede(sede.getId());
-
-            return new BalanceSedeDTO(
-                    sede.getId(),
-                    sede.getNombre(),
-                    ventas,
-                    costo,
-                    ventas - costo,
-                    inventario,
-                    stock,
-                    cantVentas
-            );
-
-        }).toList();
-    }
-
     @Override
     public BalanceGeneralDTO balanceGeneral(LocalDateTime desde, LocalDateTime hasta) {
 
@@ -138,6 +110,8 @@ public class BalanceServicioImpl implements BalanceServicio {
                     sede.getId(),
                     sede.getNombre(),
                     ventas,
+                    ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(),desde,hasta),
+                    ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(),desde,hasta),
                     costo,
                     ventas - costo,
                     inventario,
@@ -181,6 +155,8 @@ public class BalanceServicioImpl implements BalanceServicio {
                     sede.getId(),
                     sede.getNombre(),
                     ventas,
+                    ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(),desde,hasta),
+                    ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(),desde,hasta),
                     costo,
                     ventas - costo,
                     inventario,
