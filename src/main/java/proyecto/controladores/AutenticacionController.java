@@ -31,4 +31,10 @@ public class AutenticacionController {
         return ResponseEntity.ok().body(new MensajeDTO<>(false, ciudadGetDTOS));
     }
 
+    @PostMapping("/crearAdministrador")
+    public ResponseEntity<MensajeDTO<String>> crearAdministrador(@Valid @RequestBody AdministradorDTO administradorDTO)throws Exception{
+        administradorServicio.crearAdministrador(administradorDTO);
+        return ResponseEntity.ok().body(new MensajeDTO<>(false, "se agregó el administrador correctamente"));
+    }
+
 }
