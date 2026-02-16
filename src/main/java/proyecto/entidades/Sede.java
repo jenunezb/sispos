@@ -25,4 +25,8 @@ public class Sede {
 
     @OneToMany(mappedBy = "sede")
     private List<MateriaPrimaSede> materiasPrimas = new ArrayList<>();
+
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 }

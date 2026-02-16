@@ -12,4 +12,10 @@ import java.io.Serializable;
 @Entity
 public class Administrador extends Cuenta implements Serializable {
 
+    private String nombre;
+
+    private String apellido;
+
+    private Long celular;
+
 }
