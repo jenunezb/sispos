@@ -29,7 +29,6 @@ public class AdministradorController {
     private final VendedorServicio vendedorServicio;
     private final InformeInventarioDiaService informeInventarioDiaService;
 
-
     @PostMapping("/agregarVendedor")
     public ResponseEntity<MensajeDTO> crearVendedor(@RequestBody UsuarioDTO dto) throws Exception {
 
