@@ -13,6 +13,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,24 +26,58 @@ public class VentaServicioImpl implements VentaServicio {
     private final MateriaPrimaSedeRepository materiaPrimaSedeRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final InventarioRepository inventarioRepository;
+    private final AdministradorRepository administradorRepository;
 
     @Transactional
     public Venta crearVenta(VentaRecuestDTO dto) {
 
-        Vendedor vendedor = vendedorRepository.findById(dto.vendedorId())
-                .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+        // ===============================
+        // 🔹 VALIDAR USUARIO (VENDEDOR O ADMIN)
+        // ===============================
+
+        Optional<Vendedor> vendedorOpt = vendedorRepository.findByCorreo(dto.correo());
+
+        Vendedor vendedor = null;
+        Administrador administrador = null;
+
+        if (vendedorOpt.isPresent()) {
+
+            vendedor = vendedorOpt.get();
+
+        } else {
+
+            administrador = administradorRepository
+                    .findByCorreo(dto.correo())
+                    .orElseThrow(() -> new RuntimeException("Usuario no autorizado"));
+        }
+
+        // ===============================
+        // 🔹 VALIDAR SEDE
+        // ===============================
 
         Sede sede = sedeRepository.findById(dto.sedeId())
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
+        // ===============================
+        // 🔹 CREAR VENTA
+        // ===============================
+
         Venta venta = new Venta();
         venta.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
+
+        // 🔥 AQUÍ ESTÁ LO IMPORTANTE
         venta.setVendedor(vendedor);
+        venta.setAdministrador(administrador);
+
         venta.setSede(sede);
         venta.setModoPago(dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO);
 
         double total = 0;
         List<DetalleVenta> detalles = new ArrayList<>();
+
+        // ===============================
+        // 🔹 PROCESAR DETALLES
+        // ===============================
 
         for (DetalleVentaDTO d : dto.detalles()) {
 
@@ -50,15 +85,11 @@ public class VentaServicioImpl implements VentaServicio {
             detalle.setCantidad(d.cantidad());
             detalle.setVenta(venta);
 
-            // ===============================
-            // 🔹 PRODUCTO NORMAL
-            // ===============================
             if (d.productoId() != null) {
 
                 Producto producto = productoRepository.findById(d.productoId())
                         .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-                // 🔹 CON RECETA → MATERIA PRIMA
                 if (!producto.getMateriasPrimas().isEmpty()) {
 
                     for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
@@ -83,9 +114,7 @@ public class VentaServicioImpl implements VentaServicio {
                         materiaPrimaSedeRepository.save(mpSede);
                     }
 
-                }
-                // 🔹 SIN RECETA → INVENTARIO
-                else {
+                } else {
 
                     Inventario inventario = inventarioRepository
                             .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
@@ -94,21 +123,26 @@ public class VentaServicioImpl implements VentaServicio {
                             ));
 
                     if (inventario.getStockActual() < d.cantidad()) {
-                        throw new RuntimeException("Stock insuficiente para " + producto.getNombre());
+                        throw new RuntimeException(
+                                "Stock insuficiente para " + producto.getNombre()
+                        );
                     }
 
                     inventario.setStockActual(inventario.getStockActual() - d.cantidad());
                     inventarioRepository.save(inventario);
                 }
 
-                // 🔹 MOVIMIENTO INVENTARIO
                 MovimientoInventario movimiento = new MovimientoInventario();
                 movimiento.setProducto(producto);
                 movimiento.setSede(sede);
                 movimiento.setTipo(TipoMovimiento.SALIDA);
                 movimiento.setCantidad(d.cantidad());
                 movimiento.setObservacion("Venta de producto");
-                movimiento.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
+                movimiento.setFecha(
+                        ZonedDateTime.now(ZoneId.of("America/Bogota"))
+                                .toLocalDateTime()
+                );
+
                 movimientoInventarioRepository.save(movimiento);
 
                 detalle.setProducto(producto);
@@ -116,9 +150,6 @@ public class VentaServicioImpl implements VentaServicio {
                 detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
             }
 
-            // ===============================
-            // ⚡ PRODUCTO RÁPIDO
-            // ===============================
             else {
 
                 if (d.nombreLibre() == null || d.precioUnitario() == null) {
@@ -134,14 +165,11 @@ public class VentaServicioImpl implements VentaServicio {
             total += detalle.getSubtotal();
         }
 
-
         venta.setDetalles(detalles);
         venta.setTotal(total);
 
         return ventaRepository.save(venta);
     }
-
-
 
     @Override
     @Transactional
@@ -191,11 +219,21 @@ public class VentaServicioImpl implements VentaServicio {
 
     // 🔹 Método helper para convertir a DTO de respuesta
     public VentaResponseDTO mapToResponse(Venta venta) {
+        // Determinar el nombre del usuario que hizo la venta
+        String nombreUsuario;
+        if (venta.getVendedor() != null) {
+            nombreUsuario = venta.getVendedor().getNombre();
+        } else if (venta.getAdministrador() != null) {
+            nombreUsuario = venta.getAdministrador().getNombre();
+        } else {
+            nombreUsuario = "Usuario desconocido";
+        }
+
         return new VentaResponseDTO(
                 venta.getId(),
                 venta.getFecha(),
                 venta.getTotal(),
-                venta.getVendedor().getNombre(),
+                nombreUsuario,  // ahora puede ser vendedor o administrador
                 venta.getSede().getUbicacion(),
                 venta.getDetalles().stream()
                         .map(d -> new DetalleVentaResponseDTO(
@@ -209,6 +247,7 @@ public class VentaServicioImpl implements VentaServicio {
                         .toList()
         );
     }
+
 
     @Override
     @Transactional

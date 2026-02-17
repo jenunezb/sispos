@@ -6,9 +6,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import proyecto.dto.InventarioFinalProjection;
 import proyecto.entidades.Administrador;
+import proyecto.entidades.Vendedor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AdministradorRepository extends JpaRepository<Administrador, Long> {
@@ -126,5 +128,7 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             @Param("fechaInicio") LocalDateTime fechaInicio,
             @Param("fechaFin") LocalDateTime fechaFin
     );
+
+    Optional<Administrador> findByCorreo(String correo);
 
 }

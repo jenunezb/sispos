@@ -8,6 +8,7 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor @ToString
 @Entity
 public class Venta {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -15,9 +16,15 @@ public class Venta {
     private LocalDateTime fecha;
     private Double total;
 
+    // 🔹 Puede vender un vendedor
     @ManyToOne
-    @JoinColumn(name = "vendedor_id")
+    @JoinColumn(name = "vendedor_id", nullable = true)
     private Vendedor vendedor;
+
+    // 🔹 O puede vender un administrador
+    @ManyToOne
+    @JoinColumn(name = "administrador_id", nullable = true)
+    private Administrador administrador;
 
     @ManyToOne
     @JoinColumn(name = "sede_id")
@@ -32,5 +39,4 @@ public class Venta {
 
     @Column(nullable = false)
     private Boolean anulado = false;
-
 }
