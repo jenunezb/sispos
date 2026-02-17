@@ -31,6 +31,10 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    implementation 'com.cloudinary:cloudinary-http44:1.39.0'
+
+    implementation 'org.springframework.boot:spring-boot-starter'
 }
 
 test {
