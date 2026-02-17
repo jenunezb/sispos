@@ -172,7 +172,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                         mp.getMateriaPrima().isActiva(),
 
                         mp.getSede().getId(),
-                        mp.getSede().getNombre(),
+                        mp.getSede().getUbicacion(),
 
                         mp.getCantidadActualMl(),
                         mp.getMlPorVaso(),

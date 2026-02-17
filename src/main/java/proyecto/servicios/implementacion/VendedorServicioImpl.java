@@ -96,7 +96,6 @@ public class VendedorServicioImpl implements VendedorServicio {
 
         return BalanceSedeVendedor.builder()
                 .sedeId(sede1.getId())
-                .sedeNombre(sede1.getNombre())
                 .totalVentas(totalVentas)
                 .ventasEfectivo(ventasEfectivo)
                 .ventasTransferencia(ventasTransferencia)

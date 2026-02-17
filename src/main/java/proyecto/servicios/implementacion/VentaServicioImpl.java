@@ -196,7 +196,7 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getFecha(),
                 venta.getTotal(),
                 venta.getVendedor().getNombre(),
-                venta.getSede().getNombre(),
+                venta.getSede().getUbicacion(),
                 venta.getDetalles().stream()
                         .map(d -> new DetalleVentaResponseDTO(
                                 d.getProducto() != null ? d.getProducto().getCodigo() : null,

@@ -39,12 +39,6 @@ public class AdministradorController {
         );
     }
 
-    @PostMapping("/crearAdministrador")
-    public ResponseEntity<MensajeDTO<String>> crearAdministrador(@Valid @RequestBody AdministradorDTO administradorDTO)throws Exception{
-        administradorServicio.crearAdministrador(administradorDTO);
-        return ResponseEntity.ok().body(new MensajeDTO<>(false, "se agregó el administrador correctamente"));
-    }
-
     @PostMapping("/crearProducto")
     public ResponseEntity<ProductoDTO> crearProducto(@Valid @RequestBody ProductoCrearDTO dto) {
         ProductoDTO productoCreado = productoService.crearProducto(dto);

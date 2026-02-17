@@ -1,9 +1,11 @@
 package proyecto.controladores;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import proyecto.dto.*;
 import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.AutenticacionServicio;
@@ -31,10 +33,20 @@ public class AutenticacionController {
         return ResponseEntity.ok().body(new MensajeDTO<>(false, ciudadGetDTOS));
     }
 
-    @PostMapping("/crearAdministrador")
-    public ResponseEntity<MensajeDTO<String>> crearAdministrador(@Valid @RequestBody AdministradorDTO administradorDTO)throws Exception{
-        administradorServicio.crearAdministrador(administradorDTO);
-        return ResponseEntity.ok().body(new MensajeDTO<>(false, "se agregó el administrador correctamente"));
+    @PostMapping(value = "/registro", consumes = "multipart/form-data")
+    public ResponseEntity<MensajeDTO<String>> registro(
+            @RequestPart("datos") String datosJson,
+            @RequestPart("logo") MultipartFile archivo
+    ) throws Exception {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        RegistroEmpresaDTO dto =
+                objectMapper.readValue(datosJson, RegistroEmpresaDTO.class);
+
+        administradorServicio.registrarEmpresa(dto, archivo);
+
+        return ResponseEntity.ok()
+                .body(new MensajeDTO<>(false, "Empresa y administrador creados correctamente"));
     }
 
 }

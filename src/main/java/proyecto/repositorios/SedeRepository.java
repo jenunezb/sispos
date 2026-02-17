@@ -6,5 +6,5 @@ import proyecto.entidades.Sede;
 
 @Repository
 public interface SedeRepository extends JpaRepository<Sede, Long> {
-    boolean existsByNombreIgnoreCase(String nombre);
+    boolean existsByUbicacionIgnoreCase(String ubicacion);
 }

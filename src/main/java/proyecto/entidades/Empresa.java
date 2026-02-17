@@ -26,4 +26,8 @@ public class Empresa implements Serializable {
 
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL)
     private List<Sede> sedes;
+
+    @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL)
+    private List<Administrador> administradores;
+
 }

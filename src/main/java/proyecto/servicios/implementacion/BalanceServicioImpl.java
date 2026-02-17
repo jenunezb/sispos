@@ -108,7 +108,7 @@ public class BalanceServicioImpl implements BalanceServicio {
 
             return new BalanceSedeDTO(
                     sede.getId(),
-                    sede.getNombre(),
+                    sede.getUbicacion(),
                     ventas,
                     ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(),desde,hasta),
                     ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(),desde,hasta),
@@ -153,7 +153,7 @@ public class BalanceServicioImpl implements BalanceServicio {
 
             return new BalanceSedeDTO(
                     sede.getId(),
-                    sede.getNombre(),
+                    sede.getUbicacion(),
                     ventas,
                     ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(),desde,hasta),
                     ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(),desde,hasta),

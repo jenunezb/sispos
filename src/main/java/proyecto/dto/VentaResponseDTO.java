@@ -8,7 +8,7 @@ public record VentaResponseDTO(
         LocalDateTime fecha,
         Double total,
         String vendedorNombre,
-        String sedeNombre,
+        String sedeUbicacion,
         List<DetalleVentaResponseDTO> detalles
 ) {
 }
