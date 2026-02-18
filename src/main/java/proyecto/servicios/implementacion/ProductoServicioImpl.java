@@ -1,23 +1,30 @@
 package proyecto.servicios.implementacion;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import proyecto.dto.ProductoActualizarDTO;
 import proyecto.dto.ProductoCrearDTO;
 import proyecto.dto.ProductoDTO;
+import proyecto.entidades.Inventario;
 import proyecto.entidades.Producto;
+import proyecto.entidades.Sede;
+import proyecto.repositorios.InventarioRepository;
 import proyecto.repositorios.ProductoRepository;
+import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.ProductoServicio;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ProductoServicioImpl implements ProductoServicio {
 
     @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
+    private final InventarioRepository inventarioRepository;
+    private final SedeRepository sedeRepository;
 
     @Override
     public ProductoDTO crearProducto(ProductoCrearDTO dto) {
@@ -30,7 +37,24 @@ public class ProductoServicioImpl implements ProductoServicio {
         producto.setEstado(true);
 
         Producto guardado = productoRepository.save(producto);
+
+        // 🔹 Buscar sede
+        Sede sede = sedeRepository.findById(dto.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        // 🔹 Crear inventario automáticamente
+        Inventario inventario = new Inventario();
+        inventario.setProducto(guardado);
+        inventario.setSede(sede);
+        inventario.setEntradas(0);
+        inventario.setSalidas(0);
+        inventario.setPerdidas(0);
+        inventario.setStockActual(0);
+
+        inventarioRepository.save(inventario);
+
         return mapToDTO(guardado);
+
     }
 
     @Override
