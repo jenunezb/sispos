@@ -45,12 +45,14 @@ public class AdministradorController {
         return ResponseEntity.ok(productoCreado);
     }
 
-    @DeleteMapping("/productos/{id}")
-    public ResponseEntity<String> eliminarProducto(@PathVariable Long id) {
+    @PutMapping("/productos/{codigo}/desactivar")
+    public ResponseEntity<MensajeDTO> desactivarProducto(@PathVariable Long codigo) {
 
-        productoService.eliminarPorCodigo(id);
+        productoService.desactivarProducto(codigo);
 
-        return ResponseEntity.ok("Producto eliminado correctamente");
+        return ResponseEntity.ok(
+                new MensajeDTO(false, "Producto desactivado correctamente")
+        );
     }
 
     @PatchMapping("/estado")
@@ -85,17 +87,6 @@ public class AdministradorController {
 
         ProductoDTO productoActualizado = productoService.actualizarProducto(dto);
         return ResponseEntity.ok(productoActualizado);
-    }
-
-    /**
-     * Eliminar producto
-     */
-    @PutMapping("/productos/{codigo}/desactivar")
-    public ResponseEntity<MensajeDTO> desactivarProducto(@PathVariable Long codigo) {
-        productoService.eliminarProducto(codigo);
-        return ResponseEntity.ok(
-                new MensajeDTO(false, "Producto desactivado correctamente")
-        );
     }
 
     @GetMapping("/listar-vendedores")

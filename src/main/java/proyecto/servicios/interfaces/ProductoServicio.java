@@ -9,7 +9,7 @@ public interface ProductoServicio {
 
     ProductoDTO crearProducto(ProductoCrearDTO dto);
 
-    void eliminarPorCodigo(Long codigo);
+    void desactivarProducto(Long codigo);
 
     ProductoDTO actualizarProducto(ProductoActualizarDTO dto);
 
@@ -17,7 +17,4 @@ public interface ProductoServicio {
 
     List<ProductoDTO> listarProductos();
 
-    List<ProductoDTO> listarProductosActivos();
-
-    void eliminarProducto(Long codigo);
 }

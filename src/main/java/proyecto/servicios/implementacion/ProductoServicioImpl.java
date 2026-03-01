@@ -1,5 +1,6 @@
 package proyecto.servicios.implementacion;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -58,13 +59,24 @@ public class ProductoServicioImpl implements ProductoServicio {
     }
 
     @Override
-    public void eliminarPorCodigo(Long codigo) {
+    @Transactional
+    public void desactivarProducto(Long codigo) {
 
-        if (!productoRepository.existsById(codigo)) {
-            throw new RuntimeException("Producto no encontrado");
-        }
+        Producto producto = productoRepository.findById(codigo)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-        productoRepository.deleteById(codigo);
+        producto.setActivo(false);
+
+        productoRepository.save(producto);
+    }
+
+    @Override
+    public List<ProductoDTO> listarProductos() {
+
+        return productoRepository.findByActivoTrueOrderByCodigoAsc()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     @Override
@@ -88,31 +100,6 @@ public class ProductoServicioImpl implements ProductoServicio {
         Producto producto = productoRepository.findById(codigo)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         return mapToDTO(producto);
-    }
-
-    @Override
-    public List<ProductoDTO> listarProductos() {
-        return productoRepository.findAllByOrderByCodigoAsc()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
-    }
-
-
-    @Override
-    public List<ProductoDTO> listarProductosActivos() {
-        return productoRepository.findByEstadoTrue()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public void eliminarProducto(Long codigo) {
-        Producto producto = productoRepository.findById(codigo)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-        producto.setEstado(false);
-        productoRepository.save(producto);
     }
 
     private ProductoDTO mapToDTO(Producto producto) {

@@ -34,6 +34,8 @@ public class Producto implements Serializable {
     @Column(nullable = false)
     private Boolean estado = true;
 
+    private Boolean activo = true;
+
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductoMateriaPrima> materiasPrimas = new ArrayList<>();
 
