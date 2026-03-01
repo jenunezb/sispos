@@ -48,7 +48,7 @@ public class VendedorServicioImpl implements VendedorServicio {
                         v.getCedula(),
                         v.getCorreo(),
                         v.getTelefono(),
-                        v.getCiudad().getNombre(),
+                        v.getCiudad() != null ? v.getCiudad().getNombre() : "SIN CIUDAD",
                         v.isEstado()
                 ))
                 .toList();
