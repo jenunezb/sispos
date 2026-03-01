@@ -6,7 +6,6 @@ public record VendedorDTO(
         String cedula,
         String correo,
         String telefono,
-        String ciudad,
         Boolean estado
 ) {
 }

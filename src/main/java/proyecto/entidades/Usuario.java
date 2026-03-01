@@ -30,11 +30,6 @@ public class Usuario extends Cuenta implements Serializable {
     @NotBlank(message = "El teléfono es obligatorio")
     private String telefono;
 
-    @NotNull(message = "La ciudad es obligatoria")
-    @JoinColumn(nullable = false)
-    @ManyToOne
-    private Ciudad ciudad;
-
     @Column(nullable = false)
     private boolean estado;
 
