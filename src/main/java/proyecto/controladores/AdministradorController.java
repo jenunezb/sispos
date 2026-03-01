@@ -10,6 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import proyecto.dto.*;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.InformeInventarioDia;
@@ -103,6 +104,26 @@ public class AdministradorController {
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, vendedores)
+        );
+    }
+
+
+    @PostMapping("/productos/importar-csv")
+    public ResponseEntity<MensajeDTO<String>> importarProductosCsv(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam("file") MultipartFile archivo) {
+
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        int total = productoService.importarProductosCsv(archivo, admin.getEmpresa().getNit());
+
+        return ResponseEntity.ok(
+                new MensajeDTO<>(false, "Productos importados correctamente: " + total)
         );
     }
 
