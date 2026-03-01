@@ -6,5 +6,5 @@ public interface LoginCuentaDTO {
     String getPassword();
     String getRol();
     String getNombre();
-    Boolean getEstado();
+    Integer getEstado();
 }

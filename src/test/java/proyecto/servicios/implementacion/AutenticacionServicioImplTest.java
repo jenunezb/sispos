@@ -44,7 +44,7 @@ class AutenticacionServicioImplTest {
                 encoder.encode("secreta"),
                 "vendedor",
                 "Laura",
-                false
+                0
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
@@ -64,7 +64,7 @@ class AutenticacionServicioImplTest {
                 encoder.encode("secreta"),
                 "vendedor",
                 "Laura",
-                true
+                1
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
@@ -82,7 +82,7 @@ class AutenticacionServicioImplTest {
             String password,
             String rol,
             String nombre,
-            Boolean estado
+            Integer estado
     ) {
         return new LoginCuentaDTO() {
             @Override
@@ -111,7 +111,7 @@ class AutenticacionServicioImplTest {
             }
 
             @Override
-            public Boolean getEstado() {
+            public Integer getEstado() {
                 return estado;
             }
         };

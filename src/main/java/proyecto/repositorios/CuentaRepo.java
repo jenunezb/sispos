@@ -22,7 +22,7 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
                    c.password AS password,
                    CASE WHEN v.codigo IS NOT NULL THEN 'vendedor' ELSE 'administrador' END AS rol,
                    COALESCE(v.nombre, a.nombre, 'Administrador') AS nombre,
-                   COALESCE(v.estado, true) AS estado
+                   IFNULL(v.estado, 1) AS estado
             FROM cuenta c
             LEFT JOIN vendedor v ON v.codigo = c.codigo
             LEFT JOIN administrador a ON a.codigo = c.codigo

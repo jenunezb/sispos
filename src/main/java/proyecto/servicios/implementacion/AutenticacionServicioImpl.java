@@ -29,7 +29,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         LoginCuentaDTO cuenta = cuentaRepo.findLoginByCorreo(loginDTO.email())
                 .orElseThrow(() -> new RuntimeException("Credenciales incorrectas"));
 
-        if ("vendedor".equals(cuenta.getRol()) && !Boolean.TRUE.equals(cuenta.getEstado())) {
+        if ("vendedor".equals(cuenta.getRol()) && (cuenta.getEstado() == null || cuenta.getEstado() != 1)) {
             throw new RuntimeException(
                     "El vendedor se encuentra desactivado. Comuníquese con el administrador."
             );
