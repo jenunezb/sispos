@@ -45,6 +45,14 @@ public class AdministradorController {
         return ResponseEntity.ok(productoCreado);
     }
 
+    @DeleteMapping("/productos/{id}")
+    public ResponseEntity<String> eliminarProducto(@PathVariable Long id) {
+
+        productoService.eliminarPorCodigo(id);
+
+        return ResponseEntity.ok("Producto eliminado correctamente");
+    }
+
     @PatchMapping("/estado")
     public ResponseEntity<MensajeDTO> cambiarEstado(@Valid @RequestBody CambiarEstadoVendedorDTO dto) {
 

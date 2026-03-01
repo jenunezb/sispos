@@ -9,6 +9,8 @@ public interface ProductoServicio {
 
     ProductoDTO crearProducto(ProductoCrearDTO dto);
 
+    void eliminarPorCodigo(Long codigo);
+
     ProductoDTO actualizarProducto(ProductoActualizarDTO dto);
 
     ProductoDTO obtenerProductoPorCodigo(Long codigo);

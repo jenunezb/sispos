@@ -58,6 +58,16 @@ public class ProductoServicioImpl implements ProductoServicio {
     }
 
     @Override
+    public void eliminarPorCodigo(Long codigo) {
+
+        if (!productoRepository.existsById(codigo)) {
+            throw new RuntimeException("Producto no encontrado");
+        }
+
+        productoRepository.deleteById(codigo);
+    }
+
+    @Override
     public ProductoDTO actualizarProducto(ProductoActualizarDTO dto) {
         Producto producto = productoRepository.findById(dto.codigo())
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
