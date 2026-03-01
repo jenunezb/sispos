@@ -4,10 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import proyecto.dto.CiudadGetDTO;
+import proyecto.dto.LoginCuentaDTO;
 import proyecto.dto.LoginDTO;
 import proyecto.dto.TokenDTO;
-import proyecto.entidades.Cuenta;
-import proyecto.entidades.Vendedor;
 import proyecto.repositorios.CuentaRepo;
 import proyecto.servicios.interfaces.AutenticacionServicio;
 import proyecto.utils.JWTUtils;
@@ -26,11 +25,11 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
     @Override
     public TokenDTO login(LoginDTO loginDTO) throws Exception {
 
-        // Buscar cuenta por correo
-        Cuenta cuenta = cuentaRepo.findByCorreo(loginDTO.email())
+        // Buscar credenciales de login sin hidratar relaciones pesadas (ej. ciudad del vendedor)
+        LoginCuentaDTO cuenta = cuentaRepo.findLoginByCorreo(loginDTO.email())
                 .orElseThrow(() -> new RuntimeException("Credenciales incorrectas"));
 
-        if (cuenta instanceof Vendedor vendedor && !vendedor.isEstado()) {
+        if ("vendedor".equals(cuenta.getRol()) && !Boolean.TRUE.equals(cuenta.getEstado())) {
             throw new RuntimeException(
                     "El vendedor se encuentra desactivado. Comuníquese con el administrador."
             );
@@ -52,19 +51,10 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         return List.of();
     }
 
-    private String crearToken(Cuenta cuenta){
-        String rol;
-        String nombre;
-        if( cuenta instanceof Vendedor vendedor){
-            rol = "vendedor";
-            nombre = vendedor.getNombre();
-        }else{
-            rol = "administrador";
-            nombre = "Administrador";
-        }
+    private String crearToken(LoginCuentaDTO cuenta) {
         Map<String, Object> map = new HashMap<>();
-        map.put("rol", rol);
-        map.put("nombre", nombre);
+        map.put("rol", cuenta.getRol());
+        map.put("nombre", cuenta.getNombre());
         map.put("id", cuenta.getCodigo());
 
         return jwtUtils.generarToken(cuenta.getCorreo(), map);
