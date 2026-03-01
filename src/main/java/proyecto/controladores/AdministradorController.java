@@ -1,6 +1,8 @@
 package proyecto.controladores;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -9,11 +11,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.*;
+import proyecto.entidades.Administrador;
 import proyecto.entidades.InformeInventarioDia;
+import proyecto.repositorios.AdministradorRepository;
 import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.InformeInventarioDiaService;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
+import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +33,8 @@ public class AdministradorController {
     private final ProductoServicio productoService;
     private final VendedorServicio vendedorServicio;
     private final InformeInventarioDiaService informeInventarioDiaService;
+    private final JWTUtils jwtUtils;
+    private final AdministradorRepository administradorRepository;
 
     @PostMapping("/agregarVendedor")
     public ResponseEntity<MensajeDTO> crearVendedor(@RequestBody UsuarioDTO dto) throws Exception {
@@ -100,9 +107,16 @@ public class AdministradorController {
     }
 
     @GetMapping("/listar-productos")
-    public ResponseEntity<MensajeDTO<List<ProductoDTO>>> listarProductos() {
+    public ResponseEntity<MensajeDTO<List<ProductoDTO>>> listarProductos(@RequestHeader("Authorization") String authorization) {
 
-        List<ProductoDTO> productoDTOS = productoService.listarProductos();
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        List<ProductoDTO> productoDTOS = productoService.listarProductos(admin.getEmpresa().getNit());
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, productoDTOS)
