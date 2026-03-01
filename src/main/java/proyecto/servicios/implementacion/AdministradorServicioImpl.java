@@ -25,7 +25,6 @@ public class AdministradorServicioImpl implements AdministradorServicio {
     private final AdministradorRepository administradorRepository;
     private final VendedorRepository vendedorRepository;
     BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final CiudadRepo ciudadRepo;
     private final CuentaRepo cuentaRepo;
     private final ImagenRepository imagenRepository;
     private final EmpresaRepository empresaRepository;
@@ -47,7 +46,6 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         vendedor.setCedula(usuarioDTO.cedula());
         vendedor.setNombre(usuarioDTO.nombre());
         vendedor.setTelefono(usuarioDTO.telefono());
-        vendedor.setCiudad(ciudadRepo.findByNombre(usuarioDTO.ciudad()));
         vendedor.setCorreo(usuarioDTO.correo());
         vendedor.setEstado(true);
         String passwordEncriptada = passwordEncoder.encode(usuarioDTO.password());
