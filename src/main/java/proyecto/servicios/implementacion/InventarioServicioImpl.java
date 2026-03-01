@@ -30,7 +30,7 @@ public class InventarioServicioImpl implements InventarioServicio {
 
     @Override
     public List<InventarioDTO> listarPorSede(Long sedeId) {
-        return inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId)
+        return inventarioRepository.findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(sedeId)
                 .stream()
                 .map(this::toDTO)
                 .toList();
@@ -305,7 +305,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         // 1️⃣ INVENTARIO BASE POR SEDE
         // ===============================
         List<Inventario> inventarios =
-                inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId);
+                inventarioRepository.findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(sedeId);
 
         // ===============================
         // 2️⃣ MOVIMIENTOS DEL DÍA

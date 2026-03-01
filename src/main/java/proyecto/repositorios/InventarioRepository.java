@@ -15,8 +15,7 @@ import java.util.Optional;
 @Repository
 public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     // Listar todo el inventario de una sede
-    List<Inventario> findBySedeIdOrderByProductoCodigoAsc(Long sedeId);
-
+    List<Inventario> findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(Long sedeId);
 
     // Obtener inventario de un producto específico en una sede
     Optional<Inventario> findByProductoCodigoAndSedeId(Long productoId, Long sedeId);
