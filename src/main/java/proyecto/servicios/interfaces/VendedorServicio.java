@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface VendedorServicio {
     void cambiarEstado(Long codigo, Boolean estado);
-    List<VendedorDTO> listarVendedores();
+    List<VendedorDTO> listarVendedores(Long empresaNit);
     Vendedor obtenerVendedorPorCorreo(String correo);
     BalanceSedeVendedor balancePorSedeId(String email, LocalDateTime desde, LocalDateTime hasta);
 }

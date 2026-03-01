@@ -23,5 +23,6 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
 
     List<Vendedor> findAllByOrderByNombreAsc();
 
+    List<Vendedor> findBySedeEmpresaNitOrderByNombreAsc(Long empresaNit);
 
 }

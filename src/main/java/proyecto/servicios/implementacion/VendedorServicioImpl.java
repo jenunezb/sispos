@@ -38,9 +38,9 @@ public class VendedorServicioImpl implements VendedorServicio {
     }
 
     @Override
-    public List<VendedorDTO> listarVendedores() {
+    public List<VendedorDTO> listarVendedores(Long empresaNit) {
 
-        return vendedorRepository.findAllByOrderByNombreAsc()
+        return vendedorRepository.findBySedeEmpresaNitOrderByNombreAsc(empresaNit)
                 .stream()
                 .map(v -> new VendedorDTO(
                         v.getCodigo(),

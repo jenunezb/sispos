@@ -42,9 +42,9 @@ class VendedorServicioImplTest {
         vendedor.setEstado(true);
         vendedor.setCiudad(null);
 
-        when(vendedorRepository.findAllByOrderByNombreAsc()).thenReturn(List.of(vendedor));
+        when(vendedorRepository.findBySedeEmpresaNitOrderByNombreAsc(900123456L)).thenReturn(List.of(vendedor));
 
-        List<VendedorDTO> respuesta = vendedorServicio.listarVendedores();
+        List<VendedorDTO> respuesta = vendedorServicio.listarVendedores(900123456L);
 
         assertEquals(1, respuesta.size());
         assertEquals("SIN CIUDAD", respuesta.get(0).ciudad());

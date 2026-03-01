@@ -98,9 +98,16 @@ public class AdministradorController {
     }
 
     @GetMapping("/listar-vendedores")
-    public ResponseEntity<MensajeDTO<List<VendedorDTO>>> listarVendedores() {
+    public ResponseEntity<MensajeDTO<List<VendedorDTO>>> listarVendedores(@RequestHeader("Authorization") String authorization) {
 
-        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores();
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores(admin.getEmpresa().getNit());
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, vendedores)
