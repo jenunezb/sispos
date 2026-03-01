@@ -48,6 +48,9 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         vendedor.setNombre(usuarioDTO.nombre());
         vendedor.setTelefono(usuarioDTO.telefono());
         vendedor.setCiudad(obtenerCiudadParaVendedor(usuarioDTO.ciudad()));
+        if (vendedor.getCiudad() == null) {
+            vendedor.setCiudad(obtenerCiudadParaVendedor(null));
+        }
         vendedor.setCorreo(usuarioDTO.correo());
         vendedor.setEstado(true);
         String passwordEncriptada = passwordEncoder.encode(usuarioDTO.password());
@@ -110,6 +113,9 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         vendedor.setCorreo(dto.correo());
         vendedor.setTelefono(dto.telefono());
         vendedor.setCiudad(obtenerCiudadParaVendedor(dto.ciudad()));
+        if (vendedor.getCiudad() == null) {
+            vendedor.setCiudad(obtenerCiudadParaVendedor(null));
+        }
         vendedor.setEstado(dto.estado());
 
         if (dto.password() != null && !dto.password().isBlank()) {
