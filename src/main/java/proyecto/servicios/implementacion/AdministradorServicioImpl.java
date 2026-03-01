@@ -25,6 +25,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
     private final AdministradorRepository administradorRepository;
     private final VendedorRepository vendedorRepository;
     BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final CiudadRepo ciudadRepo;
     private final CuentaRepo cuentaRepo;
     private final ImagenRepository imagenRepository;
     private final EmpresaRepository empresaRepository;
@@ -46,6 +47,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         vendedor.setCedula(usuarioDTO.cedula());
         vendedor.setNombre(usuarioDTO.nombre());
         vendedor.setTelefono(usuarioDTO.telefono());
+        vendedor.setCiudad(obtenerCiudadParaVendedor(usuarioDTO.ciudad()));
         vendedor.setCorreo(usuarioDTO.correo());
         vendedor.setEstado(true);
         String passwordEncriptada = passwordEncoder.encode(usuarioDTO.password());
@@ -54,6 +56,30 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         Vendedor vendedorNuevo = vendedorRepository.save(vendedor);
 
         return vendedorNuevo.getCodigo();
+    }
+
+
+    private Ciudad obtenerCiudadParaVendedor(String nombreCiudad) {
+        if (nombreCiudad != null && !nombreCiudad.isBlank()) {
+            Ciudad ciudad = ciudadRepo.findByNombre(nombreCiudad.trim());
+            if (ciudad != null) {
+                return ciudad;
+            }
+
+            Ciudad nuevaCiudad = new Ciudad();
+            nuevaCiudad.setNombre(nombreCiudad.trim());
+            return ciudadRepo.save(nuevaCiudad);
+        }
+
+        String nombreDefault = "SIN CIUDAD";
+        Ciudad ciudadDefault = ciudadRepo.findByNombre(nombreDefault);
+        if (ciudadDefault != null) {
+            return ciudadDefault;
+        }
+
+        Ciudad nuevaCiudadDefault = new Ciudad();
+        nuevaCiudadDefault.setNombre(nombreDefault);
+        return ciudadRepo.save(nuevaCiudadDefault);
     }
 
     public boolean estaRepetidaCedula(String cedula) {
