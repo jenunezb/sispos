@@ -7,10 +7,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BalanceServicio {
-    /* SIN FECHAS */
-    BalanceGeneralDTO balanceDelDia();
-    /* CON FECHAS */
-    BalanceGeneralDTO balanceGeneral(LocalDateTime desde, LocalDateTime hasta);
-    List<BalanceSedeDTO> balancePorSede(LocalDateTime desde, LocalDateTime hasta);
-    public List<BalanceSedeDTO> balancePorSedeHoy();
+
+    public BalanceGeneralDTO balanceDelDia();
+
+    public BalanceGeneralDTO balanceGeneral(LocalDateTime desde, LocalDateTime hasta);
+
+    List<BalanceSedeDTO> balancePorSede(Long empresaNit, LocalDateTime desde, LocalDateTime hasta);
+
+    List<BalanceSedeDTO> balancePorSedeHoy(Long empresaNit);
+
 }

@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import proyecto.dto.SedeActualizarDTO;
 import proyecto.dto.SedeCrearDTO;
 import proyecto.dto.SedeDTO;
-import proyecto.entidades.Administrador;
 import proyecto.entidades.Sede;
 import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.SedeServicio;
@@ -32,6 +31,13 @@ public class SedeServicioIpml implements SedeServicio {
 
     public List<SedeDTO> listar() {
         return sedeRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    public List<SedeDTO> listarPorEmpresa(Long empresaNit) {
+        return sedeRepository.findByEmpresaNit(empresaNit)
                 .stream()
                 .map(this::toDTO)
                 .toList();

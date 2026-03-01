@@ -85,9 +85,9 @@ public class BalanceServicioImpl implements BalanceServicio {
     }
 
     @Override
-    public List<BalanceSedeDTO> balancePorSede(LocalDateTime desde, LocalDateTime hasta) {
+    public List<BalanceSedeDTO> balancePorSede(Long empresaNit, LocalDateTime desde, LocalDateTime hasta) {
 
-        List<Sede> sedes = sedeRepository.findAll();
+        List<Sede> sedes = sedeRepository.findByEmpresaNit(empresaNit);
 
         return sedes.stream().map(sede -> {
 
@@ -123,12 +123,12 @@ public class BalanceServicioImpl implements BalanceServicio {
     }
 
     @Override
-    public List<BalanceSedeDTO> balancePorSedeHoy() {
+    public List<BalanceSedeDTO> balancePorSedeHoy(Long empresaNit) {
 
         LocalDateTime desde = LocalDate.now().atStartOfDay();
         LocalDateTime hasta = LocalDate.now().atTime(23, 59, 59);
 
-        List<Sede> sedes = sedeRepository.findAll();
+        List<Sede> sedes = sedeRepository.findByEmpresaNit(empresaNit);
 
         return sedes.stream().map(sede -> {
 

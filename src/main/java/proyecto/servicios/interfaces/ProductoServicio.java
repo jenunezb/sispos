@@ -15,6 +15,6 @@ public interface ProductoServicio {
 
     ProductoDTO obtenerProductoPorCodigo(Long codigo);
 
-    List<ProductoDTO> listarProductos();
+    List<ProductoDTO> listarProductos(Long empresaNit);
 
 }

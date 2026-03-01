@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import proyecto.dto.ProductoActualizarDTO;
 import proyecto.dto.ProductoCrearDTO;
 import proyecto.dto.ProductoDTO;
+import proyecto.entidades.Empresa;
 import proyecto.entidades.Inventario;
 import proyecto.entidades.Producto;
 import proyecto.entidades.Sede;
@@ -16,7 +17,6 @@ import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.ProductoServicio;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +29,15 @@ public class ProductoServicioImpl implements ProductoServicio {
 
     @Override
     public ProductoDTO crearProducto(ProductoCrearDTO dto) {
+        // 🔹 Buscar sede
+        Sede sede = sedeRepository.findById(dto.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        Empresa empresa = sede.getEmpresa();
+        if (empresa == null) {
+            throw new RuntimeException("La sede no tiene una empresa asociada");
+        }
+
         Producto producto = new Producto();
         producto.setNombre(dto.nombre());
         producto.setDescripcion(dto.descripcion());
@@ -36,12 +45,9 @@ public class ProductoServicioImpl implements ProductoServicio {
         producto.setPrecioVenta(dto.precioVenta());
         producto.setCategoria(dto.categoria());
         producto.setEstado(true);
+        producto.setEmpresa(empresa);
 
         Producto guardado = productoRepository.save(producto);
-
-        // 🔹 Buscar sede
-        Sede sede = sedeRepository.findById(dto.sedeId())
-                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
         // 🔹 Crear inventario automáticamente
         Inventario inventario = new Inventario();
@@ -71,9 +77,9 @@ public class ProductoServicioImpl implements ProductoServicio {
     }
 
     @Override
-    public List<ProductoDTO> listarProductos() {
+    public List<ProductoDTO> listarProductos(Long empresaNit) {
 
-        return productoRepository.findByActivoTrueOrderByCodigoAsc()
+        return productoRepository.findByActivoTrueAndEmpresaNitOrderByCodigoAsc(empresaNit)
                 .stream()
                 .map(this::mapToDTO)
                 .toList();
