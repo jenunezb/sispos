@@ -109,6 +109,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         vendedor.setNombre(dto.nombre());
         vendedor.setCorreo(dto.correo());
         vendedor.setTelefono(dto.telefono());
+        vendedor.setCiudad(obtenerCiudadParaVendedor(dto.ciudad()));
         vendedor.setEstado(dto.estado());
 
         if (dto.password() != null && !dto.password().isBlank()) {
