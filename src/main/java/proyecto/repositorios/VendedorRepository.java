@@ -26,8 +26,11 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
     @Query("""
             SELECT v
             FROM Vendedor v
-            WHERE v.empresa.nit = :empresaNit
-               OR (v.empresa IS NULL AND v.sede.empresa.nit = :empresaNit)
+            LEFT JOIN v.empresa empresa
+            LEFT JOIN v.sede sede
+            LEFT JOIN sede.empresa empresaSede
+            WHERE empresa.nit = :empresaNit
+               OR (empresa IS NULL AND empresaSede.nit = :empresaNit)
             ORDER BY v.nombre ASC
             """)
     List<Vendedor> findVisiblesByEmpresaNit(@Param("empresaNit") Long empresaNit);
