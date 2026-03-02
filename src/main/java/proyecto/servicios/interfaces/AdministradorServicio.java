@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface AdministradorServicio {
 
-    int crearVendedor (UsuarioDTO usuarioDTO) throws Exception;
+    int crearVendedor (UsuarioDTO usuarioDTO, Long empresaNit) throws Exception;
 
     int registrarEmpresa(RegistroEmpresaDTO dto, MultipartFile archivo) throws Exception;
 

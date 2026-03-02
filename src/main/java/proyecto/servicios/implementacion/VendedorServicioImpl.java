@@ -40,7 +40,7 @@ public class VendedorServicioImpl implements VendedorServicio {
     @Override
     public List<VendedorDTO> listarVendedores(Long empresaNit) {
 
-        return vendedorRepository.findBySedeEmpresaNitOrderByNombreAsc(empresaNit)
+        return vendedorRepository.findVisiblesByEmpresaNit(empresaNit)
                 .stream()
                 .map(v -> new VendedorDTO(
                         v.getCodigo(),

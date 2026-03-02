@@ -34,7 +34,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
 
 
     @Override
-    public int crearVendedor(UsuarioDTO usuarioDTO) throws Exception {
+    public int crearVendedor(UsuarioDTO usuarioDTO, Long empresaNit) throws Exception {
         if (vendedorRepository.existsByCedula(usuarioDTO.cedula())) {
             throw new RuntimeException("La cédula ya se encuentra registrada");
         }
@@ -55,6 +55,10 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         vendedor.setEstado(true);
         String passwordEncriptada = passwordEncoder.encode(usuarioDTO.password());
         vendedor.setPassword(passwordEncriptada);
+
+        Empresa empresa = empresaRepository.findById(empresaNit)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        vendedor.setEmpresa(empresa);
 
         Vendedor vendedorNuevo = vendedorRepository.save(vendedor);
 

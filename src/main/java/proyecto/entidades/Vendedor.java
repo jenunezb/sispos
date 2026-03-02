@@ -7,7 +7,6 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.io.Serializable;
-import java.util.List;
 
 @Entity
 @Getter
@@ -16,6 +15,10 @@ import java.util.List;
 @ToString
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class Vendedor extends Usuario implements Serializable {
+
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 
     @ManyToOne
     @JoinColumn(name = "sede_id")

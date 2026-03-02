@@ -38,9 +38,18 @@ public class AdministradorController {
     private final AdministradorRepository administradorRepository;
 
     @PostMapping("/agregarVendedor")
-    public ResponseEntity<MensajeDTO> crearVendedor(@RequestBody UsuarioDTO dto) throws Exception {
+    public ResponseEntity<MensajeDTO> crearVendedor(
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody UsuarioDTO dto) throws Exception {
 
-        administradorServicio.crearVendedor(dto);
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        administradorServicio.crearVendedor(dto, admin.getEmpresa().getNit());
 
         return ResponseEntity.ok(
                 new MensajeDTO(false, "Vendedor creado exitosamente")

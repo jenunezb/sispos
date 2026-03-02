@@ -42,7 +42,7 @@ class VendedorServicioImplTest {
         vendedor.setEstado(true);
         vendedor.setCiudad(null);
 
-        when(vendedorRepository.findBySedeEmpresaNitOrderByNombreAsc(900123456L)).thenReturn(List.of(vendedor));
+        when(vendedorRepository.findVisiblesByEmpresaNit(900123456L)).thenReturn(List.of(vendedor));
 
         List<VendedorDTO> respuesta = vendedorServicio.listarVendedores(900123456L);
 
