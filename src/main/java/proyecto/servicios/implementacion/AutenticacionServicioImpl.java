@@ -56,6 +56,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         map.put("rol", cuenta.getRol());
         map.put("nombre", cuenta.getNombre());
         map.put("id", cuenta.getCodigo());
+        map.put("nombreEmpresa", cuenta.getNombreEmpresa());
 
         return jwtUtils.generarToken(cuenta.getCorreo(), map);
     }

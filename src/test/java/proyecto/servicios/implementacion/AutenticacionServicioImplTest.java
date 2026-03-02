@@ -16,6 +16,10 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.mockito.ArgumentCaptor;
+
+import java.util.Map;
+
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -44,7 +48,8 @@ class AutenticacionServicioImplTest {
                 encoder.encode("secreta"),
                 "vendedor",
                 "Laura",
-                0
+                0,
+                "Empresa Uno"
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
@@ -64,7 +69,8 @@ class AutenticacionServicioImplTest {
                 encoder.encode("secreta"),
                 "vendedor",
                 "Laura",
-                1
+                1,
+                "Empresa Uno"
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
@@ -73,7 +79,10 @@ class AutenticacionServicioImplTest {
         TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta"));
 
         assertEquals("token-falso", respuesta.getToken());
-        verify(jwtUtils).generarToken(eq("vendedor@correo.com"), anyMap());
+
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(jwtUtils).generarToken(eq("vendedor@correo.com"), captor.capture());
+        assertEquals("Empresa Uno", captor.getValue().get("nombreEmpresa"));
     }
 
     private LoginCuentaDTO crearCuentaLogin(
@@ -82,7 +91,8 @@ class AutenticacionServicioImplTest {
             String password,
             String rol,
             String nombre,
-            Integer estado
+            Integer estado,
+            String nombreEmpresa
     ) {
         return new LoginCuentaDTO() {
             @Override
@@ -113,6 +123,11 @@ class AutenticacionServicioImplTest {
             @Override
             public Integer getEstado() {
                 return estado;
+            }
+
+            @Override
+            public String getNombreEmpresa() {
+                return nombreEmpresa;
             }
         };
     }

@@ -7,4 +7,5 @@ public interface LoginCuentaDTO {
     String getRol();
     String getNombre();
     Integer getEstado();
+    String getNombreEmpresa();
 }
