@@ -70,6 +70,21 @@ LEFT JOIN Inventario i
     Double valorInventarioPorSede(@Param("sedeId") Long sedeId);
 
     @Query("""
+        SELECT COALESCE(SUM(i.stockActual), 0)
+        FROM Inventario i
+        WHERE i.sede.empresa.nit = :empresaNit
+    """)
+    Integer stockTotalPorEmpresa(@Param("empresaNit") Long empresaNit);
+
+    @Query("""
+        SELECT COALESCE(SUM(i.stockActual * p.precioProduccion), 0)
+        FROM Inventario i
+        JOIN i.producto p
+        WHERE i.sede.empresa.nit = :empresaNit
+    """)
+    Double valorInventarioPorEmpresa(@Param("empresaNit") Long empresaNit);
+
+    @Query("""
     SELECT new proyecto.dto.PerdidasDetalleDTO(
         m.fecha,
         m.producto.nombre,

@@ -24,53 +24,31 @@ public class BalanceServicioImpl implements BalanceServicio {
     private final InventarioRepository inventarioRepository;
     private final SedeRepository sedeRepository;
 
-    /* ======================
-       BALANCE GENERAL
-       ====================== */
     @Override
-    public BalanceGeneralDTO balanceDelDia() {
-
+    public BalanceGeneralDTO balanceDelDia(Long empresaNit) {
         LocalDateTime desde = LocalDate.now().atStartOfDay();
         LocalDateTime hasta = LocalDate.now().atTime(23, 59, 59);
+        return balanceGeneral(empresaNit, desde, hasta);
+    }
 
-        Double ventas = ventaRepository.totalVentasEntreFechas(desde, hasta);
-        Double costo = detalleVentaRepository.costoProduccionEntreFechas(desde, hasta);
-        Long cantVentas = ventaRepository.cantidadVentasEntreFechas(desde, hasta);
-        Double ventasEfectivo = ventaRepository.totalVentasEntreFechasEfectivo(desde, hasta);
-        Double ventasTransferencia = ventaRepository.totalVentasEntreFechasTransferencia(desde, hasta);
+    @Override
+    public BalanceGeneralDTO balanceGeneral(Long empresaNit, LocalDateTime desde, LocalDateTime hasta) {
 
-        Double inventario = inventarioRepository.valorInventario();
-        Integer stock = inventarioRepository.stockTotal();
+        Double ventas = ventaRepository.totalVentasEntreFechasPorEmpresa(empresaNit, desde, hasta);
+        Double costo = detalleVentaRepository.costoProduccionEntreFechasPorEmpresa(empresaNit, desde, hasta);
+        Long cantVentas = ventaRepository.cantidadVentasEntreFechasPorEmpresa(empresaNit, desde, hasta);
+        Double inventario = inventarioRepository.valorInventarioPorEmpresa(empresaNit);
+        Integer stock = inventarioRepository.stockTotalPorEmpresa(empresaNit);
+        Double ventasEfectivo = ventaRepository.totalVentasEntreFechasEfectivoPorEmpresa(empresaNit, desde, hasta);
+        Double ventasTransferencia = ventaRepository.totalVentasEntreFechasTransferenciaPorEmpresa(empresaNit, desde, hasta);
 
         ventas = ventas != null ? ventas : 0.0;
         costo = costo != null ? costo : 0.0;
         cantVentas = cantVentas != null ? cantVentas : 0L;
         ventasEfectivo = ventasEfectivo != null ? ventasEfectivo : 0.0;
         ventasTransferencia = ventasTransferencia != null ? ventasTransferencia : 0.0;
-
-        return new BalanceGeneralDTO(
-                ventas,
-                costo,
-                ventas - costo,
-                inventario,
-                stock,
-                cantVentas,
-                ventasEfectivo,
-                ventasTransferencia
-        );
-    }
-
-    @Override
-    public BalanceGeneralDTO balanceGeneral(LocalDateTime desde, LocalDateTime hasta) {
-
-        Double ventas = ventaRepository.totalVentasEntreFechas(desde, hasta);
-        Double costo = detalleVentaRepository.costoProduccionEntreFechas(desde, hasta);
-        Long cantVentas = ventaRepository.cantidadVentasEntreFechas(desde, hasta);
-        Double inventario = inventarioRepository.valorInventario();
-        Integer stock = inventarioRepository.stockTotal();
-        Double ventasEfectivo = ventaRepository.totalVentasEntreFechasEfectivo(desde, hasta);
-        Double ventasTransferencia = ventaRepository.totalVentasEntreFechasTransferencia(desde, hasta);
-
+        inventario = inventario != null ? inventario : 0.0;
+        stock = stock != null ? stock : 0;
 
         return new BalanceGeneralDTO(
                 ventas,
@@ -91,27 +69,18 @@ public class BalanceServicioImpl implements BalanceServicio {
 
         return sedes.stream().map(sede -> {
 
-            Double ventas = ventaRepository
-                    .totalVentasPorSedeEntreFechas(sede.getId(), desde, hasta);
-
-            Double costo = detalleVentaRepository
-                    .costoProduccionPorSedeEntreFechas(sede.getId(), desde, hasta);
-
-            Double inventario = inventarioRepository
-                    .valorInventarioPorSede(sede.getId());
-
-            Integer stock = inventarioRepository
-                    .stockPorSede(sede.getId());
-
-            Long cantVentas = ventaRepository.cantidadVentasPorSedeEntreFechas(sede.getId(),desde,hasta);
-
+            Double ventas = ventaRepository.totalVentasPorSedeEntreFechas(sede.getId(), desde, hasta);
+            Double costo = detalleVentaRepository.costoProduccionPorSedeEntreFechas(sede.getId(), desde, hasta);
+            Double inventario = inventarioRepository.valorInventarioPorSede(sede.getId());
+            Integer stock = inventarioRepository.stockPorSede(sede.getId());
+            Long cantVentas = ventaRepository.cantidadVentasPorSedeEntreFechas(sede.getId(), desde, hasta);
 
             return new BalanceSedeDTO(
                     sede.getId(),
                     sede.getUbicacion(),
                     ventas,
-                    ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(),desde,hasta),
-                    ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(),desde,hasta),
+                    ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(), desde, hasta),
+                    ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(), desde, hasta),
                     costo,
                     ventas - costo,
                     inventario,
@@ -128,43 +97,6 @@ public class BalanceServicioImpl implements BalanceServicio {
         LocalDateTime desde = LocalDate.now().atStartOfDay();
         LocalDateTime hasta = LocalDate.now().atTime(23, 59, 59);
 
-        List<Sede> sedes = sedeRepository.findByEmpresaNit(empresaNit);
-
-        return sedes.stream().map(sede -> {
-
-            Double ventas = ventaRepository.totalVentasPorSedeEntreFechas(
-                    sede.getId(), desde, hasta
-            );
-
-            Double costo = detalleVentaRepository.costoProduccionPorSedeEntreFechas(
-                    sede.getId(), desde, hasta
-            );
-
-            Long cantVentas = ventaRepository.cantidadVentasPorSedeEntreFechas(
-                    sede.getId(), desde, hasta
-            );
-
-            Double inventario = inventarioRepository.valorInventarioPorSede(sede.getId());
-            Integer stock = inventarioRepository.stockPorSede(sede.getId());
-
-            ventas = ventas != null ? ventas : 0.0;
-            costo = costo != null ? costo : 0.0;
-            cantVentas = cantVentas != null ? cantVentas : 0L;
-
-            return new BalanceSedeDTO(
-                    sede.getId(),
-                    sede.getUbicacion(),
-                    ventas,
-                    ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(),desde,hasta),
-                    ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(),desde,hasta),
-                    costo,
-                    ventas - costo,
-                    inventario,
-                    stock,
-                    cantVentas
-            );
-
-        }).toList();
+        return balancePorSede(empresaNit, desde, hasta);
     }
-
 }

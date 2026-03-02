@@ -54,6 +54,56 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("""
     SELECT COALESCE(SUM(v.total), 0)
     FROM Venta v
+    WHERE v.sede.empresa.nit = :empresaNit
+      AND v.fecha BETWEEN :desde AND :hasta
+""")
+    Double totalVentasEntreFechasPorEmpresa(
+            @Param("empresaNit") Long empresaNit,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+    SELECT COUNT(v)
+    FROM Venta v
+    WHERE v.sede.empresa.nit = :empresaNit
+      AND v.fecha BETWEEN :desde AND :hasta
+""")
+    Long cantidadVentasEntreFechasPorEmpresa(
+            @Param("empresaNit") Long empresaNit,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
+    WHERE v.sede.empresa.nit = :empresaNit
+      AND v.modoPago = 'EFECTIVO'
+      AND v.fecha BETWEEN :desde AND :hasta
+""")
+    Double totalVentasEntreFechasEfectivoPorEmpresa(
+            @Param("empresaNit") Long empresaNit,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
+    WHERE v.sede.empresa.nit = :empresaNit
+      AND v.modoPago = 'TRANSFERENCIA'
+      AND v.fecha BETWEEN :desde AND :hasta
+""")
+    Double totalVentasEntreFechasTransferenciaPorEmpresa(
+            @Param("empresaNit") Long empresaNit,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
     WHERE v.sede.id = :sedeId
     AND v.fecha BETWEEN :desde AND :hasta
 """)
