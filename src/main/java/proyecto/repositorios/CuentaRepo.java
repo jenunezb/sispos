@@ -27,7 +27,7 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
             FROM cuenta c
             LEFT JOIN vendedor v ON v.codigo = c.codigo
             LEFT JOIN administrador a ON a.codigo = c.codigo
-            LEFT JOIN empresa ea ON ea.nit = a.empresa_id
+            LEFT JOIN empresa ea ON ea.nit = a.empresa_nit
             LEFT JOIN empresa ev ON ev.nit = v.empresa_id
             LEFT JOIN sede sv ON sv.id = v.sede_id
             LEFT JOIN empresa evs ON evs.nit = sv.empresa_id
