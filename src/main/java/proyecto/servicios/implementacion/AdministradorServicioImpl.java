@@ -58,7 +58,20 @@ public class AdministradorServicioImpl implements AdministradorServicio {
 
         Empresa empresa = empresaRepository.findById(empresaNit)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        if (usuarioDTO.sedeId() == null) {
+            throw new RuntimeException("Debe seleccionar una sede para el vendedor");
+        }
+
+        Sede sede = sedeRepository.findById(usuarioDTO.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        if (sede.getEmpresa() == null || !empresaNit.equals(sede.getEmpresa().getNit())) {
+            throw new RuntimeException("La sede no pertenece a la empresa del administrador");
+        }
+
         vendedor.setEmpresa(empresa);
+        vendedor.setSede(sede);
 
         Vendedor vendedorNuevo = vendedorRepository.save(vendedor);
 
