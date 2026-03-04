@@ -210,22 +210,21 @@ public class AdministradorServicioImpl implements AdministradorServicio {
             throw new Exception("El correo ya está registrado");
         }
 
-        if (archivo == null || archivo.isEmpty()) {
-            throw new Exception("Debe subir un logo");
+        Imagen imagen = null;
+
+        if (archivo != null && !archivo.isEmpty()) {
+            Map<?, ?> resultado = cloudinary.uploader().upload(
+                    archivo.getBytes(),
+                    Map.of("folder", "logos_empresas")
+            );
+
+            imagen = new Imagen();
+            imagen.setUrl(resultado.get("secure_url").toString());
+            imagen.setPublicId(resultado.get("public_id").toString());
+            imagen.setTipo(TipoImagen.LOGO);
+
+            imagenRepository.save(imagen);
         }
-
-        // 1️⃣ Subir logo a Cloudinary
-        Map<?, ?> resultado = cloudinary.uploader().upload(
-                archivo.getBytes(),
-                Map.of("folder", "logos_empresas")
-        );
-
-        Imagen imagen = new Imagen();
-        imagen.setUrl(resultado.get("secure_url").toString());
-        imagen.setPublicId(resultado.get("public_id").toString());
-        imagen.setTipo(TipoImagen.LOGO);
-
-        imagenRepository.save(imagen);
 
         // 2️⃣ Crear empresa
         Empresa empresa = new Empresa();

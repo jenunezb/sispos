@@ -3,23 +3,31 @@ package proyecto.servicios.implementacion;
 import com.cloudinary.Cloudinary;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import proyecto.dto.RegistroEmpresaDTO;
 import proyecto.dto.UsuarioDTO;
+import proyecto.entidades.Administrador;
 import proyecto.entidades.Ciudad;
 import proyecto.entidades.Empresa;
 import proyecto.entidades.Sede;
 import proyecto.entidades.Vendedor;
-import proyecto.repositorios.*;
+import proyecto.repositorios.AdministradorRepository;
+import proyecto.repositorios.CiudadRepo;
+import proyecto.repositorios.CuentaRepo;
+import proyecto.repositorios.EmpresaRepository;
+import proyecto.repositorios.ImagenRepository;
+import proyecto.repositorios.SedeRepository;
+import proyecto.repositorios.VendedorRepository;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.mockito.ArgumentCaptor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,16 +56,7 @@ class AdministradorServicioImplTest {
 
     @Test
     void crearVendedorDebeAsignarSedeDeLaEmpresa() throws Exception {
-        UsuarioDTO dto = new UsuarioDTO(
-                "123",
-                "Vendedor",
-                "Bogotá",
-                "3000000000",
-                "secret",
-                "vendedor@correo.com",
-                true,
-                10L
-        );
+        UsuarioDTO dto = new UsuarioDTO("123", "Vendedor", "Bogotá", "3000000000", "secret", "vendedor@correo.com", true, 10L);
 
         Empresa empresa = new Empresa();
         empresa.setNit(900123456L);
@@ -90,16 +89,7 @@ class AdministradorServicioImplTest {
 
     @Test
     void crearVendedorDebeFallarSiSedeNoPerteneceAEmpresa() {
-        UsuarioDTO dto = new UsuarioDTO(
-                "123",
-                "Vendedor",
-                "Bogotá",
-                "3000000000",
-                "secret",
-                "vendedor@correo.com",
-                true,
-                10L
-        );
+        UsuarioDTO dto = new UsuarioDTO("123", "Vendedor", "Bogotá", "3000000000", "secret", "vendedor@correo.com", true, 10L);
 
         Empresa empresaAdmin = new Empresa();
         empresaAdmin.setNit(900123456L);
@@ -121,5 +111,39 @@ class AdministradorServicioImplTest {
         when(sedeRepository.findById(10L)).thenReturn(Optional.of(sede));
 
         assertThrows(RuntimeException.class, () -> administradorServicio.crearVendedor(dto, 900123456L));
+    }
+
+    @Test
+    void registrarEmpresaDebePermitirLogoOpcional() throws Exception {
+        RegistroEmpresaDTO dto = new RegistroEmpresaDTO(
+                "admin@correo.com",
+                "Password#123",
+                "Admin",
+                "Principal",
+                3001234567L,
+                900123456L,
+                "Empresa Demo",
+                "Sede Principal",
+                "Centro"
+        );
+
+        when(empresaRepository.existsById(900123456L)).thenReturn(false);
+        when(cuentaRepo.findByCorreo("admin@correo.com")).thenReturn(Optional.empty());
+        when(empresaRepository.save(any(Empresa.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(administradorRepository.save(any(Administrador.class))).thenAnswer(inv -> {
+            Administrador admin = inv.getArgument(0);
+            admin.setCodigo(1);
+            return admin;
+        });
+        when(sedeRepository.save(any(Sede.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        int codigo = administradorServicio.registrarEmpresa(dto, null);
+
+        assertEquals(1, codigo);
+
+        ArgumentCaptor<Empresa> empresaCaptor = ArgumentCaptor.forClass(Empresa.class);
+        verify(empresaRepository).save(empresaCaptor.capture());
+        assertEquals(null, empresaCaptor.getValue().getLogo());
+        verify(imagenRepository, never()).save(any());
     }
 }
