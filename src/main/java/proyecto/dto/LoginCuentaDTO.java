@@ -8,4 +8,6 @@ public interface LoginCuentaDTO {
     String getNombre();
     Integer getEstado();
     String getNombreEmpresa();
+    Long getEmpresaNit();
+    Long getEmpresaTelefono();
 }

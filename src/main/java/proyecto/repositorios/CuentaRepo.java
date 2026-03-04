@@ -23,7 +23,18 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
                    CASE WHEN v.codigo IS NOT NULL THEN 'vendedor' ELSE 'administrador' END AS rol,
                    COALESCE(v.nombre, a.nombre, 'Administrador') AS nombre,
                    CASE WHEN COALESCE(v.estado, true) THEN 1 ELSE 0 END AS estado,
-                   COALESCE(ea.nombre, ev.nombre, evs.nombre) AS nombreEmpresa
+                   COALESCE(ea.nombre, ev.nombre, evs.nombre) AS nombreEmpresa,
+                   COALESCE(a.empresa_nit, v.empresa_id, sv.empresa_id) AS empresaNit,
+                   COALESCE(
+                       a.celular,
+                       (
+                           SELECT ax.celular
+                           FROM administrador ax
+                           WHERE ax.empresa_nit = COALESCE(v.empresa_id, sv.empresa_id)
+                           ORDER BY ax.codigo
+                           LIMIT 1
+                       )
+                   ) AS empresaTelefono
             FROM cuenta c
             LEFT JOIN vendedor v ON v.codigo = c.codigo
             LEFT JOIN administrador a ON a.codigo = c.codigo

@@ -49,7 +49,9 @@ class AutenticacionServicioImplTest {
                 "vendedor",
                 "Laura",
                 0,
-                "Empresa Uno"
+                "Empresa Uno",
+                900123456L,
+                3001234567L
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
@@ -70,7 +72,9 @@ class AutenticacionServicioImplTest {
                 "vendedor",
                 "Laura",
                 1,
-                "Empresa Uno"
+                "Empresa Uno",
+                900123456L,
+                3001234567L
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
@@ -83,6 +87,8 @@ class AutenticacionServicioImplTest {
         ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
         verify(jwtUtils).generarToken(eq("vendedor@correo.com"), captor.capture());
         assertEquals("Empresa Uno", captor.getValue().get("nombreEmpresa"));
+        assertEquals(900123456L, captor.getValue().get("companyNit"));
+        assertEquals(3001234567L, captor.getValue().get("companyPhone"));
     }
 
     private LoginCuentaDTO crearCuentaLogin(
@@ -92,7 +98,9 @@ class AutenticacionServicioImplTest {
             String rol,
             String nombre,
             Integer estado,
-            String nombreEmpresa
+            String nombreEmpresa,
+            Long empresaNit,
+            Long empresaTelefono
     ) {
         return new LoginCuentaDTO() {
             @Override
@@ -128,6 +136,16 @@ class AutenticacionServicioImplTest {
             @Override
             public String getNombreEmpresa() {
                 return nombreEmpresa;
+            }
+
+            @Override
+            public Long getEmpresaNit() {
+                return empresaNit;
+            }
+
+            @Override
+            public Long getEmpresaTelefono() {
+                return empresaTelefono;
             }
         };
     }
