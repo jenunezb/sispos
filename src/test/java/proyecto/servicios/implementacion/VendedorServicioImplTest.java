@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.VendedorDTO;
+import proyecto.entidades.TipoPerfilVendedor;
 import proyecto.entidades.Vendedor;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
@@ -40,6 +41,7 @@ class VendedorServicioImplTest {
         vendedor.setCorreo("juan@correo.com");
         vendedor.setTelefono("3001234567");
         vendedor.setEstado(true);
+        vendedor.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
         vendedor.setCiudad(null);
 
         when(vendedorRepository.findVisiblesByEmpresaNit(900123456L)).thenReturn(List.of(vendedor));
@@ -48,5 +50,6 @@ class VendedorServicioImplTest {
 
         assertEquals(1, respuesta.size());
         assertEquals("SIN CIUDAD", respuesta.get(0).ciudad());
+        assertEquals("PRODUCCION", respuesta.get(0).perfil());
     }
 }
