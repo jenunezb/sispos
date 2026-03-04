@@ -32,6 +32,8 @@ public class VentaServicioImpl implements VentaServicio {
     private final AdministradorRepository administradorRepository;
     private final ClienteRepository clienteRepository;
     private final PrecioClienteProductoRepository precioClienteProductoRepository;
+    private final InventarioProduccionRepository inventarioProduccionRepository;
+    private final MovimientoProduccionRepository movimientoProduccionRepository;
 
     @Override
     @Transactional
@@ -84,6 +86,13 @@ public class VentaServicioImpl implements VentaServicio {
         Sede sede = sedeRepository.findById(dto.sedeId())
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
+        if (esVendedorProduccion(vendedor)) {
+            Sede sedeProduccion = obtenerSedeDesdeVendedor(vendedor);
+            if (!sedeProduccion.getId().equals(sede.getId())) {
+                throw new RuntimeException("El perfil produccion solo puede vender sobre su sede asignada");
+            }
+        }
+
         Cliente cliente = null;
         if (dto.clienteId() != null) {
             cliente = clienteRepository.findById(dto.clienteId())
@@ -113,6 +122,8 @@ public class VentaServicioImpl implements VentaServicio {
         double total = 0;
         List<DetalleVenta> detalles = new ArrayList<>();
 
+        boolean ventaProduccion = esVendedorProduccion(vendedor);
+
         for (DetalleVentaDTO d : dto.detalles()) {
 
             if (d.cantidad() == null || d.cantidad() <= 0) {
@@ -128,60 +139,11 @@ public class VentaServicioImpl implements VentaServicio {
                 Producto producto = productoRepository.findById(d.productoId())
                         .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-                if (!producto.getMateriasPrimas().isEmpty()) {
-
-                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                                .findByMateriaPrimaCodigoAndSedeId(
-                                        pmp.getMateriaPrima().getCodigo(),
-                                        sede.getId())
-                                .orElseThrow(() -> new RuntimeException(
-                                        "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                                ));
-
-                        double mlNecesarios = pmp.getMlConsumidos() * d.cantidad();
-
-                        if (mpSede.getCantidadActualMl() < mlNecesarios) {
-                            throw new RuntimeException(
-                                    "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
-                            );
-                        }
-
-                        mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
-                        materiaPrimaSedeRepository.save(mpSede);
-                    }
-
+                if (ventaProduccion) {
+                    descontarInventarioProduccion(producto, sede, d.cantidad(), vendedor, cliente);
                 } else {
-
-                    Inventario inventario = inventarioRepository
-                            .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
-                            .orElseThrow(() -> new RuntimeException(
-                                    "No hay inventario para " + producto.getNombre()
-                            ));
-
-                    if (inventario.getStockActual() < d.cantidad()) {
-                        throw new RuntimeException(
-                                "Stock insuficiente para " + producto.getNombre()
-                        );
-                    }
-
-                    inventario.setStockActual(inventario.getStockActual() - d.cantidad());
-                    inventarioRepository.save(inventario);
+                    procesarDescuentoInventarioGeneral(producto, sede, d.cantidad());
                 }
-
-                MovimientoInventario movimiento = new MovimientoInventario();
-                movimiento.setProducto(producto);
-                movimiento.setSede(sede);
-                movimiento.setTipo(TipoMovimiento.SALIDA);
-                movimiento.setCantidad(d.cantidad());
-                movimiento.setObservacion("Venta de producto");
-                movimiento.setFecha(
-                        ZonedDateTime.now(ZoneId.of("America/Bogota"))
-                                .toLocalDateTime()
-                );
-
-                movimientoInventarioRepository.save(movimiento);
 
                 Double precioUnitario = producto.getPrecioVenta();
                 if (cliente != null) {
@@ -198,6 +160,9 @@ public class VentaServicioImpl implements VentaServicio {
             }
 
             else {
+                if (ventaProduccion) {
+                    throw new RuntimeException("Produccion solo puede despachar productos del catalogo");
+                }
 
                 if (d.nombreLibre() == null || d.precioUnitario() == null) {
                     throw new RuntimeException("Producto rapido invalido");
@@ -216,6 +181,96 @@ public class VentaServicioImpl implements VentaServicio {
         venta.setTotal(total);
 
         return ventaRepository.save(venta);
+    }
+
+    private void procesarDescuentoInventarioGeneral(Producto producto, Sede sede, Integer cantidad) {
+        if (!producto.getMateriasPrimas().isEmpty()) {
+
+            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+
+                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                        .findByMateriaPrimaCodigoAndSedeId(
+                                pmp.getMateriaPrima().getCodigo(),
+                                sede.getId())
+                        .orElseThrow(() -> new RuntimeException(
+                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
+                        ));
+
+                double mlNecesarios = pmp.getMlConsumidos() * cantidad;
+
+                if (mpSede.getCantidadActualMl() < mlNecesarios) {
+                    throw new RuntimeException(
+                            "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
+                    );
+                }
+
+                mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
+                materiaPrimaSedeRepository.save(mpSede);
+            }
+
+        } else {
+
+            Inventario inventario = inventarioRepository
+                    .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "No hay inventario para " + producto.getNombre()
+                    ));
+
+            if (inventario.getStockActual() < cantidad) {
+                throw new RuntimeException(
+                        "Stock insuficiente para " + producto.getNombre()
+                );
+            }
+
+            inventario.setStockActual(inventario.getStockActual() - cantidad);
+            inventarioRepository.save(inventario);
+        }
+
+        MovimientoInventario movimiento = new MovimientoInventario();
+        movimiento.setProducto(producto);
+        movimiento.setSede(sede);
+        movimiento.setTipo(TipoMovimiento.SALIDA);
+        movimiento.setCantidad(cantidad);
+        movimiento.setObservacion("Venta de producto");
+        movimiento.setFecha(
+                ZonedDateTime.now(ZoneId.of("America/Bogota"))
+                        .toLocalDateTime()
+        );
+
+        movimientoInventarioRepository.save(movimiento);
+    }
+
+    private void descontarInventarioProduccion(
+            Producto producto,
+            Sede sede,
+            Integer cantidad,
+            Vendedor vendedor,
+            Cliente cliente
+    ) {
+        InventarioProduccion inventario = inventarioProduccionRepository
+                .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Inventario de produccion insuficiente para " + producto.getNombre()
+                ));
+
+        if (inventario.getStockActual() < cantidad) {
+            throw new RuntimeException("Stock de produccion insuficiente para " + producto.getNombre());
+        }
+
+        inventario.setStockActual(inventario.getStockActual() - cantidad);
+        inventario.setDespachadoAcumulado(inventario.getDespachadoAcumulado() + cantidad);
+        inventarioProduccionRepository.save(inventario);
+
+        MovimientoProduccion movimiento = new MovimientoProduccion();
+        movimiento.setProducto(producto);
+        movimiento.setSede(sede);
+        movimiento.setCliente(cliente);
+        movimiento.setVendedor(vendedor);
+        movimiento.setTipo(TipoMovimientoProduccion.DESPACHO);
+        movimiento.setCantidad(cantidad);
+        movimiento.setObservacion("Despacho por venta");
+
+        movimientoProduccionRepository.save(movimiento);
     }
 
     @Override
@@ -359,5 +414,12 @@ public class VentaServicioImpl implements VentaServicio {
         }
 
         throw new RuntimeException("El vendedor no tiene empresa asociada");
+    }
+
+    private Sede obtenerSedeDesdeVendedor(Vendedor vendedor) {
+        if (vendedor.getSede() == null) {
+            throw new RuntimeException("El perfil de produccion no tiene sede asociada");
+        }
+        return vendedor.getSede();
     }
 }

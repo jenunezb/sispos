@@ -13,6 +13,7 @@ import proyecto.servicios.interfaces.ProduccionServicio;
 import proyecto.servicios.interfaces.VentaServicio;
 import proyecto.utils.JWTUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -71,6 +72,34 @@ public class ProduccionController {
     ) {
         return ResponseEntity.ok(
                 produccionServicio.listarPreciosCliente(obtenerCorreo(authorization), clienteId)
+        );
+    }
+
+    @PostMapping("/inventario/produccion")
+    public ResponseEntity<Void> registrarProduccion(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProduccionRegistroDTO dto
+    ) {
+        produccionServicio.registrarProduccion(obtenerCorreo(authorization), dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/inventario")
+    public ResponseEntity<List<InventarioProduccionDTO>> listarInventarioProduccion(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarInventarioProduccion(obtenerCorreo(authorization))
+        );
+    }
+
+    @GetMapping("/informe-diario")
+    public ResponseEntity<InformeProduccionDiaDTO> obtenerInformeDiario(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.obtenerInformeDiario(obtenerCorreo(authorization), fecha)
         );
     }
 
