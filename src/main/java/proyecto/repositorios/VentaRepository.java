@@ -32,7 +32,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         SELECT v
         FROM Venta v
         WHERE v.sede.id = :sedeId
-          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     List<Venta> findBySedeId(@Param("sedeId") Long sedeId);
 
@@ -41,7 +41,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         FROM Venta v
         WHERE v.sede.id = :sedeId
           AND v.fecha BETWEEN :desde AND :hasta
-          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     List<Venta> findBySedeIdAndFechaBetween(
             @Param("sedeId") Long sedeId,
@@ -59,7 +59,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         SELECT COALESCE(SUM(v.total), 0)
         FROM Venta v
         WHERE v.sede.id = :sedeId
-          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     Double totalVentasPorSede(@Param("sedeId") Long sedeId);
 
@@ -78,7 +78,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -91,7 +91,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Long cantidadVentasEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -105,7 +105,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.modoPago = 'EFECTIVO'
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasEntreFechasEfectivoPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -119,7 +119,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.modoPago = 'TRANSFERENCIA'
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasEntreFechasTransferenciaPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -132,7 +132,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
@@ -160,7 +160,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     SELECT COUNT(v)
     FROM Venta v
     WHERE v.sede.id = :sedeId
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Long cantidadVentasPorSede(@Param("sedeId") Long sedeId);
 
@@ -169,7 +169,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Long cantidadVentasPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
@@ -206,7 +206,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
       AND v.fecha BETWEEN :desde AND :hasta
       AND v.modoPago = proyecto.entidades.ModoPago.EFECTIVO
       AND v.anulado = false
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasEfectivoPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
@@ -221,7 +221,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
       AND v.fecha BETWEEN :desde AND :hasta
       AND v.modoPago = proyecto.entidades.ModoPago.TRANSFERENCIA
       AND v.anulado = false
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasTransferenciaPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
@@ -236,8 +236,9 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         FROM Venta v
         WHERE v.sede.id = :sedeId
           AND v.anulado = true
-          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     List<Venta> findBySedeIdAndAnuladoTrue(@Param("sedeId") Long sedeId);
 
 }
+

@@ -24,7 +24,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         JOIN d.producto p
         JOIN d.venta v
         WHERE v.sede.id = :sedeId
-          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     Double costoProduccionPorSede(@Param("sedeId") Long sedeId);
 
@@ -47,7 +47,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     JOIN d.venta v
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double costoProduccionPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
@@ -62,7 +62,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     JOIN d.venta v
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double costoProduccionEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -72,3 +72,4 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
 
 
 }
+
