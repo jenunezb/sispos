@@ -20,6 +20,14 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             LocalDateTime hasta
     );
 
+    List<Venta> findByVendedorCorreoOrderByFechaDesc(String correo);
+
+    List<Venta> findByVendedorCorreoAndFechaBetweenOrderByFechaDesc(
+            String correo,
+            LocalDateTime desde,
+            LocalDateTime hasta
+    );
+
     List<Venta> findBySedeId(Long sedeId);
 
     List<Venta> findBySedeIdAndFechaBetween(

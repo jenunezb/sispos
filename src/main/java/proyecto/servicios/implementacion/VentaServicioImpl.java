@@ -3,7 +3,10 @@ package proyecto.servicios.implementacion;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import proyecto.dto.*;
+import proyecto.dto.DetalleVentaDTO;
+import proyecto.dto.DetalleVentaResponseDTO;
+import proyecto.dto.VentaRecuestDTO;
+import proyecto.dto.VentaResponseDTO;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.VentaServicio;
@@ -27,13 +30,33 @@ public class VentaServicioImpl implements VentaServicio {
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final InventarioRepository inventarioRepository;
     private final AdministradorRepository administradorRepository;
+    private final ClienteRepository clienteRepository;
+    private final PrecioClienteProductoRepository precioClienteProductoRepository;
 
+    @Override
     @Transactional
     public Venta crearVenta(VentaRecuestDTO dto) {
+        return crearVentaInterna(dto, false);
+    }
 
-        // ===============================
-        // 🔹 VALIDAR USUARIO (VENDEDOR O ADMIN)
-        // ===============================
+    @Override
+    @Transactional
+    public Venta crearVentaProduccion(String correoProduccion, VentaRecuestDTO dto) {
+        VentaRecuestDTO dtoConCorreo = new VentaRecuestDTO(
+                correoProduccion,
+                dto.sedeId(),
+                dto.clienteId(),
+                dto.detalles(),
+                dto.modoPago()
+        );
+        return crearVentaInterna(dtoConCorreo, true);
+    }
+
+    private Venta crearVentaInterna(VentaRecuestDTO dto, boolean exigirPerfilProduccion) {
+
+        if (dto.detalles() == null || dto.detalles().isEmpty()) {
+            throw new RuntimeException("La venta debe contener al menos un detalle");
+        }
 
         Optional<Vendedor> vendedorOpt = vendedorRepository.findByCorreo(dto.correo());
 
@@ -41,45 +64,60 @@ public class VentaServicioImpl implements VentaServicio {
         Administrador administrador = null;
 
         if (vendedorOpt.isPresent()) {
-
             vendedor = vendedorOpt.get();
 
+            if (exigirPerfilProduccion && vendedor.getTipoPerfil() != TipoPerfilVendedor.PRODUCCION) {
+                throw new RuntimeException("Solo el perfil de produccion puede usar este recurso");
+            }
+
         } else {
+
+            if (exigirPerfilProduccion) {
+                throw new RuntimeException("Usuario de produccion no autorizado");
+            }
 
             administrador = administradorRepository
                     .findByCorreo(dto.correo())
                     .orElseThrow(() -> new RuntimeException("Usuario no autorizado"));
         }
 
-        // ===============================
-        // 🔹 VALIDAR SEDE
-        // ===============================
-
         Sede sede = sedeRepository.findById(dto.sedeId())
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
-        // ===============================
-        // 🔹 CREAR VENTA
-        // ===============================
+        Cliente cliente = null;
+        if (dto.clienteId() != null) {
+            cliente = clienteRepository.findById(dto.clienteId())
+                    .filter(Cliente::getActivo)
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o inactivo"));
+        }
+
+        if (esVendedorProduccion(vendedor)) {
+            if (cliente == null) {
+                throw new RuntimeException("Para perfil produccion el cliente es obligatorio");
+            }
+
+            Empresa empresaProduccion = obtenerEmpresaVendedor(vendedor);
+            if (cliente.getEmpresa() == null || !empresaProduccion.getNit().equals(cliente.getEmpresa().getNit())) {
+                throw new RuntimeException("El cliente no pertenece a la empresa del perfil produccion");
+            }
+        }
 
         Venta venta = new Venta();
         venta.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
-
-        // 🔥 AQUÍ ESTÁ LO IMPORTANTE
         venta.setVendedor(vendedor);
         venta.setAdministrador(administrador);
-
         venta.setSede(sede);
+        venta.setCliente(cliente);
         venta.setModoPago(dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO);
 
         double total = 0;
         List<DetalleVenta> detalles = new ArrayList<>();
 
-        // ===============================
-        // 🔹 PROCESAR DETALLES
-        // ===============================
-
         for (DetalleVentaDTO d : dto.detalles()) {
+
+            if (d.cantidad() == null || d.cantidad() <= 0) {
+                throw new RuntimeException("La cantidad del detalle debe ser mayor a cero");
+            }
 
             DetalleVenta detalle = new DetalleVenta();
             detalle.setCantidad(d.cantidad());
@@ -145,15 +183,24 @@ public class VentaServicioImpl implements VentaServicio {
 
                 movimientoInventarioRepository.save(movimiento);
 
+                Double precioUnitario = producto.getPrecioVenta();
+                if (cliente != null) {
+                    Optional<PrecioClienteProducto> precioCliente = precioClienteProductoRepository
+                            .findByClienteIdAndProductoCodigo(cliente.getId(), producto.getCodigo());
+                    if (precioCliente.isPresent() && Boolean.TRUE.equals(precioCliente.get().getActivo())) {
+                        precioUnitario = precioCliente.get().getPrecioVenta();
+                    }
+                }
+
                 detalle.setProducto(producto);
-                detalle.setPrecioUnitario(producto.getPrecioVenta());
-                detalle.setSubtotal(producto.getPrecioVenta() * d.cantidad());
+                detalle.setPrecioUnitario(precioUnitario);
+                detalle.setSubtotal(precioUnitario * d.cantidad());
             }
 
             else {
 
                 if (d.nombreLibre() == null || d.precioUnitario() == null) {
-                    throw new RuntimeException("Producto rápido inválido");
+                    throw new RuntimeException("Producto rapido invalido");
                 }
 
                 detalle.setNombreLibre(d.nombreLibre());
@@ -196,6 +243,29 @@ public class VentaServicioImpl implements VentaServicio {
 
     @Override
     @Transactional
+    public List<VentaResponseDTO> listarVentasPorCorreoVendedor(String correoVendedor) {
+        return ventaRepository.findByVendedorCorreoOrderByFechaDesc(correoVendedor)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public List<VentaResponseDTO> listarVentasPorCorreoVendedorEntreFechas(
+            String correoVendedor,
+            LocalDateTime desde,
+            LocalDateTime hasta
+    ) {
+        return ventaRepository
+                .findByVendedorCorreoAndFechaBetweenOrderByFechaDesc(correoVendedor, desde, hasta)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
     public List<VentaResponseDTO> listarVentasPorSede(Long sedeId) {
         return ventaRepository.findBySedeId(sedeId)
                 .stream()
@@ -217,9 +287,8 @@ public class VentaServicioImpl implements VentaServicio {
                 .toList();
     }
 
-    // 🔹 Método helper para convertir a DTO de respuesta
+    @Override
     public VentaResponseDTO mapToResponse(Venta venta) {
-        // Determinar el nombre del usuario que hizo la venta
         String nombreUsuario;
         if (venta.getVendedor() != null) {
             nombreUsuario = venta.getVendedor().getNombre();
@@ -233,8 +302,10 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getId(),
                 venta.getFecha(),
                 venta.getTotal(),
-                nombreUsuario,  // ahora puede ser vendedor o administrador
+                nombreUsuario,
                 venta.getSede().getUbicacion(),
+                venta.getCliente() != null ? venta.getCliente().getId() : null,
+                venta.getCliente() != null ? venta.getCliente().getNombre() : null,
                 venta.getDetalles().stream()
                         .map(d -> new DetalleVentaResponseDTO(
                                 d.getProducto() != null ? d.getProducto().getCodigo() : null,
@@ -242,12 +313,11 @@ public class VentaServicioImpl implements VentaServicio {
                                 d.getCantidad(),
                                 d.getPrecioUnitario(),
                                 d.getSubtotal(),
-                                d.getNombreLibre() // solo para referencia, puede ser null si es normal
+                                d.getNombreLibre()
                         ))
                         .toList()
         );
     }
-
 
     @Override
     @Transactional
@@ -257,7 +327,7 @@ public class VentaServicioImpl implements VentaServicio {
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
 
         if (venta.getAnulado()) {
-            throw new RuntimeException("La venta ya está anulada");
+            throw new RuntimeException("La venta ya esta anulada");
         }
 
         venta.setAnulado(true);
@@ -275,4 +345,19 @@ public class VentaServicioImpl implements VentaServicio {
                 .toList();
     }
 
+    private boolean esVendedorProduccion(Vendedor vendedor) {
+        return vendedor != null && vendedor.getTipoPerfil() == TipoPerfilVendedor.PRODUCCION;
+    }
+
+    private Empresa obtenerEmpresaVendedor(Vendedor vendedor) {
+        if (vendedor.getEmpresa() != null) {
+            return vendedor.getEmpresa();
+        }
+
+        if (vendedor.getSede() != null && vendedor.getSede().getEmpresa() != null) {
+            return vendedor.getSede().getEmpresa();
+        }
+
+        throw new RuntimeException("El vendedor no tiene empresa asociada");
+    }
 }

@@ -9,6 +9,8 @@ public record VentaResponseDTO(
         Double total,
         String vendedorNombre,
         String sedeUbicacion,
+        Long clienteId,
+        String clienteNombre,
         List<DetalleVentaResponseDTO> detalles
 ) {
 }
