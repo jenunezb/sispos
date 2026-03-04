@@ -60,7 +60,7 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         Cliente cliente = clienteRepository.findByIdAndEmpresaNit(clienteId, empresa.getNit())
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado para la empresa"));
 
-        Producto producto = productoRepository.findById(dto.productoCodigo())
+        Producto producto = productoRepository.findById(dto.productoId())
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
         if (producto.getEmpresa() == null || !empresa.getNit().equals(producto.getEmpresa().getNit())) {
@@ -68,12 +68,12 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         }
 
         PrecioClienteProducto precio = precioClienteProductoRepository
-                .findByClienteIdAndProductoCodigo(clienteId, dto.productoCodigo())
+                .findByClienteIdAndProductoCodigo(clienteId, dto.productoId())
                 .orElseGet(PrecioClienteProducto::new);
 
         precio.setCliente(cliente);
         precio.setProducto(producto);
-        precio.setPrecioVenta(dto.precioVenta());
+        precio.setPrecioVenta(dto.precio());
         precio.setActivo(true);
 
         PrecioClienteProducto guardado = precioClienteProductoRepository.save(precio);
@@ -102,6 +102,21 @@ public class ProduccionServicioImpl implements ProduccionServicio {
                         p.getProducto().getNombre(),
                         p.getPrecioVenta(),
                         p.getActivo()
+                ))
+                .toList();
+    }
+
+
+    @Override
+    public List<ProductoProduccionDTO> listarProductos(String correoProduccion) {
+        Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
+
+        return productoRepository.findByActivoTrueAndEmpresaNitOrderByCodigoAsc(empresa.getNit())
+                .stream()
+                .map(p -> new ProductoProduccionDTO(
+                        p.getCodigo(),
+                        p.getNombre(),
+                        p.getPrecioVenta()
                 ))
                 .toList();
     }

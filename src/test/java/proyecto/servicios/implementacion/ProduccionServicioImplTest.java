@@ -7,9 +7,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.ClienteCrearDTO;
 import proyecto.dto.PrecioClienteRequestDTO;
-import proyecto.entidades.*;
-import proyecto.repositorios.*;
+import proyecto.entidades.Cliente;
+import proyecto.entidades.Empresa;
+import proyecto.entidades.PrecioClienteProducto;
+import proyecto.entidades.Producto;
+import proyecto.entidades.TipoPerfilVendedor;
+import proyecto.entidades.Vendedor;
+import proyecto.repositorios.ClienteRepository;
+import proyecto.repositorios.PrecioClienteProductoRepository;
+import proyecto.repositorios.ProductoRepository;
+import proyecto.repositorios.VendedorRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,5 +101,30 @@ class ProduccionServicioImplTest {
 
         assertEquals(100L, respuesta.id());
         assertEquals(15500.0, respuesta.precioVenta());
+    }
+
+    @Test
+    void listarProductosDebeFiltrarPorEmpresa() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+
+        Producto producto = new Producto();
+        producto.setCodigo(30L);
+        producto.setNombre("Producto Listado");
+        producto.setPrecioVenta(20000.0);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(productoRepository.findByActivoTrueAndEmpresaNitOrderByCodigoAsc(900123456L))
+                .thenReturn(List.of(producto));
+
+        var respuesta = produccionServicio.listarProductos("prod@correo.com");
+
+        assertEquals(1, respuesta.size());
+        assertEquals(30L, respuesta.get(0).id());
     }
 }

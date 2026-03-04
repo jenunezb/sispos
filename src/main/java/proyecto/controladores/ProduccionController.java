@@ -39,6 +39,17 @@ public class ProduccionController {
         );
     }
 
+
+
+    @GetMapping("/productos")
+    public ResponseEntity<List<ProductoProduccionDTO>> listarProductos(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarProductos(obtenerCorreo(authorization))
+        );
+    }
+
     @PostMapping("/clientes/{clienteId}/precios")
     public ResponseEntity<PrecioClienteDTO> guardarPrecio(
             @RequestHeader("Authorization") String authorization,

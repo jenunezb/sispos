@@ -13,4 +13,6 @@ public interface ProduccionServicio {
     PrecioClienteDTO guardarPrecioCliente(String correoProduccion, Long clienteId, PrecioClienteRequestDTO dto);
 
     List<PrecioClienteDTO> listarPreciosCliente(String correoProduccion, Long clienteId);
+
+    List<ProductoProduccionDTO> listarProductos(String correoProduccion);
 }
