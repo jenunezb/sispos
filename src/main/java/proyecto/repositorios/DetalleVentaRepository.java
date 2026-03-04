@@ -15,6 +15,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         FROM DetalleVenta d
         JOIN d.producto p
         JOIN d.venta v
+        LEFT JOIN v.vendedor vend
     """)
     Double costoProduccionTotal();
 
@@ -23,8 +24,9 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         FROM DetalleVenta d
         JOIN d.producto p
         JOIN d.venta v
+        LEFT JOIN v.vendedor vend
         WHERE v.sede.id = :sedeId
-          AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+          AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     Double costoProduccionPorSede(@Param("sedeId") Long sedeId);
 
@@ -33,6 +35,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     FROM DetalleVenta d
     JOIN d.producto p
     JOIN d.venta v
+        LEFT JOIN v.vendedor vend
     WHERE v.fecha BETWEEN :desde AND :hasta
 """)
     Double costoProduccionEntreFechas(
@@ -45,9 +48,10 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     FROM DetalleVenta d
     JOIN d.producto p
     JOIN d.venta v
+        LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double costoProduccionPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
@@ -60,9 +64,10 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     FROM DetalleVenta d
     JOIN d.producto p
     JOIN d.venta v
+        LEFT JOIN v.vendedor vend
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (v.vendedor IS NULL OR v.vendedor.tipoPerfil IS NULL OR v.vendedor.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double costoProduccionEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -72,4 +77,5 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
 
 
 }
+
 

@@ -61,26 +61,28 @@ public class VentaServicioImpl implements VentaServicio {
         }
 
         Optional<Vendedor> vendedorOpt = vendedorRepository.findByCorreo(dto.correo());
+        Optional<Administrador> adminOpt = administradorRepository.findByCorreo(dto.correo());
 
         Vendedor vendedor = null;
         Administrador administrador = null;
 
-        if (vendedorOpt.isPresent()) {
-            vendedor = vendedorOpt.get();
+        if (exigirPerfilProduccion) {
+            vendedor = vendedorOpt
+                    .orElseThrow(() -> new RuntimeException("Usuario de produccion no autorizado"));
 
-            if (exigirPerfilProduccion && vendedor.getTipoPerfil() != TipoPerfilVendedor.PRODUCCION) {
+            if (vendedor.getTipoPerfil() != TipoPerfilVendedor.PRODUCCION) {
                 throw new RuntimeException("Solo el perfil de produccion puede usar este recurso");
             }
-
         } else {
-
-            if (exigirPerfilProduccion) {
-                throw new RuntimeException("Usuario de produccion no autorizado");
+            // En flujo general priorizamos administrador para evitar clasificar su venta como produccion
+            // cuando hay correos duplicados entre tablas de usuarios heredadas.
+            if (adminOpt.isPresent()) {
+                administrador = adminOpt.get();
+            } else if (vendedorOpt.isPresent()) {
+                vendedor = vendedorOpt.get();
+            } else {
+                throw new RuntimeException("Usuario no autorizado");
             }
-
-            administrador = administradorRepository
-                    .findByCorreo(dto.correo())
-                    .orElseThrow(() -> new RuntimeException("Usuario no autorizado"));
         }
 
         Sede sede;
@@ -425,5 +427,6 @@ public class VentaServicioImpl implements VentaServicio {
         return vendedor.getSede();
     }
 }
+
 
 
