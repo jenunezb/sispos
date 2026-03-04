@@ -86,9 +86,6 @@ public class VentaServicioImpl implements VentaServicio {
         Sede sede;
         if (esVendedorProduccion(vendedor)) {
             Sede sedeProduccion = obtenerSedeDesdeVendedor(vendedor);
-            if (dto.sedeId() != null && !sedeProduccion.getId().equals(dto.sedeId())) {
-                throw new RuntimeException("El perfil produccion solo puede vender sobre su sede asignada");
-            }
             sede = sedeProduccion;
         } else {
             if (dto.sedeId() == null) {
@@ -428,4 +425,5 @@ public class VentaServicioImpl implements VentaServicio {
         return vendedor.getSede();
     }
 }
+
 
