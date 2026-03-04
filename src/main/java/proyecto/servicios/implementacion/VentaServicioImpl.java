@@ -83,14 +83,19 @@ public class VentaServicioImpl implements VentaServicio {
                     .orElseThrow(() -> new RuntimeException("Usuario no autorizado"));
         }
 
-        Sede sede = sedeRepository.findById(dto.sedeId())
-                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
-
+        Sede sede;
         if (esVendedorProduccion(vendedor)) {
             Sede sedeProduccion = obtenerSedeDesdeVendedor(vendedor);
-            if (!sedeProduccion.getId().equals(sede.getId())) {
+            if (dto.sedeId() != null && !sedeProduccion.getId().equals(dto.sedeId())) {
                 throw new RuntimeException("El perfil produccion solo puede vender sobre su sede asignada");
             }
+            sede = sedeProduccion;
+        } else {
+            if (dto.sedeId() == null) {
+                throw new RuntimeException("Sede no encontrada");
+            }
+            sede = sedeRepository.findById(dto.sedeId())
+                    .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
         }
 
         Cliente cliente = null;
@@ -423,3 +428,4 @@ public class VentaServicioImpl implements VentaServicio {
         return vendedor.getSede();
     }
 }
+
