@@ -16,6 +16,10 @@ import java.io.Serializable;
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class Vendedor extends Usuario implements Serializable {
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_perfil", nullable = false)
+    private TipoPerfilVendedor tipoPerfil = TipoPerfilVendedor.VENDEDOR;
+
     @ManyToOne
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;

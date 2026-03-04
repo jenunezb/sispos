@@ -53,6 +53,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         }
         vendedor.setCorreo(usuarioDTO.correo());
         vendedor.setEstado(true);
+        vendedor.setTipoPerfil(parsePerfil(usuarioDTO.perfil()));
         String passwordEncriptada = passwordEncoder.encode(usuarioDTO.password());
         vendedor.setPassword(passwordEncriptada);
 
@@ -100,6 +101,19 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         Ciudad nuevaCiudadDefault = new Ciudad();
         nuevaCiudadDefault.setNombre(nombreDefault);
         return ciudadRepo.save(nuevaCiudadDefault);
+    }
+
+
+    private TipoPerfilVendedor parsePerfil(String perfil) {
+        if (perfil == null || perfil.isBlank()) {
+            return TipoPerfilVendedor.VENDEDOR;
+        }
+
+        if ("PRODUCCION".equalsIgnoreCase(perfil.trim())) {
+            return TipoPerfilVendedor.PRODUCCION;
+        }
+
+        return TipoPerfilVendedor.VENDEDOR;
     }
 
     public boolean estaRepetidaCedula(String cedula) {

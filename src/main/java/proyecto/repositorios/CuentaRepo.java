@@ -20,7 +20,7 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
             SELECT c.codigo AS codigo,
                    c.correo AS correo,
                    c.password AS password,
-                   CASE WHEN v.codigo IS NOT NULL THEN 'vendedor' ELSE 'administrador' END AS rol,
+                   CASE WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'PRODUCCION' THEN 'produccion' WHEN v.codigo IS NOT NULL THEN 'vendedor' ELSE 'administrador' END AS rol,
                    COALESCE(v.nombre, a.nombre, 'Administrador') AS nombre,
                    CASE WHEN COALESCE(v.estado, true) THEN 1 ELSE 0 END AS estado,
                    COALESCE(ea.nombre, ev.nombre, evs.nombre) AS nombreEmpresa,

@@ -56,7 +56,7 @@ class AdministradorServicioImplTest {
 
     @Test
     void crearVendedorDebeAsignarSedeDeLaEmpresa() throws Exception {
-        UsuarioDTO dto = new UsuarioDTO("123", "Vendedor", "Bogotá", "3000000000", "secret", "vendedor@correo.com", true, 10L);
+        UsuarioDTO dto = new UsuarioDTO("123", "Vendedor", "Bogotá", "3000000000", "secret", "vendedor@correo.com", true, 10L, null);
 
         Empresa empresa = new Empresa();
         empresa.setNit(900123456L);
@@ -89,7 +89,7 @@ class AdministradorServicioImplTest {
 
     @Test
     void crearVendedorDebeFallarSiSedeNoPerteneceAEmpresa() {
-        UsuarioDTO dto = new UsuarioDTO("123", "Vendedor", "Bogotá", "3000000000", "secret", "vendedor@correo.com", true, 10L);
+        UsuarioDTO dto = new UsuarioDTO("123", "Vendedor", "Bogotá", "3000000000", "secret", "vendedor@correo.com", true, 10L, null);
 
         Empresa empresaAdmin = new Empresa();
         empresaAdmin.setNit(900123456L);
