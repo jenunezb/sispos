@@ -61,8 +61,9 @@ public class VentaServicioImpl implements VentaServicio {
             throw new RuntimeException("La venta debe contener al menos un detalle");
         }
 
-        Optional<Vendedor> vendedorOpt = vendedorRepository.findByCorreo(dto.correo());
-        Optional<Administrador> adminOpt = administradorRepository.findByCorreo(dto.correo());
+        String correo = dto.correo() == null ? "" : dto.correo().trim();
+        Optional<Vendedor> vendedorOpt = vendedorRepository.findByCorreoIgnoreCase(correo);
+        Optional<Administrador> adminOpt = administradorRepository.findByCorreoIgnoreCase(correo);
 
         Vendedor vendedor = null;
         Administrador administrador = null;

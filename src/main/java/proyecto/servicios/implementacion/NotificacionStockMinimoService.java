@@ -9,12 +9,13 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.Inventario;
 import proyecto.repositorios.AdministradorRepository;
 import proyecto.repositorios.InventarioRepository;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -137,16 +138,17 @@ public class NotificacionStockMinimoService {
 
         try {
             String telefono = normalizarTelefono(admin.getCelular().toString());
+            String textoCodificado = URLEncoder.encode(mensaje, StandardCharsets.UTF_8);
 
-            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(whatsappApiUrl)
-                    .queryParam("phone", telefono)
-                    .queryParam("text", mensaje);
+            StringBuilder url = new StringBuilder(whatsappApiUrl)
+                    .append("?phone=").append(telefono)
+                    .append("&text=").append(textoCodificado);
 
             if (whatsappApiKey != null && !whatsappApiKey.isBlank()) {
-                builder.queryParam("apikey", whatsappApiKey);
+                url.append("&apikey=").append(whatsappApiKey);
             }
 
-            restTemplate.getForEntity(builder.toUriString(), String.class);
+            restTemplate.getForEntity(url.toString(), String.class);
         } catch (RestClientException e) {
             log.warn("No se pudo enviar WhatsApp de stock minimo a {}: {}", admin.getCelular(), e.getMessage());
         }
