@@ -3,6 +3,7 @@ package proyecto.servicios.implementacion;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class NotificacionStockMinimoService {
     @Value("${notificaciones.whatsapp.prefijo-pais:57}")
     private String prefijoPais;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = crearRestTemplateConTimeout();
 
     public void evaluarYNotificar(Inventario inventario, int stockActual) {
         if (inventario == null) {
@@ -146,5 +147,11 @@ public class NotificacionStockMinimoService {
 
         return prefijoPais + soloDigitos;
     }
-}
 
+    private RestTemplate crearRestTemplateConTimeout() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(3000);
+        return new RestTemplate(factory);
+    }
+}
