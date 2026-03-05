@@ -100,11 +100,11 @@ public class NotificacionStockMinimoService {
     }
 
     private String construirMensaje(Inventario inventario, int stockActual, int stockMinimo) {
-        return "Alerta de stock minimo: el producto " + inventario.getProducto().getNombre()
+        return "Alerta de stock minimo del producto " + inventario.getProducto().getNombre()
                 + " en la sede " + inventario.getSede().getUbicacion()
                 + " llego al umbral minimo."
-                + " Stock actual: " + stockActual
-                + " unidades. Stock minimo configurado: " + stockMinimo + " unidades.";
+                + " Stock actual " + stockActual
+                + " unidades. Stock minimo configurado " + stockMinimo + " unidades.";
     }
 
     private void enviarCorreo(Administrador admin, Inventario inventario, String mensaje) {
