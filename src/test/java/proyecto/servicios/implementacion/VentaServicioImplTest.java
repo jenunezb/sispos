@@ -34,6 +34,7 @@ class VentaServicioImplTest {
     @Mock private PrecioClienteProductoRepository precioClienteProductoRepository;
     @Mock private InventarioProduccionRepository inventarioProduccionRepository;
     @Mock private MovimientoProduccionRepository movimientoProduccionRepository;
+    @Mock private NotificacionStockMinimoService notificacionStockMinimoService;
 
     @InjectMocks
     private VentaServicioImpl ventaServicio;
@@ -127,3 +128,5 @@ class VentaServicioImplTest {
         assertEquals(22L, ventaCaptor.getValue().getSede().getId());
     }
 }
+
+

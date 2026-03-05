@@ -19,7 +19,7 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "    :sedeId AS sedeId,\n" +
             "    p.nombre AS productoNombre,\n" +
             "\n" +
-            "    /* Inventario inicial antes del período */\n" +
+            "    /* Inventario inicial antes del perÃ­odo */\n" +
             "    COALESCE(SUM(\n" +
             "        CASE\n" +
             "            WHEN m.fecha < :fechaInicio AND m.tipo = 'ENTRADA' THEN m.cantidad\n" +
@@ -28,7 +28,7 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "        END\n" +
             "    ), 0) AS inventarioInicial,\n" +
             "\n" +
-            "    /* Entradas del período */\n" +
+            "    /* Entradas del perÃ­odo */\n" +
             "    COALESCE(SUM(\n" +
             "        CASE\n" +
             "            WHEN m.fecha BETWEEN :fechaInicio AND :fechaFin\n" +
@@ -131,4 +131,9 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
 
     Optional<Administrador> findByCorreo(String correo);
 
+    List<Administrador> findByEmpresaNit(Long nit);
+
 }
+
+
+

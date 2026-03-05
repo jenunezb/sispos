@@ -34,6 +34,7 @@ public class VentaServicioImpl implements VentaServicio {
     private final PrecioClienteProductoRepository precioClienteProductoRepository;
     private final InventarioProduccionRepository inventarioProduccionRepository;
     private final MovimientoProduccionRepository movimientoProduccionRepository;
+    private final NotificacionStockMinimoService notificacionStockMinimoService;
 
     @Override
     @Transactional
@@ -212,6 +213,12 @@ public class VentaServicioImpl implements VentaServicio {
                 materiaPrimaSedeRepository.save(mpSede);
             }
 
+            inventarioRepository.findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                    .ifPresent(inventario -> notificacionStockMinimoService.evaluarYNotificar(
+                            inventario,
+                            calcularStockDisponibleDesdeMateriaPrima(producto, sede)
+                    ));
+
         } else {
 
             Inventario inventario = inventarioRepository
@@ -228,6 +235,7 @@ public class VentaServicioImpl implements VentaServicio {
 
             inventario.setStockActual(inventario.getStockActual() - cantidad);
             inventarioRepository.save(inventario);
+            notificacionStockMinimoService.evaluarYNotificar(inventario, inventario.getStockActual());
         }
 
         MovimientoInventario movimiento = new MovimientoInventario();
@@ -404,6 +412,25 @@ public class VentaServicioImpl implements VentaServicio {
                 .toList();
     }
 
+    private int calcularStockDisponibleDesdeMateriaPrima(Producto producto, Sede sede) {
+        int stock = Integer.MAX_VALUE;
+
+        for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                    .findByMateriaPrimaCodigoAndSedeId(pmp.getMateriaPrima().getCodigo(), sede.getId())
+                    .orElse(null);
+
+            if (mpSede == null) {
+                return 0;
+            }
+
+            int unidades = (int) Math.floor(mpSede.getCantidadActualMl() / pmp.getMlConsumidos());
+            stock = Math.min(stock, unidades);
+        }
+
+        return stock == Integer.MAX_VALUE ? 0 : stock;
+    }
+
     private boolean esVendedorProduccion(Vendedor vendedor) {
         return vendedor != null && vendedor.getTipoPerfil() == TipoPerfilVendedor.PRODUCCION;
     }
@@ -427,6 +454,7 @@ public class VentaServicioImpl implements VentaServicio {
         return vendedor.getSede();
     }
 }
+
 
 
 
