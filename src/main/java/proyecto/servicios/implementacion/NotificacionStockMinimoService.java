@@ -16,6 +16,7 @@ import proyecto.repositorios.AdministradorRepository;
 import proyecto.repositorios.InventarioRepository;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,9 @@ public class NotificacionStockMinimoService {
 
     @Value("${notificaciones.whatsapp.habilitado:false}")
     private boolean whatsappHabilitado;
+
+    @Value("${notificaciones.correo.habilitado:true}")
+    private boolean correoHabilitado;
 
     @Value("${notificaciones.whatsapp.api-url:https://api.callmebot.com/whatsapp.php}")
     private String whatsappApiUrl;
@@ -77,8 +81,10 @@ public class NotificacionStockMinimoService {
         String mensaje = construirMensaje(inventario, stockActual, stockMinimo);
 
         for (Administrador admin : administradores) {
-            enviarCorreo(admin, inventario, mensaje);
-            enviarWhatsapp(admin, mensaje);
+            if (correoHabilitado) {
+                enviarCorreo(admin, inventario, mensaje);
+            }
+            enviarWhatsappAsync(admin, mensaje);
         }
 
         inventario.setAlertaStockMinimoActiva(true);
@@ -114,6 +120,14 @@ public class NotificacionStockMinimoService {
         } catch (Exception e) {
             log.warn("No se pudo enviar correo de stock minimo a {}: {}", admin.getCorreo(), e.getMessage());
         }
+    }
+
+    private void enviarWhatsappAsync(Administrador admin, String mensaje) {
+        if (!whatsappHabilitado || admin.getCelular() == null) {
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> enviarWhatsapp(admin, mensaje));
     }
 
     private void enviarWhatsapp(Administrador admin, String mensaje) {

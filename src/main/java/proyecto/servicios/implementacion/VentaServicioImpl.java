@@ -1,6 +1,6 @@
 package proyecto.servicios.implementacion;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import proyecto.dto.DetalleVentaDTO;
@@ -37,13 +37,13 @@ public class VentaServicioImpl implements VentaServicio {
     private final NotificacionStockMinimoService notificacionStockMinimoService;
 
     @Override
-    @Transactional
+    @Transactional(timeout = 20)
     public Venta crearVenta(VentaRecuestDTO dto) {
         return crearVentaInterna(dto, false);
     }
 
     @Override
-    @Transactional
+    @Transactional(timeout = 20)
     public Venta crearVentaProduccion(String correoProduccion, VentaRecuestDTO dto) {
         VentaRecuestDTO dtoConCorreo = new VentaRecuestDTO(
                 correoProduccion,
