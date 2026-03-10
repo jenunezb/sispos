@@ -19,6 +19,7 @@ import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.InformeInventarioDiaService;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
+import proyecto.servicios.interfaces.VentaServicio;
 import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
@@ -34,6 +35,7 @@ public class AdministradorController {
     private final ProductoServicio productoService;
     private final VendedorServicio vendedorServicio;
     private final InformeInventarioDiaService informeInventarioDiaService;
+    private final VentaServicio ventaServicio;
     private final JWTUtils jwtUtils;
     private final AdministradorRepository administradorRepository;
 
@@ -197,6 +199,29 @@ public class AdministradorController {
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, "Contraseña actualizada correctamente")
         );
+    }
+
+
+
+    @PatchMapping("/ventas/estado")
+    public ResponseEntity<MensajeDTO> cambiarEstadoVenta(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody CambiarEstadoVentaDTO dto
+    ) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        ventaServicio.cambiarEstadoVenta(dto.ventaId(), dto.valido(), admin.getEmpresa().getNit());
+
+        String msg = dto.valido()
+                ? "La venta fue marcada como válida"
+                : "La venta fue marcada como inválida";
+
+        return ResponseEntity.ok(new MensajeDTO(false, msg));
     }
 
     @PostMapping("/guardar")

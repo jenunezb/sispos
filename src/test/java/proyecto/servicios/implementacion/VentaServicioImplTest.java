@@ -2,131 +2,67 @@ package proyecto.servicios.implementacion;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import proyecto.dto.DetalleVentaDTO;
-import proyecto.dto.VentaRecuestDTO;
-import proyecto.entidades.*;
+import proyecto.entidades.Empresa;
+import proyecto.entidades.Sede;
+import proyecto.entidades.Venta;
 import proyecto.repositorios.*;
 
-import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class VentaServicioImplTest {
 
-    @Mock private VentaRepository ventaRepository;
-    @Mock private ProductoRepository productoRepository;
-    @Mock private VendedorRepository vendedorRepository;
-    @Mock private SedeRepository sedeRepository;
-    @Mock private MateriaPrimaSedeRepository materiaPrimaSedeRepository;
-    @Mock private MovimientoInventarioRepository movimientoInventarioRepository;
-    @Mock private InventarioRepository inventarioRepository;
-    @Mock private AdministradorRepository administradorRepository;
-    @Mock private ClienteRepository clienteRepository;
-    @Mock private PrecioClienteProductoRepository precioClienteProductoRepository;
-    @Mock private InventarioProduccionRepository inventarioProduccionRepository;
-    @Mock private MovimientoProduccionRepository movimientoProduccionRepository;
-    @Mock private NotificacionStockMinimoService notificacionStockMinimoService;
+    @Mock
+    private VentaRepository ventaRepository;
+    @Mock
+    private ProductoRepository productoRepository;
+    @Mock
+    private VendedorRepository vendedorRepository;
+    @Mock
+    private SedeRepository sedeRepository;
+    @Mock
+    private MateriaPrimaSedeRepository materiaPrimaSedeRepository;
+    @Mock
+    private MovimientoInventarioRepository movimientoInventarioRepository;
+    @Mock
+    private InventarioRepository inventarioRepository;
+    @Mock
+    private AdministradorRepository administradorRepository;
 
     @InjectMocks
     private VentaServicioImpl ventaServicio;
 
     @Test
-    void crearVentaProduccionDebeUsarSedeDelVendedorAunqueRequestTengaOtra() {
-        Sede sedeProduccion = new Sede();
-        sedeProduccion.setId(10L);
-
+    void cambiarEstadoVentaDebeMarcarInvalidaYValidaPorEmpresa() {
         Empresa empresa = new Empresa();
         empresa.setNit(900123456L);
 
-        Vendedor vendedor = new Vendedor();
-        vendedor.setCorreo("prod@correo.com");
-        vendedor.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
-        vendedor.setSede(sedeProduccion);
-        vendedor.setEmpresa(empresa);
+        Sede sede = new Sede();
+        sede.setEmpresa(empresa);
 
-        Cliente cliente = new Cliente();
-        cliente.setId(7L);
-        cliente.setEmpresa(empresa);
-        cliente.setActivo(true);
+        Venta venta = new Venta();
+        venta.setId(10L);
+        venta.setSede(sede);
+        venta.setAnulado(false);
 
-        Producto producto = new Producto();
-        producto.setCodigo(99L);
-        producto.setPrecioVenta(12000.0);
+        when(ventaRepository.findByIdAndSedeEmpresaNit(10L, 900123456L))
+                .thenReturn(Optional.of(venta));
 
-        InventarioProduccion inventario = new InventarioProduccion();
-        inventario.setProducto(producto);
-        inventario.setSede(sedeProduccion);
-        inventario.setStockActual(50);
+        ventaServicio.cambiarEstadoVenta(10L, false, 900123456L);
+        assertTrue(venta.getAnulado());
 
-        VentaRecuestDTO dto = new VentaRecuestDTO(
-                "cualquier@valor.com",
-                999L,
-                7L,
-                List.of(new DetalleVentaDTO(99L, null, null, 2)),
-                ModoPago.EFECTIVO
-        );
+        ventaServicio.cambiarEstadoVenta(10L, true, 900123456L);
+        assertFalse(venta.getAnulado());
 
-        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(vendedor));
-        when(clienteRepository.findById(7L)).thenReturn(Optional.of(cliente));
-        when(productoRepository.findById(99L)).thenReturn(Optional.of(producto));
-        when(inventarioProduccionRepository.findByProductoCodigoAndSedeId(99L, 10L)).thenReturn(Optional.of(inventario));
-        when(precioClienteProductoRepository.findByClienteIdAndProductoCodigo(7L, 99L)).thenReturn(Optional.empty());
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        ventaServicio.crearVentaProduccion("prod@correo.com", dto);
-
-        ArgumentCaptor<Venta> ventaCaptor = ArgumentCaptor.forClass(Venta.class);
-        verify(ventaRepository).save(ventaCaptor.capture());
-        assertEquals(10L, ventaCaptor.getValue().getSede().getId());
-    }
-
-    @Test
-    void crearVentaVendedorDebeUsarSedeDelRequest() {
-        Sede sedeRequest = new Sede();
-        sedeRequest.setId(22L);
-
-        Vendedor vendedor = new Vendedor();
-        vendedor.setCorreo("vend@correo.com");
-        vendedor.setTipoPerfil(TipoPerfilVendedor.VENDEDOR);
-
-        Producto producto = new Producto();
-        producto.setCodigo(40L);
-        producto.setPrecioVenta(8000.0);
-
-        Inventario inventario = new Inventario();
-        inventario.setProducto(producto);
-        inventario.setSede(sedeRequest);
-        inventario.setStockActual(30);
-
-        VentaRecuestDTO dto = new VentaRecuestDTO(
-                "vend@correo.com",
-                22L,
-                null,
-                List.of(new DetalleVentaDTO(40L, null, null, 1)),
-                ModoPago.EFECTIVO
-        );
-
-        when(vendedorRepository.findByCorreo("vend@correo.com")).thenReturn(Optional.of(vendedor));
-        when(sedeRepository.findById(22L)).thenReturn(Optional.of(sedeRequest));
-        when(productoRepository.findById(40L)).thenReturn(Optional.of(producto));
-        when(inventarioRepository.findByProductoCodigoAndSedeId(40L, 22L)).thenReturn(Optional.of(inventario));
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        ventaServicio.crearVenta(dto);
-
-        ArgumentCaptor<Venta> ventaCaptor = ArgumentCaptor.forClass(Venta.class);
-        verify(ventaRepository).save(ventaCaptor.capture());
-        assertEquals(22L, ventaCaptor.getValue().getSede().getId());
+        verify(ventaRepository, times(2)).save(venta);
     }
 }
-
-

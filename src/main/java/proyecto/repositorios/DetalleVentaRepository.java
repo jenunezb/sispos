@@ -64,10 +64,8 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     FROM DetalleVenta d
     JOIN d.producto p
     JOIN d.venta v
-        LEFT JOIN v.vendedor vend
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double costoProduccionEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,

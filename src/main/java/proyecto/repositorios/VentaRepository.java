@@ -81,10 +81,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("""
     SELECT COALESCE(SUM(v.total), 0)
     FROM Venta v
-        LEFT JOIN v.vendedor vend
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -95,10 +93,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("""
     SELECT COUNT(v)
     FROM Venta v
-        LEFT JOIN v.vendedor vend
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Long cantidadVentasEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -109,11 +105,9 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("""
     SELECT COALESCE(SUM(v.total), 0)
     FROM Venta v
-        LEFT JOIN v.vendedor vend
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.modoPago = 'EFECTIVO'
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasEntreFechasEfectivoPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -124,11 +118,9 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("""
     SELECT COALESCE(SUM(v.total), 0)
     FROM Venta v
-        LEFT JOIN v.vendedor vend
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.modoPago = 'TRANSFERENCIA'
       AND v.fecha BETWEEN :desde AND :hasta
-      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasEntreFechasTransferenciaPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -139,7 +131,6 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("""
     SELECT COALESCE(SUM(v.total), 0)
     FROM Venta v
-        LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
@@ -262,3 +253,6 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 }
 
 
+    java.util.Optional<Venta> findByIdAndSedeEmpresaNit(Long id, Long empresaNit);
+
+}
