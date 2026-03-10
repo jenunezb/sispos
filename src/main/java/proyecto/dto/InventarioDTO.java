@@ -8,7 +8,9 @@ public record InventarioDTO(
         Integer entradas,
         Integer salidas,
         Integer perdidas,
+        Integer stockMinimo,
         Double precioVenta
 
 ) {
 }
+

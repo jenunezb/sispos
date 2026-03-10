@@ -14,9 +14,11 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
 
     Optional<Vendedor> findByCorreo(String correo);
 
+    Optional<Vendedor> findByCorreoIgnoreCase(String correo);
+
     Optional<Vendedor> findByCedula(String cedula);
 
-    boolean existsByCedula (String cedula);
+    boolean existsByCedula(String cedula);
 
     @Query("SELECT e FROM Vendedor e WHERE e.cedula = :cedula")
     Vendedor findBycedula(@Param("cedula") String cedula);

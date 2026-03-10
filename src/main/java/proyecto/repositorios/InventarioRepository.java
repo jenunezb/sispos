@@ -17,7 +17,7 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     // Listar todo el inventario de una sede
     List<Inventario> findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(Long sedeId);
 
-    // Obtener inventario de un producto específico en una sede
+    // Obtener inventario de un producto especÃ­fico en una sede
     Optional<Inventario> findByProductoCodigoAndSedeId(Long productoId, Long sedeId);
 
     // Verificar si existe inventario para producto + sede
@@ -32,6 +32,7 @@ SELECT new proyecto.dto.InventarioDTO(
     COALESCE(i.entradas, 0),
     COALESCE(i.salidas, 0),
     COALESCE(i.perdidas, 0),
+    COALESCE(i.stockMinimo, 0),
     p.precioVenta
 )
 FROM Producto p
@@ -105,3 +106,6 @@ LEFT JOIN Inventario i
 
 
 }
+
+
+
