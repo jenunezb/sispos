@@ -33,15 +33,16 @@ public class BalanceController {
             @RequestParam(required = false) String hasta
     ) {
 
-        obtenerAdminAutenticado(authorization);
+        Administrador admin = obtenerAdminAutenticado(authorization);
+        Long empresaNit = admin.getEmpresa().getNit();
 
         if (desde != null && hasta != null) {
             LocalDateTime fDesde = LocalDate.parse(desde).atStartOfDay();
             LocalDateTime fHasta = LocalDate.parse(hasta).atTime(23, 59, 59);
-            return balanceServicio.balanceGeneral(fDesde, fHasta);
+            return balanceServicio.balanceGeneral(empresaNit, fDesde, fHasta);
         }
 
-        return balanceServicio.balanceDelDia();
+        return balanceServicio.balanceDelDia(empresaNit);
     }
 
     /* ======================

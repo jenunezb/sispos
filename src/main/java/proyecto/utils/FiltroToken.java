@@ -38,6 +38,7 @@ public class FiltroToken extends OncePerRequestFilter {
             boolean error = true;
         try{
             if (requestURI.startsWith("/api/vendedor") || requestURI.startsWith("/api/administrador")
+                    || requestURI.startsWith("/api/produccion")
                     || requestURI.startsWith("/api/sedes") || requestURI.startsWith("/api/inventario") ) {
                 if(token != null) {
                     Jws<Claims> jws = jwtUtils.parseJwt(token);
@@ -45,7 +46,8 @@ public class FiltroToken extends OncePerRequestFilter {
 
                     boolean noAutorizado =
                             (requestURI.startsWith("/api/vendedor") && !rol.equals("vendedor")) ||
-                                    (requestURI.startsWith("/api/administrador") && !rol.equals("administrador"));
+                                    (requestURI.startsWith("/api/administrador") && !rol.equals("administrador")) ||
+                                    (requestURI.startsWith("/api/produccion") && !rol.equals("produccion"));
 
                     if (noAutorizado) {
                         crearRespuestaError("No tiene los permisos para acceder a este recurso",

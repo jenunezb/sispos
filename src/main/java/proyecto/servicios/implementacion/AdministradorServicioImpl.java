@@ -34,7 +34,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
 
 
     @Override
-    public int crearVendedor(UsuarioDTO usuarioDTO) throws Exception {
+    public int crearVendedor(UsuarioDTO usuarioDTO, Long empresaNit) throws Exception {
         if (vendedorRepository.existsByCedula(usuarioDTO.cedula())) {
             throw new RuntimeException("La cédula ya se encuentra registrada");
         }
@@ -53,8 +53,26 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         }
         vendedor.setCorreo(usuarioDTO.correo());
         vendedor.setEstado(true);
+        vendedor.setTipoPerfil(parsePerfil(usuarioDTO.perfil()));
         String passwordEncriptada = passwordEncoder.encode(usuarioDTO.password());
         vendedor.setPassword(passwordEncriptada);
+
+        Empresa empresa = empresaRepository.findById(empresaNit)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        if (usuarioDTO.sedeId() == null) {
+            throw new RuntimeException("Debe seleccionar una sede para el vendedor");
+        }
+
+        Sede sede = sedeRepository.findById(usuarioDTO.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        if (sede.getEmpresa() == null || !empresaNit.equals(sede.getEmpresa().getNit())) {
+            throw new RuntimeException("La sede no pertenece a la empresa del administrador");
+        }
+
+        vendedor.setEmpresa(empresa);
+        vendedor.setSede(sede);
 
         Vendedor vendedorNuevo = vendedorRepository.save(vendedor);
 
@@ -83,6 +101,19 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         Ciudad nuevaCiudadDefault = new Ciudad();
         nuevaCiudadDefault.setNombre(nombreDefault);
         return ciudadRepo.save(nuevaCiudadDefault);
+    }
+
+
+    private TipoPerfilVendedor parsePerfil(String perfil) {
+        if (perfil == null || perfil.isBlank()) {
+            return TipoPerfilVendedor.VENDEDOR;
+        }
+
+        if ("PRODUCCION".equalsIgnoreCase(perfil.trim())) {
+            return TipoPerfilVendedor.PRODUCCION;
+        }
+
+        return TipoPerfilVendedor.VENDEDOR;
     }
 
     public boolean estaRepetidaCedula(String cedula) {
@@ -193,22 +224,21 @@ public class AdministradorServicioImpl implements AdministradorServicio {
             throw new Exception("El correo ya está registrado");
         }
 
-        if (archivo == null || archivo.isEmpty()) {
-            throw new Exception("Debe subir un logo");
+        Imagen imagen = null;
+
+        if (archivo != null && !archivo.isEmpty()) {
+            Map<?, ?> resultado = cloudinary.uploader().upload(
+                    archivo.getBytes(),
+                    Map.of("folder", "logos_empresas")
+            );
+
+            imagen = new Imagen();
+            imagen.setUrl(resultado.get("secure_url").toString());
+            imagen.setPublicId(resultado.get("public_id").toString());
+            imagen.setTipo(TipoImagen.LOGO);
+
+            imagenRepository.save(imagen);
         }
-
-        // 1️⃣ Subir logo a Cloudinary
-        Map<?, ?> resultado = cloudinary.uploader().upload(
-                archivo.getBytes(),
-                Map.of("folder", "logos_empresas")
-        );
-
-        Imagen imagen = new Imagen();
-        imagen.setUrl(resultado.get("secure_url").toString());
-        imagen.setPublicId(resultado.get("public_id").toString());
-        imagen.setTipo(TipoImagen.LOGO);
-
-        imagenRepository.save(imagen);
 
         // 2️⃣ Crear empresa
         Empresa empresa = new Empresa();

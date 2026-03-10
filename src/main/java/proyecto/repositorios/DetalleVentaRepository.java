@@ -53,4 +53,19 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
             @Param("hasta") LocalDateTime hasta
     );
 
+    @Query("""
+    SELECT COALESCE(SUM(d.cantidad * p.precioProduccion), 0)
+    FROM DetalleVenta d
+    JOIN d.producto p
+    JOIN d.venta v
+    WHERE v.sede.empresa.nit = :empresaNit
+      AND v.fecha BETWEEN :desde AND :hasta
+""")
+    Double costoProduccionEntreFechasPorEmpresa(
+            @Param("empresaNit") Long empresaNit,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+
 }

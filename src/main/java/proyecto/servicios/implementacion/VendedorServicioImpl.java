@@ -38,9 +38,9 @@ public class VendedorServicioImpl implements VendedorServicio {
     }
 
     @Override
-    public List<VendedorDTO> listarVendedores() {
+    public List<VendedorDTO> listarVendedores(Long empresaNit) {
 
-        return vendedorRepository.findAllByOrderByNombreAsc()
+        return vendedorRepository.findVisiblesByEmpresaNit(empresaNit)
                 .stream()
                 .map(v -> new VendedorDTO(
                         v.getCodigo(),
@@ -49,7 +49,8 @@ public class VendedorServicioImpl implements VendedorServicio {
                         v.getCorreo(),
                         v.getTelefono(),
                         v.getCiudad() != null ? v.getCiudad().getNombre() : "SIN CIUDAD",
-                        v.isEstado()
+                        v.isEstado(),
+                        v.getTipoPerfil() != null ? v.getTipoPerfil().name() : "VENDEDOR"
                 ))
                 .toList();
     }

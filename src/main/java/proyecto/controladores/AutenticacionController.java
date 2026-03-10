@@ -36,7 +36,7 @@ public class AutenticacionController {
     @PostMapping(value = "/registro", consumes = "multipart/form-data")
     public ResponseEntity<MensajeDTO<String>> registro(
             @RequestPart("datos") String datosJson,
-            @RequestPart("logo") MultipartFile archivo
+            @RequestPart(value = "logo", required = false) MultipartFile archivo
     ) throws Exception {
 
         ObjectMapper objectMapper = new ObjectMapper();
