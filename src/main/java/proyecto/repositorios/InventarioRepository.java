@@ -15,10 +15,9 @@ import java.util.Optional;
 @Repository
 public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     // Listar todo el inventario de una sede
-    List<Inventario> findBySedeIdOrderByProductoCodigoAsc(Long sedeId);
+    List<Inventario> findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(Long sedeId);
 
-
-    // Obtener inventario de un producto específico en una sede
+    // Obtener inventario de un producto especÃ­fico en una sede
     Optional<Inventario> findByProductoCodigoAndSedeId(Long productoId, Long sedeId);
 
     // Verificar si existe inventario para producto + sede
@@ -33,6 +32,7 @@ SELECT new proyecto.dto.InventarioDTO(
     COALESCE(i.entradas, 0),
     COALESCE(i.salidas, 0),
     COALESCE(i.perdidas, 0),
+    COALESCE(i.stockMinimo, 0),
     p.precioVenta
 )
 FROM Producto p
@@ -71,6 +71,21 @@ LEFT JOIN Inventario i
     Double valorInventarioPorSede(@Param("sedeId") Long sedeId);
 
     @Query("""
+        SELECT COALESCE(SUM(i.stockActual), 0)
+        FROM Inventario i
+        WHERE i.sede.empresa.nit = :empresaNit
+    """)
+    Integer stockTotalPorEmpresa(@Param("empresaNit") Long empresaNit);
+
+    @Query("""
+        SELECT COALESCE(SUM(i.stockActual * p.precioProduccion), 0)
+        FROM Inventario i
+        JOIN i.producto p
+        WHERE i.sede.empresa.nit = :empresaNit
+    """)
+    Double valorInventarioPorEmpresa(@Param("empresaNit") Long empresaNit);
+
+    @Query("""
     SELECT new proyecto.dto.PerdidasDetalleDTO(
         m.fecha,
         m.producto.nombre,
@@ -91,3 +106,6 @@ LEFT JOIN Inventario i
 
 
 }
+
+
+

@@ -6,9 +6,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import proyecto.dto.InventarioFinalProjection;
 import proyecto.entidades.Administrador;
+import proyecto.entidades.Vendedor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AdministradorRepository extends JpaRepository<Administrador, Long> {
@@ -17,7 +19,7 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "    :sedeId AS sedeId,\n" +
             "    p.nombre AS productoNombre,\n" +
             "\n" +
-            "    /* Inventario inicial antes del período */\n" +
+            "    /* Inventario inicial antes del perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo */\n" +
             "    COALESCE(SUM(\n" +
             "        CASE\n" +
             "            WHEN m.fecha < :fechaInicio AND m.tipo = 'ENTRADA' THEN m.cantidad\n" +
@@ -26,7 +28,7 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "        END\n" +
             "    ), 0) AS inventarioInicial,\n" +
             "\n" +
-            "    /* Entradas del período */\n" +
+            "    /* Entradas del perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo */\n" +
             "    COALESCE(SUM(\n" +
             "        CASE\n" +
             "            WHEN m.fecha BETWEEN :fechaInicio AND :fechaFin\n" +
@@ -127,4 +129,13 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             @Param("fechaFin") LocalDateTime fechaFin
     );
 
+    Optional<Administrador> findByCorreo(String correo);
+
+    Optional<Administrador> findByCorreoIgnoreCase(String correo);
+
+    List<Administrador> findByEmpresaNit(Long nit);
+
 }
+
+
+

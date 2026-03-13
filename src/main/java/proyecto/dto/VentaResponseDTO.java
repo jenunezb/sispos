@@ -8,7 +8,11 @@ public record VentaResponseDTO(
         LocalDateTime fecha,
         Double total,
         String vendedorNombre,
-        String sedeNombre,
+        String sedeUbicacion,
+        Long clienteId,
+        String clienteNombre,
+        Boolean anulado,
+        Boolean valido,
         List<DetalleVentaResponseDTO> detalles
 ) {
 }

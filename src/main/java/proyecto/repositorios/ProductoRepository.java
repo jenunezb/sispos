@@ -8,14 +8,7 @@ import java.util.List;
 
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
-    // Puedes agregar consultas personalizadas si lo necesitas
-    // Ejemplo: List<Producto> findByNombreContainingIgnoreCase(String nombre);
 
-    // Buscar productos activos
-    List<Producto> findByEstadoTrue();
+    List<Producto> findByActivoTrueAndEmpresaNitOrderByCodigoAsc(Long empresaNit);
 
-    List<Producto> findAllByOrderByCodigoAsc();
-
-    // Buscar por nombre (opcional, útil más adelante)
-    List<Producto> findByNombreContainingIgnoreCase(String nombre);
 }

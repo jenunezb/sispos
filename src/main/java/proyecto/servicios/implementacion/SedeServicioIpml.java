@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import proyecto.dto.SedeActualizarDTO;
 import proyecto.dto.SedeCrearDTO;
 import proyecto.dto.SedeDTO;
-import proyecto.entidades.Administrador;
 import proyecto.entidades.Sede;
 import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.SedeServicio;
@@ -19,12 +18,12 @@ public class SedeServicioIpml implements SedeServicio {
 
     public SedeDTO crear(SedeCrearDTO dto) {
 
-        if (sedeRepository.existsByNombreIgnoreCase(dto.nombre())) {
+        if (sedeRepository.existsByUbicacionIgnoreCase(dto.nombre())) {
             throw new IllegalArgumentException("Ya existe una sede con ese nombre");
         }
 
         Sede sede = new Sede();
-        sede.setNombre(dto.nombre());
+        sede.setUbicacion(dto.nombre());
         sede.setUbicacion(dto.ubicacion());
 
         return toDTO(sedeRepository.save(sede));
@@ -37,12 +36,19 @@ public class SedeServicioIpml implements SedeServicio {
                 .toList();
     }
 
+    public List<SedeDTO> listarPorEmpresa(Long empresaNit) {
+        return sedeRepository.findByEmpresaNit(empresaNit)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     public SedeDTO actualizar(SedeActualizarDTO dto) {
 
         Sede sede = sedeRepository.findById(dto.id())
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
-        sede.setNombre(dto.nombre());
+        sede.setUbicacion(dto.nombre());
         sede.setUbicacion(dto.ubicacion());
 
         return toDTO(sedeRepository.save(sede));
@@ -51,7 +57,6 @@ public class SedeServicioIpml implements SedeServicio {
     private SedeDTO toDTO(Sede sede) {
         return new SedeDTO(
                 sede.getId(),
-                sede.getNombre(),
                 sede.getUbicacion()
         );
     }

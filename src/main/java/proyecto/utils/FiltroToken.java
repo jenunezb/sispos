@@ -10,42 +10,53 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import proyecto.dto.MensajeDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import proyecto.dto.MensajeDTO;
 
 import java.io.IOException;
+
 @Component
 @RequiredArgsConstructor
 public class FiltroToken extends OncePerRequestFilter {
+
     private final JWTUtils jwtUtils;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain
-            chain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws ServletException, IOException {
 
-        // Configuración de cabeceras para CORS
-        res.addHeader("Access-Control-Allow-Origin", "*");
-        res.addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        res.addHeader("Access-Control-Allow-Headers", "Origin, Accept, Content-Type, Authorization");
-                res.addHeader("Access-Control-Allow-Credentials", "true");
+        String origin = req.getHeader("Origin");
+        if (origin != null && !origin.isBlank()) {
+            res.setHeader("Access-Control-Allow-Origin", origin);
+            res.setHeader("Vary", "Origin");
+        }
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Origin, Accept, Content-Type, Authorization");
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+
         if (req.getMethod().equals("OPTIONS")) {
             res.setStatus(HttpServletResponse.SC_OK);
-        }else {
-            String requestURI = req.getRequestURI();
-            String token = getToken(req);
-            boolean error = true;
-        try{
+            return;
+        }
+
+        String requestURI = req.getRequestURI();
+        String token = getToken(req);
+        boolean error = true;
+
+        try {
             if (requestURI.startsWith("/api/vendedor") || requestURI.startsWith("/api/administrador")
-                    || requestURI.startsWith("/api/sedes") || requestURI.startsWith("/api/inventario") ) {
-                if(token != null) {
+                    || requestURI.startsWith("/api/produccion")
+                    || requestURI.startsWith("/api/sedes") || requestURI.startsWith("/api/inventario")) {
+                if (token != null) {
                     Jws<Claims> jws = jwtUtils.parseJwt(token);
                     String rol = (String) jws.getBody().get("rol");
 
                     boolean noAutorizado =
                             (requestURI.startsWith("/api/vendedor") && !rol.equals("vendedor")) ||
-                                    (requestURI.startsWith("/api/administrador") && !rol.equals("administrador"));
+                                    (requestURI.startsWith("/api/administrador") && !rol.equals("administrador")) ||
+                                    (requestURI.startsWith("/api/produccion") && !rol.equals("produccion"));
 
                     if (noAutorizado) {
                         crearRespuestaError("No tiene los permisos para acceder a este recurso",
@@ -62,30 +73,30 @@ public class FiltroToken extends OncePerRequestFilter {
                 error = false;
             }
 
-        }catch (MalformedJwtException | SignatureException e){
+        } catch (MalformedJwtException | SignatureException e) {
             crearRespuestaError("El token es incorrecto",
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR, res);
-        }catch (ExpiredJwtException e ){
-            crearRespuestaError("El token está vencido",
+        } catch (ExpiredJwtException e) {
+            crearRespuestaError("El token esta vencido",
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR, res);
-        }catch (Exception e){
-            crearRespuestaError(e.getMessage(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-
-                    res);
+        } catch (Exception e) {
+            crearRespuestaError(e.getMessage(), HttpServletResponse.SC_INTERNAL_SERVER_ERROR, res);
         }
-        if(!error){
+
+        if (!error) {
             chain.doFilter(req, res);
         }
-        }
     }
+
     private String getToken(HttpServletRequest req) {
         String header = req.getHeader("Authorization");
-        if(header != null && header.startsWith("Bearer "))
+        if (header != null && header.startsWith("Bearer ")) {
             return header.replace("Bearer ", "");
+        }
         return null;
     }
-    private void crearRespuestaError(String mensaje, int codigoError, HttpServletResponse
-            response) throws IOException {
+
+    private void crearRespuestaError(String mensaje, int codigoError, HttpServletResponse response) throws IOException {
         MensajeDTO<String> dto = new MensajeDTO<>(true, mensaje);
         response.setContentType("application/json");
         response.setStatus(codigoError);

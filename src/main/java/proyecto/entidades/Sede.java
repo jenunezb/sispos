@@ -13,7 +13,6 @@ public class Sede {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nombre;
     private String ubicacion;
 
     @ManyToOne
@@ -25,4 +24,8 @@ public class Sede {
 
     @OneToMany(mappedBy = "sede")
     private List<MateriaPrimaSede> materiasPrimas = new ArrayList<>();
+
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 }

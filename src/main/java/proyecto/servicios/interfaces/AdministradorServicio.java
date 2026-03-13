@@ -1,18 +1,16 @@
 package proyecto.servicios.interfaces;
 
-import proyecto.dto.AdministradorDTO;
-import proyecto.dto.InventarioFinalDTO;
-import proyecto.dto.InventarioFinalProjection;
-import proyecto.dto.UsuarioDTO;
+import org.springframework.web.multipart.MultipartFile;
+import proyecto.dto.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
 public interface AdministradorServicio {
 
-    int crearVendedor (UsuarioDTO usuarioDTO) throws Exception;
+    int crearVendedor (UsuarioDTO usuarioDTO, Long empresaNit) throws Exception;
 
-    int crearAdministrador(AdministradorDTO administradorDTO) throws Exception;
+    int registrarEmpresa(RegistroEmpresaDTO dto, MultipartFile archivo) throws Exception;
 
     void editarVendedor(UsuarioDTO usuarioDTO);
 

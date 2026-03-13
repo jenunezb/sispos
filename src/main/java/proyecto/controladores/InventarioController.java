@@ -76,7 +76,7 @@ public class InventarioController {
     }
 
     // ===============================
-    // REGISTRAR PÉRDIDA
+    // REGISTRAR PÃ‰RDIDA
     // ===============================
     @PostMapping("/perdida")
     public ResponseEntity<Void> registrarPerdida(
@@ -96,6 +96,15 @@ public class InventarioController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/stock-minimo")
+    public ResponseEntity<MensajeDTO<String>> actualizarStockMinimo(
+            @RequestParam Long productoId,
+            @RequestParam Long sedeId,
+            @RequestParam Integer stockMinimo
+    ) {
+        inventarioServicio.actualizarStockMinimo(productoId, sedeId, stockMinimo);
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Stock minimo actualizado"));
+    }
     @GetMapping("/perdidas/detalle")
     public ResponseEntity<List<PerdidasDetalleDTO>> obtenerPerdidasDetalle(
             @RequestParam Long sedeId,
@@ -113,7 +122,7 @@ public class InventarioController {
     }
 
     // ===============================
-    // INVENTARIO DEL DÍA
+    // INVENTARIO DEL DÃA
     // ===============================
     @GetMapping("/dia")
     public ResponseEntity<List<InventarioDelDia>> obtenerInventarioDelDia(
@@ -157,3 +166,5 @@ public class InventarioController {
     }
 
 }
+
+
