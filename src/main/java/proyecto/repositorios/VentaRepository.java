@@ -13,17 +13,17 @@ import java.util.Optional;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
-    List<Venta> findByVendedorCodigo(Long vendedorId);
+    List<Venta> findByVendedorCodigoAndAnuladoFalse(Long vendedorId);
 
-    List<Venta> findByVendedorCodigoAndFechaBetween(
+    List<Venta> findByVendedorCodigoAndAnuladoFalseAndFechaBetween(
             Long vendedorId,
             LocalDateTime desde,
             LocalDateTime hasta
     );
 
-    List<Venta> findByVendedorCorreoOrderByFechaDesc(String correo);
+    List<Venta> findByVendedorCorreoAndAnuladoFalseOrderByFechaDesc(String correo);
 
-    List<Venta> findByVendedorCorreoAndFechaBetweenOrderByFechaDesc(
+    List<Venta> findByVendedorCorreoAndAnuladoFalseAndFechaBetweenOrderByFechaDesc(
             String correo,
             LocalDateTime desde,
             LocalDateTime hasta
@@ -34,6 +34,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         FROM Venta v
         LEFT JOIN v.vendedor vend
         WHERE v.sede.id = :sedeId
+          AND v.anulado = false
           AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     List<Venta> findBySedeId(@Param("sedeId") Long sedeId);
@@ -44,6 +45,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         LEFT JOIN v.vendedor vend
         WHERE v.sede.id = :sedeId
           AND v.fecha BETWEEN :desde AND :hasta
+          AND v.anulado = false
           AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     List<Venta> findBySedeIdAndFechaBetween(
@@ -56,6 +58,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         SELECT COALESCE(SUM(v.total), 0)
         FROM Venta v
         LEFT JOIN v.vendedor vend
+        WHERE v.anulado = false
     """)
     Double totalVentas();
 
@@ -64,6 +67,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         FROM Venta v
         LEFT JOIN v.vendedor vend
         WHERE v.sede.id = :sedeId
+          AND v.anulado = false
           AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     Double totalVentasPorSede(@Param("sedeId") Long sedeId);
@@ -73,6 +77,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
         LEFT JOIN v.vendedor vend
     WHERE v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double totalVentasEntreFechas(
             @Param("desde") LocalDateTime desde,
@@ -84,6 +89,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double totalVentasEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -96,6 +102,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Long cantidadVentasEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -109,6 +116,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.modoPago = 'EFECTIVO'
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double totalVentasEntreFechasEfectivoPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -122,6 +130,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.modoPago = 'TRANSFERENCIA'
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double totalVentasEntreFechasTransferenciaPorEmpresa(
             @Param("empresaNit") Long empresaNit,
@@ -135,6 +144,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double totalVentasPorSedeEntreFechas(
@@ -148,6 +158,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
         LEFT JOIN v.vendedor vend
     WHERE v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Long cantidadVentasEntreFechas(
             @Param("desde") LocalDateTime desde,
@@ -158,6 +169,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     SELECT COUNT(v)
     FROM Venta v
         LEFT JOIN v.vendedor vend
+    WHERE v.anulado = false
 """)
     Long cantidadVentasTotal();
 
@@ -166,6 +178,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     FROM Venta v
         LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
+      AND v.anulado = false
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Long cantidadVentasPorSede(@Param("sedeId") Long sedeId);
@@ -176,6 +189,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Long cantidadVentasPorSedeEntreFechas(
@@ -190,6 +204,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         LEFT JOIN v.vendedor vend
     WHERE v.modoPago = 'EFECTIVO'
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double totalVentasEntreFechasEfectivo(
             @Param("desde") LocalDateTime desde,
@@ -202,6 +217,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         LEFT JOIN v.vendedor vend
     WHERE v.modoPago = 'TRANSFERENCIA'
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double totalVentasEntreFechasTransferencia(
             @Param("desde") LocalDateTime desde,
@@ -239,8 +255,6 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta
     );
-
-    List<Venta> findByVendedorCodigoAndAnuladoFalse(Long vendedorId);
 
     @Query("""
         SELECT v

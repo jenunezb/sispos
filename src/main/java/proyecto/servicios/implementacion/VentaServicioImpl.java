@@ -289,7 +289,7 @@ public class VentaServicioImpl implements VentaServicio {
     @Override
     @Transactional
     public List<VentaResponseDTO> listarVentasPorVendedor(Long vendedorId) {
-        return ventaRepository.findByVendedorCodigo(vendedorId)
+        return ventaRepository.findByVendedorCodigoAndAnuladoFalse(vendedorId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -303,7 +303,7 @@ public class VentaServicioImpl implements VentaServicio {
             LocalDateTime hasta
     ) {
         return ventaRepository
-                .findByVendedorCodigoAndFechaBetween(vendedorId, desde, hasta)
+                .findByVendedorCodigoAndAnuladoFalseAndFechaBetween(vendedorId, desde, hasta)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -312,7 +312,7 @@ public class VentaServicioImpl implements VentaServicio {
     @Override
     @Transactional
     public List<VentaResponseDTO> listarVentasPorCorreoVendedor(String correoVendedor) {
-        return ventaRepository.findByVendedorCorreoOrderByFechaDesc(correoVendedor)
+        return ventaRepository.findByVendedorCorreoAndAnuladoFalseOrderByFechaDesc(correoVendedor)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -326,7 +326,7 @@ public class VentaServicioImpl implements VentaServicio {
             LocalDateTime hasta
     ) {
         return ventaRepository
-                .findByVendedorCorreoAndFechaBetweenOrderByFechaDesc(correoVendedor, desde, hasta)
+                .findByVendedorCorreoAndAnuladoFalseAndFechaBetweenOrderByFechaDesc(correoVendedor, desde, hasta)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
