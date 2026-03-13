@@ -374,6 +374,8 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getSede().getUbicacion(),
                 venta.getCliente() != null ? venta.getCliente().getId() : null,
                 venta.getCliente() != null ? venta.getCliente().getNombre() : null,
+                venta.getAnulado(),
+                !Boolean.TRUE.equals(venta.getAnulado()),
                 venta.getDetalles().stream()
                         .map(d -> new DetalleVentaResponseDTO(
                                 d.getProducto() != null ? d.getProducto().getCodigo() : null,
@@ -407,6 +409,10 @@ public class VentaServicioImpl implements VentaServicio {
     @Override
     @Transactional
     public void cambiarEstadoVenta(Long ventaId, Boolean valido, Long empresaNit) {
+        if (valido == null) {
+            throw new RuntimeException("El estado de la venta es obligatorio");
+        }
+
         Venta venta = ventaRepository.findByIdAndSedeEmpresaNit(ventaId, empresaNit)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada para la empresa"));
 
