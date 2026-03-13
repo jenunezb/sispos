@@ -266,6 +266,21 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     """)
     List<Venta> findBySedeIdAndAnuladoTrue(@Param("sedeId") Long sedeId);
 
+    @Query("""
+        SELECT v
+        FROM Venta v
+        LEFT JOIN v.vendedor vend
+        WHERE v.sede.id = :sedeId
+          AND v.fecha BETWEEN :desde AND :hasta
+          AND v.anulado = true
+          AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+    """)
+    List<Venta> findBySedeIdAndFechaBetweenAndAnuladoTrue(
+            @Param("sedeId") Long sedeId,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
     Optional<Venta> findByIdAndSedeEmpresaNit(Long id, Long empresaNit);
 
 }

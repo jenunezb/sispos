@@ -430,6 +430,20 @@ public class VentaServicioImpl implements VentaServicio {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public List<VentaResponseDTO> listarVentasAnuladasEntreFechas(
+            Long sedeId,
+            LocalDateTime desde,
+            LocalDateTime hasta
+    ) {
+        return ventaRepository
+                .findBySedeIdAndFechaBetweenAndAnuladoTrue(sedeId, desde, hasta)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     private int calcularStockDisponibleDesdeMateriaPrima(Producto producto, Sede sede) {
         int stock = Integer.MAX_VALUE;
 

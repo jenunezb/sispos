@@ -44,4 +44,10 @@ public interface VentaServicio {
     void cambiarEstadoVenta(Long ventaId, Boolean valido, Long empresaNit);
 
     List<VentaResponseDTO> listarVentasAnuladas(Long sedeId);
+
+    List<VentaResponseDTO> listarVentasAnuladasEntreFechas(
+            Long sedeId,
+            LocalDateTime desde,
+            LocalDateTime hasta
+    );
 }
