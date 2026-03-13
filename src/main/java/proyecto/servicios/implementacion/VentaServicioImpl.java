@@ -403,6 +403,17 @@ public class VentaServicioImpl implements VentaServicio {
         ventaRepository.save(venta);
     }
 
+
+    @Override
+    @Transactional
+    public void cambiarEstadoVenta(Long ventaId, Boolean valido, Long empresaNit) {
+        Venta venta = ventaRepository.findByIdAndSedeEmpresaNit(ventaId, empresaNit)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada para la empresa"));
+
+        venta.setAnulado(!valido);
+        ventaRepository.save(venta);
+    }
+
     @Override
     @Transactional
     public List<VentaResponseDTO> listarVentasAnuladas(Long sedeId) {

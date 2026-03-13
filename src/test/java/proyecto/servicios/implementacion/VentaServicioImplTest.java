@@ -9,13 +9,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.DetalleVentaDTO;
 import proyecto.dto.VentaRecuestDTO;
 import proyecto.entidades.*;
-import proyecto.repositorios.*;
+import proyecto.repositorios.AdministradorRepository;
+import proyecto.repositorios.ClienteRepository;
+import proyecto.repositorios.InventarioProduccionRepository;
+import proyecto.repositorios.InventarioRepository;
+import proyecto.repositorios.MateriaPrimaSedeRepository;
+import proyecto.repositorios.MovimientoInventarioRepository;
+import proyecto.repositorios.MovimientoProduccionRepository;
+import proyecto.repositorios.PrecioClienteProductoRepository;
+import proyecto.repositorios.ProductoRepository;
+import proyecto.repositorios.SedeRepository;
+import proyecto.repositorios.VendedorRepository;
+import proyecto.repositorios.VentaRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +52,31 @@ class VentaServicioImplTest {
 
     @InjectMocks
     private VentaServicioImpl ventaServicio;
+
+    @Test
+    void cambiarEstadoVentaDebeMarcarInvalidaYValidaPorEmpresa() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setEmpresa(empresa);
+
+        Venta venta = new Venta();
+        venta.setId(10L);
+        venta.setSede(sede);
+        venta.setAnulado(false);
+
+        when(ventaRepository.findByIdAndSedeEmpresaNit(10L, 900123456L))
+                .thenReturn(Optional.of(venta));
+
+        ventaServicio.cambiarEstadoVenta(10L, false, 900123456L);
+        assertTrue(venta.getAnulado());
+
+        ventaServicio.cambiarEstadoVenta(10L, true, 900123456L);
+        assertFalse(venta.getAnulado());
+
+        verify(ventaRepository, times(2)).save(venta);
+    }
 
     @Test
     void crearVentaProduccionDebeUsarSedeDelVendedorAunqueRequestTengaOtra() {
@@ -75,7 +114,7 @@ class VentaServicioImplTest {
                 ModoPago.EFECTIVO
         );
 
-        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(vendedor));
+        when(vendedorRepository.findByCorreoIgnoreCase("prod@correo.com")).thenReturn(Optional.of(vendedor));
         when(clienteRepository.findById(7L)).thenReturn(Optional.of(cliente));
         when(productoRepository.findById(99L)).thenReturn(Optional.of(producto));
         when(inventarioProduccionRepository.findByProductoCodigoAndSedeId(99L, 10L)).thenReturn(Optional.of(inventario));
@@ -115,7 +154,7 @@ class VentaServicioImplTest {
                 ModoPago.EFECTIVO
         );
 
-        when(vendedorRepository.findByCorreo("vend@correo.com")).thenReturn(Optional.of(vendedor));
+        when(vendedorRepository.findByCorreoIgnoreCase("vend@correo.com")).thenReturn(Optional.of(vendedor));
         when(sedeRepository.findById(22L)).thenReturn(Optional.of(sedeRequest));
         when(productoRepository.findById(40L)).thenReturn(Optional.of(producto));
         when(inventarioRepository.findByProductoCodigoAndSedeId(40L, 22L)).thenReturn(Optional.of(inventario));
@@ -128,5 +167,3 @@ class VentaServicioImplTest {
         assertEquals(22L, ventaCaptor.getValue().getSede().getId());
     }
 }
-
-
