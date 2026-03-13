@@ -10,6 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import proyecto.dto.*;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.InformeInventarioDia;
@@ -18,6 +19,7 @@ import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.InformeInventarioDiaService;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
+import proyecto.servicios.interfaces.VentaServicio;
 import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
@@ -33,13 +35,23 @@ public class AdministradorController {
     private final ProductoServicio productoService;
     private final VendedorServicio vendedorServicio;
     private final InformeInventarioDiaService informeInventarioDiaService;
+    private final VentaServicio ventaServicio;
     private final JWTUtils jwtUtils;
     private final AdministradorRepository administradorRepository;
 
     @PostMapping("/agregarVendedor")
-    public ResponseEntity<MensajeDTO> crearVendedor(@RequestBody UsuarioDTO dto) throws Exception {
+    public ResponseEntity<MensajeDTO> crearVendedor(
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody UsuarioDTO dto) throws Exception {
 
-        administradorServicio.crearVendedor(dto);
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        administradorServicio.crearVendedor(dto, admin.getEmpresa().getNit());
 
         return ResponseEntity.ok(
                 new MensajeDTO(false, "Vendedor creado exitosamente")
@@ -97,12 +109,39 @@ public class AdministradorController {
     }
 
     @GetMapping("/listar-vendedores")
-    public ResponseEntity<MensajeDTO<List<VendedorDTO>>> listarVendedores() {
+    public ResponseEntity<MensajeDTO<List<VendedorDTO>>> listarVendedores(@RequestHeader("Authorization") String authorization) {
 
-        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores();
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores(admin.getEmpresa().getNit());
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, vendedores)
+        );
+    }
+
+
+    @PostMapping("/productos/importar-csv")
+    public ResponseEntity<MensajeDTO<String>> importarProductosCsv(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam("file") MultipartFile archivo) {
+
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        int total = productoService.importarProductosCsv(archivo, admin.getEmpresa().getNit());
+
+        return ResponseEntity.ok(
+                new MensajeDTO<>(false, "Productos importados correctamente: " + total)
         );
     }
 
@@ -160,6 +199,29 @@ public class AdministradorController {
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, "Contraseña actualizada correctamente")
         );
+    }
+
+
+
+    @PatchMapping("/ventas/estado")
+    public ResponseEntity<MensajeDTO> cambiarEstadoVenta(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody CambiarEstadoVentaDTO dto
+    ) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        Administrador admin = administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        ventaServicio.cambiarEstadoVenta(dto.ventaId(), dto.valido(), admin.getEmpresa().getNit());
+
+        String msg = dto.valido()
+                ? "La venta fue marcada como válida"
+                : "La venta fue marcada como inválida";
+
+        return ResponseEntity.ok(new MensajeDTO(false, msg));
     }
 
     @PostMapping("/guardar")

@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import proyecto.dto.DetalleVentaResponseDTO;
 import proyecto.dto.VentaRecuestDTO;
 import proyecto.dto.VentaResponseDTO;
 import proyecto.entidades.Venta;
@@ -23,22 +22,14 @@ public class VentaController {
     @PostMapping
     public ResponseEntity<VentaResponseDTO> crearVenta(@RequestBody VentaRecuestDTO dto) {
         Venta venta = ventaService.crearVenta(dto);
-        return ResponseEntity.ok(
-                ventaService.mapToResponse(venta)
-        );
+        return ResponseEntity.ok(ventaService.mapToResponse(venta));
     }
 
-    // 🔹 Mis ventas (todas)
     @GetMapping("/vendedor/{vendedorId}")
-    public ResponseEntity<List<VentaResponseDTO>> misVentas(
-            @PathVariable Long vendedorId
-    ) {
-        return ResponseEntity.ok(
-                ventaService.listarVentasPorVendedor(vendedorId)
-        );
+    public ResponseEntity<List<VentaResponseDTO>> misVentas(@PathVariable Long vendedorId) {
+        return ResponseEntity.ok(ventaService.listarVentasPorVendedor(vendedorId));
     }
 
-    // 🔹 Mis ventas por fecha
     @GetMapping("/vendedor/{vendedorId}/rango")
     public ResponseEntity<List<VentaResponseDTO>> misVentasPorFecha(
             @PathVariable Long vendedorId,
@@ -46,28 +37,39 @@ public class VentaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta
     ) {
         return ResponseEntity.ok(
-                ventaService.listarVentasPorVendedorEntreFechas(
-                        vendedorId, desde, hasta
-                )
+                ventaService.listarVentasPorVendedorEntreFechas(vendedorId, desde, hasta)
         );
     }
 
-    // 🔹 Ventas por sede (ADMIN)
     @GetMapping("/sede/{sedeId}")
     public ResponseEntity<List<VentaResponseDTO>> ventasPorSede(@PathVariable Long sedeId) {
+        return ResponseEntity.ok(ventaService.listarVentasPorSede(sedeId));
+    }
+
+    @GetMapping("/sede/{sedeId}/rango")
+    public ResponseEntity<List<VentaResponseDTO>> ventasPorSedePorFecha(
+            @PathVariable Long sedeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta
+    ) {
         return ResponseEntity.ok(
-                ventaService.listarVentasPorSede(sedeId)
+                ventaService.listarVentasPorSedeEntreFechas(sedeId, desde, hasta)
         );
     }
 
-    // 🔹 Ventas por sede y fecha (ADMIN)
-    @GetMapping("/sede/{sedeId}/rango")
-    public ResponseEntity<List<VentaResponseDTO>> ventasPorSedePorFecha(@PathVariable Long sedeId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta) {
+    @GetMapping("/sede/{sedeId}/anuladas")
+    public ResponseEntity<List<VentaResponseDTO>> ventasAnuladasPorSede(@PathVariable Long sedeId) {
+        return ResponseEntity.ok(ventaService.listarVentasAnuladas(sedeId));
+    }
+
+    @GetMapping("/sede/{sedeId}/anuladas/rango")
+    public ResponseEntity<List<VentaResponseDTO>> ventasAnuladasPorSedePorFecha(
+            @PathVariable Long sedeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta
+    ) {
         return ResponseEntity.ok(
-                ventaService.listarVentasPorSedeEntreFechas(
-                        sedeId, desde, hasta
-                )
+                ventaService.listarVentasAnuladasEntreFechas(sedeId, desde, hasta)
         );
     }
 }
-
