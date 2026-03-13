@@ -132,6 +132,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("""
     SELECT COALESCE(SUM(v.total), 0)
     FROM Venta v
+        LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
