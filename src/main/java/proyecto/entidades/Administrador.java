@@ -19,7 +19,10 @@ public class Administrador extends Cuenta implements Serializable {
     private Long celular;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
+    @JoinColumn(nullable = true)
     private Empresa empresa;
+
+    @Column(nullable = false)
+    private boolean esSuperAdmin = false;
 
 }

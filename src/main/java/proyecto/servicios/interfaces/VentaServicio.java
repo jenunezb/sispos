@@ -43,6 +43,8 @@ public interface VentaServicio {
 
     void cambiarEstadoVenta(Long ventaId, Boolean valido, Long empresaNit);
 
+    void cambiarEstadoVentaSistema(Long ventaId, Boolean valido);
+
     List<VentaResponseDTO> listarVentasAnuladas(Long sedeId);
 
     List<VentaResponseDTO> listarVentasAnuladasEntreFechas(

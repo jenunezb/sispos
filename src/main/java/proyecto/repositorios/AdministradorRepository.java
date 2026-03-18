@@ -135,6 +135,8 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
 
     List<Administrador> findByEmpresaNit(Long nit);
 
+    long countByEsSuperAdminTrue();
+
 }
 
 

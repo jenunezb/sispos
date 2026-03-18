@@ -49,4 +49,13 @@ public class AutenticacionController {
                 .body(new MensajeDTO<>(false, "Empresa y administrador creados correctamente"));
     }
 
+    @PostMapping("/registro-admin-sistema")
+    public ResponseEntity<MensajeDTO<String>> registroAdministradorSistema(
+            @Valid @RequestBody RegistroAdministradorSistemaDTO dto
+    ) throws Exception {
+        administradorServicio.registrarAdministradorSistema(dto);
+        return ResponseEntity.ok()
+                .body(new MensajeDTO<>(false, "Administrador del sistema creado correctamente"));
+    }
+
 }

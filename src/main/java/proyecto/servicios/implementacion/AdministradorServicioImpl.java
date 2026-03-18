@@ -270,4 +270,29 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         return admin.getCodigo();
     }
 
+    @Override
+    @Transactional
+    public int registrarAdministradorSistema(RegistroAdministradorSistemaDTO dto) throws Exception {
+
+        if (administradorRepository.countByEsSuperAdminTrue() > 0) {
+            throw new RuntimeException("El administrador del sistema ya fue configurado");
+        }
+
+        if (estaRepetidoCorreo(dto.correo())) {
+            throw new Exception("El correo ya estÃ¡ registrado");
+        }
+
+        Administrador admin = new Administrador();
+        admin.setCorreo(dto.correo());
+        admin.setPassword(passwordEncoder.encode(dto.password()));
+        admin.setNombre(dto.nombre());
+        admin.setApellido(dto.apellido());
+        admin.setCelular(dto.celular());
+        admin.setEsSuperAdmin(true);
+        admin.setEmpresa(null);
+
+        administradorRepository.save(admin);
+        return admin.getCodigo();
+    }
+
 }

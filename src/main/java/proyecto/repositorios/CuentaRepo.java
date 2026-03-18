@@ -34,7 +34,8 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
                            ORDER BY ax.codigo
                            LIMIT 1
                        )
-                   ) AS empresaTelefono
+                   ) AS empresaTelefono,
+                   COALESCE(a.es_super_admin, false) AS esSuperAdmin
             FROM cuenta c
             LEFT JOIN vendedor v ON v.codigo = c.codigo
             LEFT JOIN administrador a ON a.codigo = c.codigo

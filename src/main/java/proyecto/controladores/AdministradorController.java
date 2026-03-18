@@ -13,8 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import proyecto.dto.*;
 import proyecto.entidades.Administrador;
+import proyecto.entidades.Empresa;
 import proyecto.entidades.InformeInventarioDia;
+import proyecto.entidades.Venta;
 import proyecto.repositorios.AdministradorRepository;
+import proyecto.repositorios.EmpresaRepository;
+import proyecto.repositorios.SedeRepository;
+import proyecto.repositorios.VentaRepository;
 import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.InformeInventarioDiaService;
 import proyecto.servicios.interfaces.ProductoServicio;
@@ -38,20 +43,17 @@ public class AdministradorController {
     private final VentaServicio ventaServicio;
     private final JWTUtils jwtUtils;
     private final AdministradorRepository administradorRepository;
+    private final EmpresaRepository empresaRepository;
+    private final SedeRepository sedeRepository;
+    private final VentaRepository ventaRepository;
 
     @PostMapping("/agregarVendedor")
     public ResponseEntity<MensajeDTO> crearVendedor(
             @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) Long empresaNit,
             @RequestBody UsuarioDTO dto) throws Exception {
 
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        String correo = claims.getBody().getSubject();
-
-        Administrador admin = administradorRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
-
-        administradorServicio.crearVendedor(dto, admin.getEmpresa().getNit());
+        administradorServicio.crearVendedor(dto, resolverEmpresaNit(authorization, empresaNit));
 
         return ResponseEntity.ok(
                 new MensajeDTO(false, "Vendedor creado exitosamente")
@@ -88,9 +90,6 @@ public class AdministradorController {
         );
     }
 
-    /**
-     * Buscar producto por código
-     */
     @GetMapping("/productos/{codigo}")
     public ResponseEntity<ProductoDTO> obtenerProducto(@PathVariable Long codigo) {
 
@@ -98,9 +97,6 @@ public class AdministradorController {
         return ResponseEntity.ok(producto);
     }
 
-    /**
-     * Editar producto
-     */
     @PutMapping("/productos")
     public ResponseEntity<ProductoDTO> editarProducto(@Valid @RequestBody ProductoActualizarDTO dto) {
 
@@ -109,36 +105,29 @@ public class AdministradorController {
     }
 
     @GetMapping("/listar-vendedores")
-    public ResponseEntity<MensajeDTO<List<VendedorDTO>>> listarVendedores(@RequestHeader("Authorization") String authorization) {
-
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        String correo = claims.getBody().getSubject();
-
-        Administrador admin = administradorRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
-
-        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores(admin.getEmpresa().getNit());
+    public ResponseEntity<MensajeDTO<List<VendedorDTO>>> listarVendedores(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) Long empresaNit
+    ) {
+        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores(
+                resolverEmpresaNit(authorization, empresaNit)
+        );
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, vendedores)
         );
     }
 
-
     @PostMapping("/productos/importar-csv")
     public ResponseEntity<MensajeDTO<String>> importarProductosCsv(
             @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) Long empresaNit,
             @RequestParam("file") MultipartFile archivo) {
 
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        String correo = claims.getBody().getSubject();
-
-        Administrador admin = administradorRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
-
-        int total = productoService.importarProductosCsv(archivo, admin.getEmpresa().getNit());
+        int total = productoService.importarProductosCsv(
+                archivo,
+                resolverEmpresaNit(authorization, empresaNit)
+        );
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, "Productos importados correctamente: " + total)
@@ -146,16 +135,14 @@ public class AdministradorController {
     }
 
     @GetMapping("/listar-productos")
-    public ResponseEntity<MensajeDTO<List<ProductoDTO>>> listarProductos(@RequestHeader("Authorization") String authorization) {
+    public ResponseEntity<MensajeDTO<List<ProductoDTO>>> listarProductos(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) Long empresaNit
+    ) {
 
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        String correo = claims.getBody().getSubject();
-
-        Administrador admin = administradorRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
-
-        List<ProductoDTO> productoDTOS = productoService.listarProductos(admin.getEmpresa().getNit());
+        List<ProductoDTO> productoDTOS = productoService.listarProductos(
+                resolverEmpresaNit(authorization, empresaNit)
+        );
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, productoDTOS)
@@ -175,12 +162,12 @@ public class AdministradorController {
     @GetMapping("/final/{sedeId}")
     public ResponseEntity<List<InventarioFinalDTO>> obtenerInventarioFinal(@PathVariable Long sedeId,
                                                                            @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate fechaInicio,
+                                                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                                                                           LocalDate fechaInicio,
 
-            @RequestParam
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate fechaFin
+                                                                           @RequestParam
+                                                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                                                                           LocalDate fechaFin
     ) {
 
         List<InventarioFinalDTO> resultado =
@@ -192,30 +179,27 @@ public class AdministradorController {
     }
 
     @PutMapping("/cuentas/{correo}")
-    public ResponseEntity<MensajeDTO<String>> cambiarPassword( @PathVariable String correo, @RequestBody CambioPasswordDTO dto) throws Exception {
+    public ResponseEntity<MensajeDTO<String>> cambiarPassword(@PathVariable String correo, @RequestBody CambioPasswordDTO dto) throws Exception {
 
-        administradorServicio.cambiarPassword( correo, dto.passwordActual(), dto.passwordNueva());
+        administradorServicio.cambiarPassword(correo, dto.passwordActual(), dto.passwordNueva());
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, "Contraseña actualizada correctamente")
         );
     }
 
-
-
     @PatchMapping("/ventas/estado")
     public ResponseEntity<MensajeDTO> cambiarEstadoVenta(
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody CambiarEstadoVentaDTO dto
     ) {
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        String correo = claims.getBody().getSubject();
+        Administrador admin = obtenerAdministradorAutenticado(authorization);
 
-        Administrador admin = administradorRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
-
-        ventaServicio.cambiarEstadoVenta(dto.ventaId(), dto.valido(), admin.getEmpresa().getNit());
+        if (admin.isEsSuperAdmin()) {
+            ventaServicio.cambiarEstadoVentaSistema(dto.ventaId(), dto.valido());
+        } else {
+            ventaServicio.cambiarEstadoVenta(dto.ventaId(), dto.valido(), admin.getEmpresa().getNit());
+        }
 
         String msg = dto.valido()
                 ? "La venta fue marcada como válida"
@@ -247,4 +231,159 @@ public class AdministradorController {
         );
     }
 
+    @GetMapping("/sistema/empresas")
+    public ResponseEntity<MensajeDTO<List<EmpresaResumenDTO>>> listarEmpresasSistema(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        validarAdministradorSistema(authorization);
+
+        List<EmpresaResumenDTO> empresas = empresaRepository.findAll().stream()
+                .map(empresa -> new EmpresaResumenDTO(
+                        empresa.getNit(),
+                        empresa.getNombre(),
+                        empresa.getSedes() != null ? empresa.getSedes().size() : 0,
+                        empresa.getAdministradores() != null
+                                ? (int) empresa.getAdministradores().stream().filter(a -> !a.isEsSuperAdmin()).count()
+                                : 0
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, empresas));
+    }
+
+    @GetMapping("/sistema/sedes")
+    public ResponseEntity<MensajeDTO<List<SedeResumenDTO>>> listarSedesSistema(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        validarAdministradorSistema(authorization);
+
+        List<SedeResumenDTO> sedes = sedeRepository.findAll().stream()
+                .map(sede -> new SedeResumenDTO(
+                        sede.getId(),
+                        sede.getUbicacion(),
+                        sede.getEmpresa() != null ? sede.getEmpresa().getNit() : null,
+                        sede.getEmpresa() != null ? sede.getEmpresa().getNombre() : null,
+                        sede.getAdministrador() != null ? sede.getAdministrador().getCorreo() : null
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, sedes));
+    }
+
+    @GetMapping("/sistema/administradores")
+    public ResponseEntity<MensajeDTO<List<AdministradorResumenDTO>>> listarAdministradoresSistema(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        validarAdministradorSistema(authorization);
+
+        List<AdministradorResumenDTO> administradores = administradorRepository.findAll().stream()
+                .map(admin -> new AdministradorResumenDTO(
+                        admin.getCodigo(),
+                        admin.getNombre(),
+                        admin.getApellido(),
+                        admin.getCorreo(),
+                        admin.getCelular(),
+                        admin.getEmpresa() != null ? admin.getEmpresa().getNit() : null,
+                        admin.getEmpresa() != null ? admin.getEmpresa().getNombre() : null,
+                        admin.isEsSuperAdmin()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, administradores));
+    }
+
+    @GetMapping("/sistema/ventas")
+    public ResponseEntity<MensajeDTO<List<VentaSeguimientoDTO>>> listarVentasSistema(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) Long empresaNit,
+            @RequestParam(required = false) Long sedeId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        validarAdministradorSistema(authorization);
+
+        LocalDate fechaFin = hasta != null ? hasta : desde;
+
+        List<VentaSeguimientoDTO> ventas = ventaRepository.buscarVentasSistema(
+                        empresaNit,
+                        sedeId,
+                        desde != null ? desde.atStartOfDay() : null,
+                        fechaFin != null ? fechaFin.atTime(23, 59, 59) : null
+                ).stream()
+                .map(this::mapToVentaSeguimiento)
+                .toList();
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, ventas));
+    }
+
+    private VentaSeguimientoDTO mapToVentaSeguimiento(Venta venta) {
+        String usuarioNombre = venta.getVendedor() != null
+                ? venta.getVendedor().getNombre()
+                : venta.getAdministrador() != null ? venta.getAdministrador().getNombre() : null;
+
+        String usuarioCorreo = venta.getVendedor() != null
+                ? venta.getVendedor().getCorreo()
+                : venta.getAdministrador() != null ? venta.getAdministrador().getCorreo() : null;
+
+        return new VentaSeguimientoDTO(
+                venta.getId(),
+                venta.getFecha(),
+                venta.getTotal(),
+                venta.getAnulado(),
+                venta.getSede() != null && venta.getSede().getEmpresa() != null ? venta.getSede().getEmpresa().getNit() : null,
+                venta.getSede() != null && venta.getSede().getEmpresa() != null ? venta.getSede().getEmpresa().getNombre() : null,
+                venta.getSede() != null ? venta.getSede().getId() : null,
+                venta.getSede() != null ? venta.getSede().getUbicacion() : null,
+                usuarioNombre,
+                usuarioCorreo,
+                venta.getCliente() != null ? venta.getCliente().getId() : null,
+                venta.getCliente() != null ? venta.getCliente().getNombre() : null,
+                venta.getDetalles().stream()
+                        .map(d -> new DetalleVentaResponseDTO(
+                                d.getProducto() != null ? d.getProducto().getCodigo() : null,
+                                d.getProducto() != null ? d.getProducto().getNombre() : d.getNombreLibre(),
+                                d.getCantidad(),
+                                d.getPrecioUnitario(),
+                                d.getSubtotal(),
+                                d.getNombreLibre()
+                        ))
+                        .toList()
+        );
+    }
+
+    private Long resolverEmpresaNit(String authorization, Long empresaNitSolicitada) {
+        Administrador admin = obtenerAdministradorAutenticado(authorization);
+
+        if (admin.isEsSuperAdmin()) {
+            if (empresaNitSolicitada == null) {
+                throw new RuntimeException("Debe indicar el parámetro empresaNit para esta operación");
+            }
+
+            Empresa empresa = empresaRepository.findById(empresaNitSolicitada)
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+            return empresa.getNit();
+        }
+
+        if (admin.getEmpresa() == null) {
+            throw new RuntimeException("El administrador no tiene una empresa asociada");
+        }
+
+        return admin.getEmpresa().getNit();
+    }
+
+    private void validarAdministradorSistema(String authorization) {
+        Administrador admin = obtenerAdministradorAutenticado(authorization);
+        if (!admin.isEsSuperAdmin()) {
+            throw new RuntimeException("No tiene permisos de administrador del sistema");
+        }
+    }
+
+    private Administrador obtenerAdministradorAutenticado(String authorization) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+
+        return administradorRepository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+    }
 }

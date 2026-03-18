@@ -1,0 +1,5 @@
+ALTER TABLE administrador
+    ADD COLUMN IF NOT EXISTS es_super_admin BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE administrador
+    ALTER COLUMN empresa_nit DROP NOT NULL;

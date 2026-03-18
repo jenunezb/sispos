@@ -12,6 +12,8 @@ public interface AdministradorServicio {
 
     int registrarEmpresa(RegistroEmpresaDTO dto, MultipartFile archivo) throws Exception;
 
+    int registrarAdministradorSistema(RegistroAdministradorSistemaDTO dto) throws Exception;
+
     void editarVendedor(UsuarioDTO usuarioDTO);
 
     List<InventarioFinalDTO> obtenerInventarioFinal(

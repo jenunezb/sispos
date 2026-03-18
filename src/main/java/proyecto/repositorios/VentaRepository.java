@@ -281,6 +281,22 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             @Param("hasta") LocalDateTime hasta
     );
 
+    @Query("""
+        SELECT v
+        FROM Venta v
+        WHERE (:empresaNit IS NULL OR v.sede.empresa.nit = :empresaNit)
+          AND (:sedeId IS NULL OR v.sede.id = :sedeId)
+          AND (:desde IS NULL OR v.fecha >= :desde)
+          AND (:hasta IS NULL OR v.fecha <= :hasta)
+        ORDER BY v.fecha DESC
+    """)
+    List<Venta> buscarVentasSistema(
+            @Param("empresaNit") Long empresaNit,
+            @Param("sedeId") Long sedeId,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
     Optional<Venta> findByIdAndSedeEmpresaNit(Long id, Long empresaNit);
 
 }

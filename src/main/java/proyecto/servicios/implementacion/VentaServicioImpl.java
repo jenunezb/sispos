@@ -422,6 +422,20 @@ public class VentaServicioImpl implements VentaServicio {
 
     @Override
     @Transactional
+    public void cambiarEstadoVentaSistema(Long ventaId, Boolean valido) {
+        if (valido == null) {
+            throw new RuntimeException("El estado de la venta es obligatorio");
+        }
+
+        Venta venta = ventaRepository.findById(ventaId)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+
+        venta.setAnulado(!valido);
+        ventaRepository.save(venta);
+    }
+
+    @Override
+    @Transactional
     public List<VentaResponseDTO> listarVentasAnuladas(Long sedeId) {
         return ventaRepository
                 .findBySedeIdAndAnuladoTrue(sedeId)

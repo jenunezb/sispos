@@ -46,6 +46,10 @@ public class SedeController {
         Administrador admin = administradorRepository.findByCorreo(correo)
                 .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
 
+        if (admin.isEsSuperAdmin()) {
+            return ResponseEntity.ok(sedeServicio.listar());
+        }
+
         return ResponseEntity.ok(sedeServicio.listarPorEmpresa(admin.getEmpresa().getNit()));
     }
 

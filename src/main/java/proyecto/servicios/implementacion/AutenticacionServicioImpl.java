@@ -61,6 +61,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         map.put("companyNit", cuenta.getEmpresaNit());
         map.put("empresaTelefono", cuenta.getEmpresaTelefono());
         map.put("companyPhone", cuenta.getEmpresaTelefono());
+        map.put("esSuperAdmin", Boolean.TRUE.equals(cuenta.getEsSuperAdmin()));
 
         return jwtUtils.generarToken(cuenta.getCorreo(), map);
     }
