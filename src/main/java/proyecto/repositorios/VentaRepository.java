@@ -297,6 +297,34 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             @Param("hasta") LocalDateTime hasta
     );
 
+    @Query("""
+        SELECT DISTINCT v
+        FROM Venta v
+        LEFT JOIN FETCH v.detalles d
+        LEFT JOIN FETCH d.producto
+        LEFT JOIN FETCH v.sede s
+        LEFT JOIN FETCH s.empresa
+        LEFT JOIN FETCH v.vendedor
+        LEFT JOIN FETCH v.administrador
+        LEFT JOIN FETCH v.cliente
+        ORDER BY v.fecha DESC
+    """)
+    List<Venta> findAllConDetalleParaSuperAdmin();
+
+    @Query("""
+        SELECT DISTINCT v
+        FROM Venta v
+        LEFT JOIN FETCH v.detalles d
+        LEFT JOIN FETCH d.producto
+        LEFT JOIN FETCH v.sede s
+        LEFT JOIN FETCH s.empresa
+        LEFT JOIN FETCH v.vendedor
+        LEFT JOIN FETCH v.administrador
+        LEFT JOIN FETCH v.cliente
+        WHERE v.id = :ventaId
+    """)
+    Optional<Venta> findDetalleByIdParaSuperAdmin(@Param("ventaId") Long ventaId);
+
     Optional<Venta> findByIdAndSedeEmpresaNit(Long id, Long empresaNit);
 
 }
