@@ -12,14 +12,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import proyecto.dto.MensajeDTO;
 import proyecto.dto.SuperAdminDetalleVentaDTO;
+import proyecto.dto.SuperAdminUsuarioDTO;
 import proyecto.dto.SuperAdminVentaDTO;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.DetalleVenta;
+import proyecto.entidades.Vendedor;
 import proyecto.entidades.Venta;
 import proyecto.repositorios.AdministradorRepository;
+import proyecto.repositorios.VendedorRepository;
 import proyecto.repositorios.VentaRepository;
 import proyecto.utils.JWTUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -30,6 +34,7 @@ public class SuperAdminController {
 
     private final VentaRepository ventaRepository;
     private final AdministradorRepository administradorRepository;
+    private final VendedorRepository vendedorRepository;
     private final JWTUtils jwtUtils;
 
     @GetMapping("/ventas")
@@ -57,6 +62,29 @@ public class SuperAdminController {
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
 
         return ResponseEntity.ok(new MensajeDTO<>(false, mapToDto(venta)));
+    }
+
+    @GetMapping("/usuarios")
+    public ResponseEntity<MensajeDTO<List<SuperAdminUsuarioDTO>>> listarTodosLosUsuarios(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        validarSuperAdmin(authorization);
+
+        List<SuperAdminUsuarioDTO> usuarios = new ArrayList<>();
+
+        usuarios.addAll(
+                administradorRepository.findAll().stream()
+                        .map(this::mapAdministrador)
+                        .toList()
+        );
+
+        usuarios.addAll(
+                vendedorRepository.findAllByOrderByNombreAsc().stream()
+                        .map(this::mapVendedor)
+                        .toList()
+        );
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, usuarios));
     }
 
     private SuperAdminVentaDTO mapToDto(Venta venta) {
@@ -98,6 +126,61 @@ public class SuperAdminController {
                 detalle.getCantidad(),
                 detalle.getPrecioUnitario(),
                 detalle.getSubtotal()
+        );
+    }
+
+    private SuperAdminUsuarioDTO mapAdministrador(Administrador admin) {
+        return new SuperAdminUsuarioDTO(
+                "ADMINISTRADOR",
+                admin.isEsSuperAdmin() ? "SUPERADMIN" : "ADMINISTRADOR",
+                admin.getCodigo(),
+                admin.getNombre(),
+                admin.getApellido(),
+                admin.getCorreo(),
+                null,
+                null,
+                admin.getCelular(),
+                null,
+                true,
+                admin.getEmpresa() != null ? admin.getEmpresa().getNit() : null,
+                admin.getEmpresa() != null ? admin.getEmpresa().getNombre() : null,
+                null,
+                null,
+                admin.isEsSuperAdmin()
+        );
+    }
+
+    private SuperAdminUsuarioDTO mapVendedor(Vendedor vendedor) {
+        String perfil = vendedor.getTipoPerfil() != null ? vendedor.getTipoPerfil().name() : "VENDEDOR";
+        Long empresaNit = vendedor.getEmpresa() != null
+                ? vendedor.getEmpresa().getNit()
+                : vendedor.getSede() != null && vendedor.getSede().getEmpresa() != null
+                ? vendedor.getSede().getEmpresa().getNit()
+                : null;
+
+        String empresaNombre = vendedor.getEmpresa() != null
+                ? vendedor.getEmpresa().getNombre()
+                : vendedor.getSede() != null && vendedor.getSede().getEmpresa() != null
+                ? vendedor.getSede().getEmpresa().getNombre()
+                : null;
+
+        return new SuperAdminUsuarioDTO(
+                "VENDEDOR",
+                perfil,
+                vendedor.getCodigo(),
+                vendedor.getNombre(),
+                null,
+                vendedor.getCorreo(),
+                vendedor.getCedula(),
+                vendedor.getTelefono(),
+                null,
+                vendedor.getCiudad() != null ? vendedor.getCiudad().getNombre() : null,
+                vendedor.isEstado(),
+                empresaNit,
+                empresaNombre,
+                vendedor.getSede() != null ? vendedor.getSede().getId() : null,
+                vendedor.getSede() != null ? vendedor.getSede().getUbicacion() : null,
+                false
         );
     }
 
