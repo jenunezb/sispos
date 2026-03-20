@@ -11,4 +11,5 @@ public interface LoginCuentaDTO {
     Long getEmpresaNit();
     Long getEmpresaTelefono();
     Boolean getEsSuperAdmin();
+    Boolean getEsAdministradorEmpresa();
 }

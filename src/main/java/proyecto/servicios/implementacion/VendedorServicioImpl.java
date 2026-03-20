@@ -39,8 +39,16 @@ public class VendedorServicioImpl implements VendedorServicio {
 
     @Override
     public List<VendedorDTO> listarVendedores(Long empresaNit) {
+        return mapVendedores(vendedorRepository.findVisiblesByEmpresaNit(empresaNit));
+    }
 
-        return vendedorRepository.findVisiblesByEmpresaNit(empresaNit)
+    @Override
+    public List<VendedorDTO> listarVendedores(Long empresaNit, List<Long> sedeIds) {
+        return mapVendedores(vendedorRepository.findVisiblesByEmpresaNitAndSedeIdIn(empresaNit, sedeIds));
+    }
+
+    private List<VendedorDTO> mapVendedores(List<Vendedor> vendedores) {
+        return vendedores
                 .stream()
                 .map(v -> new VendedorDTO(
                         v.getCodigo(),

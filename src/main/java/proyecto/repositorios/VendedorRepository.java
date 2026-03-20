@@ -37,4 +37,20 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
             """)
     List<Vendedor> findVisiblesByEmpresaNit(@Param("empresaNit") Long empresaNit);
 
+    @Query("""
+            SELECT v
+            FROM Vendedor v
+            LEFT JOIN v.empresa empresa
+            LEFT JOIN v.sede sede
+            LEFT JOIN sede.empresa empresaSede
+            WHERE (empresa.nit = :empresaNit
+               OR (empresa IS NULL AND empresaSede.nit = :empresaNit))
+              AND sede.id IN :sedeIds
+            ORDER BY v.nombre ASC
+            """)
+    List<Vendedor> findVisiblesByEmpresaNitAndSedeIdIn(
+            @Param("empresaNit") Long empresaNit,
+            @Param("sedeIds") List<Long> sedeIds
+    );
+
 }

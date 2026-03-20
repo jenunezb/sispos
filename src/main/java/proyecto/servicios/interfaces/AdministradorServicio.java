@@ -10,11 +10,17 @@ public interface AdministradorServicio {
 
     int crearVendedor (UsuarioDTO usuarioDTO, Long empresaNit) throws Exception;
 
+    int crearAdministradorDelegado(AdministradorEmpresaCrearDTO dto, Integer administradorDeleganteCodigo) throws Exception;
+
     int registrarEmpresa(RegistroEmpresaDTO dto, MultipartFile archivo) throws Exception;
 
     int registrarAdministradorSistema(RegistroAdministradorSistemaDTO dto) throws Exception;
 
     void editarVendedor(UsuarioDTO usuarioDTO);
+
+    List<AdministradorEmpresaDTO> listarAdministradoresEmpresa(Long empresaNit);
+
+    void actualizarSedesAdministrador(Integer administradorCodigo, AdministradorSedesDTO dto, Long empresaNit);
 
     List<InventarioFinalDTO> obtenerInventarioFinal(
             Long sedeId,

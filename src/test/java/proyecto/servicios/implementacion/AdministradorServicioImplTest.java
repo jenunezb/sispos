@@ -7,6 +7,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import proyecto.dto.AdministradorEmpresaCrearDTO;
+import proyecto.dto.AdministradorSedesDTO;
 import proyecto.dto.RegistroEmpresaDTO;
 import proyecto.dto.UsuarioDTO;
 import proyecto.entidades.Administrador;
@@ -23,9 +25,12 @@ import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -145,5 +150,111 @@ class AdministradorServicioImplTest {
         verify(empresaRepository).save(empresaCaptor.capture());
         assertEquals(null, empresaCaptor.getValue().getLogo());
         verify(imagenRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarEmpresaDebeMarcarAdministradorPrincipal() throws Exception {
+        RegistroEmpresaDTO dto = new RegistroEmpresaDTO(
+                "admin@correo.com",
+                "Password#123",
+                "Admin",
+                "Principal",
+                3001234567L,
+                900123456L,
+                "Empresa Demo",
+                "Sede Principal",
+                "Centro"
+        );
+
+        when(empresaRepository.existsById(900123456L)).thenReturn(false);
+        when(cuentaRepo.findByCorreo("admin@correo.com")).thenReturn(Optional.empty());
+        when(empresaRepository.save(any(Empresa.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(administradorRepository.save(any(Administrador.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(sedeRepository.save(any(Sede.class))).thenAnswer(inv -> {
+            Sede sede = inv.getArgument(0);
+            sede.setId(1L);
+            return sede;
+        });
+
+        administradorServicio.registrarEmpresa(dto, null);
+
+        ArgumentCaptor<Administrador> captor = ArgumentCaptor.forClass(Administrador.class);
+        verify(administradorRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
+
+        Administrador ultimoGuardado = captor.getAllValues().get(captor.getAllValues().size() - 1);
+        assertTrue(ultimoGuardado.isEsAdministradorEmpresa());
+        assertEquals(1, ultimoGuardado.getSedesAsignadas().size());
+        assertEquals(1L, ultimoGuardado.getSedesAsignadas().get(0).getId());
+    }
+
+    @Test
+    void crearAdministradorDelegadoDebeAsignarSedes() throws Exception {
+        AdministradorEmpresaCrearDTO dto = new AdministradorEmpresaCrearDTO(
+                "delegado@correo.com",
+                "Password#123",
+                "Laura",
+                "Lopez",
+                3001234567L,
+                List.of(10L, 11L)
+        );
+
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Administrador principal = new Administrador();
+        principal.setCodigo(99);
+        principal.setEmpresa(empresa);
+        principal.setEsAdministradorEmpresa(true);
+
+        Sede sede1 = new Sede();
+        sede1.setId(10L);
+        sede1.setEmpresa(empresa);
+
+        Sede sede2 = new Sede();
+        sede2.setId(11L);
+        sede2.setEmpresa(empresa);
+
+        when(cuentaRepo.findByCorreo("delegado@correo.com")).thenReturn(Optional.empty());
+        when(administradorRepository.findDetalleByCodigo(99)).thenReturn(Optional.of(principal));
+        when(empresaRepository.findById(900123456L)).thenReturn(Optional.of(empresa));
+        when(sedeRepository.findByEmpresaNitAndIdIn(900123456L, List.of(10L, 11L))).thenReturn(List.of(sede1, sede2));
+        when(administradorRepository.save(any(Administrador.class))).thenAnswer(inv -> {
+            Administrador admin = inv.getArgument(0);
+            admin.setCodigo(5);
+            return admin;
+        });
+
+        int codigo = administradorServicio.crearAdministradorDelegado(dto, 99);
+
+        assertEquals(5, codigo);
+
+        ArgumentCaptor<Administrador> captor = ArgumentCaptor.forClass(Administrador.class);
+        verify(administradorRepository).save(captor.capture());
+        assertFalse(captor.getValue().isEsAdministradorEmpresa());
+        assertEquals(2, captor.getValue().getSedesAsignadas().size());
+    }
+
+    @Test
+    void actualizarSedesAdministradorDebeReemplazarAsignaciones() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Administrador delegado = new Administrador();
+        delegado.setCodigo(7);
+        delegado.setEmpresa(empresa);
+        delegado.setEsAdministradorEmpresa(false);
+
+        Sede sede = new Sede();
+        sede.setId(20L);
+        sede.setEmpresa(empresa);
+
+        when(administradorRepository.findDetalleByCodigo(7)).thenReturn(Optional.of(delegado));
+        when(sedeRepository.findByEmpresaNitAndIdIn(900123456L, List.of(20L))).thenReturn(List.of(sede));
+        when(administradorRepository.save(any(Administrador.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        administradorServicio.actualizarSedesAdministrador(7, new AdministradorSedesDTO(List.of(20L)), 900123456L);
+
+        assertEquals(1, delegado.getSedesAsignadas().size());
+        assertEquals(20L, delegado.getSedesAsignadas().get(0).getId());
     }
 }

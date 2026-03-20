@@ -4,6 +4,17 @@ ALTER TABLE administrador
 ALTER TABLE administrador
     ALTER COLUMN empresa_nit DROP NOT NULL;
 
+ALTER TABLE administrador
+    ADD COLUMN IF NOT EXISTS es_administrador_empresa BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE TABLE IF NOT EXISTS administrador_sede (
+    administrador_id INTEGER NOT NULL,
+    sede_id BIGINT NOT NULL,
+    PRIMARY KEY (administrador_id, sede_id),
+    CONSTRAINT fk_administrador_sede_administrador FOREIGN KEY (administrador_id) REFERENCES administrador(codigo),
+    CONSTRAINT fk_administrador_sede_sede FOREIGN KEY (sede_id) REFERENCES sede(id)
+);
+
 CREATE TABLE IF NOT EXISTS suscripcion_sede (
     id BIGSERIAL PRIMARY KEY,
     sede_id BIGINT NOT NULL UNIQUE,

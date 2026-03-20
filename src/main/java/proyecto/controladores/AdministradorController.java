@@ -1,8 +1,6 @@
 package proyecto.controladores;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -20,12 +18,12 @@ import proyecto.repositorios.AdministradorRepository;
 import proyecto.repositorios.EmpresaRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VentaRepository;
+import proyecto.servicios.implementacion.AdministradorAccesoService;
 import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.InformeInventarioDiaService;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
 import proyecto.servicios.interfaces.VentaServicio;
-import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -41,7 +39,7 @@ public class AdministradorController {
     private final VendedorServicio vendedorServicio;
     private final InformeInventarioDiaService informeInventarioDiaService;
     private final VentaServicio ventaServicio;
-    private final JWTUtils jwtUtils;
+    private final AdministradorAccesoService administradorAccesoService;
     private final AdministradorRepository administradorRepository;
     private final EmpresaRepository empresaRepository;
     private final SedeRepository sedeRepository;
@@ -53,11 +51,65 @@ public class AdministradorController {
             @RequestParam(required = false) Long empresaNit,
             @RequestBody UsuarioDTO dto) throws Exception {
 
-        administradorServicio.crearVendedor(dto, resolverEmpresaNit(authorization, empresaNit));
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        Long empresaNitResuelta = resolverEmpresaNit(authorization, empresaNit);
+
+        if (dto.sedeId() == null) {
+            throw new RuntimeException("Debe seleccionar una sede para el vendedor");
+        }
+
+        administradorAccesoService.validarAccesoASede(admin, dto.sedeId());
+        administradorServicio.crearVendedor(dto, empresaNitResuelta);
 
         return ResponseEntity.ok(
                 new MensajeDTO(false, "Vendedor creado exitosamente")
         );
+    }
+
+    @PostMapping("/administradores")
+    public ResponseEntity<MensajeDTO<String>> crearAdministradorDelegado(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody AdministradorEmpresaCrearDTO dto
+    ) throws Exception {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAdministradorEmpresa(admin);
+
+        for (Long sedeId : dto.sedeIds()) {
+            administradorAccesoService.validarAccesoASede(admin, sedeId);
+        }
+
+        administradorServicio.crearAdministradorDelegado(dto, admin.getCodigo());
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Administrador delegado creado correctamente"));
+    }
+
+    @GetMapping("/administradores")
+    public ResponseEntity<MensajeDTO<List<AdministradorEmpresaDTO>>> listarAdministradoresEmpresa(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAdministradorEmpresa(admin);
+
+        return ResponseEntity.ok(new MensajeDTO<>(
+                false,
+                administradorServicio.listarAdministradoresEmpresa(admin.getEmpresa().getNit())
+        ));
+    }
+
+    @PutMapping("/administradores/{codigo}/sedes")
+    public ResponseEntity<MensajeDTO<String>> actualizarSedesAdministrador(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Integer codigo,
+            @Valid @RequestBody AdministradorSedesDTO dto
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAdministradorEmpresa(admin);
+
+        for (Long sedeId : dto.sedeIds()) {
+            administradorAccesoService.validarAccesoASede(admin, sedeId);
+        }
+
+        administradorServicio.actualizarSedesAdministrador(codigo, dto, admin.getEmpresa().getNit());
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Sedes del administrador actualizadas correctamente"));
     }
 
     @PostMapping("/crearProducto")
@@ -109,9 +161,17 @@ public class AdministradorController {
             @RequestHeader("Authorization") String authorization,
             @RequestParam(required = false) Long empresaNit
     ) {
-        List<VendedorDTO> vendedores = vendedorServicio.listarVendedores(
-                resolverEmpresaNit(authorization, empresaNit)
-        );
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        Long empresaNitResuelta = resolverEmpresaNit(authorization, empresaNit);
+
+        List<VendedorDTO> vendedores = admin.isEsSuperAdmin() || admin.isEsAdministradorEmpresa()
+                ? vendedorServicio.listarVendedores(empresaNitResuelta)
+                : vendedorServicio.listarVendedores(
+                        empresaNitResuelta,
+                        administradorAccesoService.obtenerSedesVisibles(admin).stream()
+                                .map(sede -> sede.getId())
+                                .toList()
+                );
 
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, vendedores)
@@ -160,15 +220,19 @@ public class AdministradorController {
     }
 
     @GetMapping("/final/{sedeId}")
-    public ResponseEntity<List<InventarioFinalDTO>> obtenerInventarioFinal(@PathVariable Long sedeId,
-                                                                           @RequestParam
-                                                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-                                                                           LocalDate fechaInicio,
+    public ResponseEntity<List<InventarioFinalDTO>> obtenerInventarioFinal(
+            @PathVariable Long sedeId,
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fechaInicio,
 
-                                                                           @RequestParam
-                                                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-                                                                           LocalDate fechaFin
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fechaFin
     ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAccesoASede(admin, sedeId);
 
         List<InventarioFinalDTO> resultado =
                 administradorServicio.obtenerInventarioFinal(
@@ -193,7 +257,13 @@ public class AdministradorController {
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody CambiarEstadoVentaDTO dto
     ) {
-        Administrador admin = obtenerAdministradorAutenticado(authorization);
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+
+        if (!admin.isEsSuperAdmin()) {
+            Venta venta = ventaRepository.findById(dto.ventaId())
+                    .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+            administradorAccesoService.validarAccesoASede(admin, venta.getSede().getId());
+        }
 
         if (admin.isEsSuperAdmin()) {
             ventaServicio.cambiarEstadoVentaSistema(dto.ventaId(), dto.valido());
@@ -221,10 +291,13 @@ public class AdministradorController {
 
     @GetMapping("/informes")
     public ResponseEntity<List<InformeInventarioDia>> obtenerInformes(
+            @RequestHeader("Authorization") String authorization,
             @RequestParam Long sedeId,
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate fecha) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAccesoASede(admin, sedeId);
 
         return ResponseEntity.ok(
                 informeInventarioDiaService.obtenerInformes(sedeId, fecha)
@@ -352,38 +425,22 @@ public class AdministradorController {
     }
 
     private Long resolverEmpresaNit(String authorization, Long empresaNitSolicitada) {
-        Administrador admin = obtenerAdministradorAutenticado(authorization);
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        Long empresaNit = administradorAccesoService.resolverEmpresaNit(admin, empresaNitSolicitada);
 
         if (admin.isEsSuperAdmin()) {
-            if (empresaNitSolicitada == null) {
-                throw new RuntimeException("Debe indicar el parámetro empresaNit para esta operación");
-            }
-
-            Empresa empresa = empresaRepository.findById(empresaNitSolicitada)
+            Empresa empresa = empresaRepository.findById(empresaNit)
                     .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
             return empresa.getNit();
         }
 
-        if (admin.getEmpresa() == null) {
-            throw new RuntimeException("El administrador no tiene una empresa asociada");
-        }
-
-        return admin.getEmpresa().getNit();
+        return empresaNit;
     }
 
     private void validarAdministradorSistema(String authorization) {
-        Administrador admin = obtenerAdministradorAutenticado(authorization);
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         if (!admin.isEsSuperAdmin()) {
             throw new RuntimeException("No tiene permisos de administrador del sistema");
         }
-    }
-
-    private Administrador obtenerAdministradorAutenticado(String authorization) {
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        String correo = claims.getBody().getSubject();
-
-        return administradorRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
     }
 }

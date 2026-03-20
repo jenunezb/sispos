@@ -9,6 +9,7 @@ import proyecto.entidades.Administrador;
 import proyecto.entidades.Vendedor;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -134,6 +135,36 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
     Optional<Administrador> findByCorreoIgnoreCase(String correo);
 
     List<Administrador> findByEmpresaNit(Long nit);
+
+    List<Administrador> findByEmpresaNitAndEsSuperAdminFalseOrderByNombreAsc(Long nit);
+
+    Optional<Administrador> findByCodigoAndEmpresaNit(Integer codigo, Long nit);
+
+    @Query("""
+            SELECT DISTINCT a
+            FROM Administrador a
+            LEFT JOIN FETCH a.sedesAsignadas sedes
+            WHERE a.codigo = :codigo
+            """)
+    Optional<Administrador> findDetalleByCodigo(@Param("codigo") Integer codigo);
+
+    @Query("""
+            SELECT DISTINCT a
+            FROM Administrador a
+            LEFT JOIN FETCH a.sedesAsignadas sedes
+            WHERE a.empresa.nit = :empresaNit
+              AND a.esSuperAdmin = false
+            ORDER BY a.nombre ASC
+            """)
+    List<Administrador> findDetalleByEmpresaNit(@Param("empresaNit") Long empresaNit);
+
+    @Query("""
+            SELECT DISTINCT a
+            FROM Administrador a
+            LEFT JOIN FETCH a.sedesAsignadas sedes
+            WHERE a.codigo IN :codigos
+            """)
+    List<Administrador> findDetalleByCodigoIn(@Param("codigos") Collection<Integer> codigos);
 
     long countByEsSuperAdminTrue();
 

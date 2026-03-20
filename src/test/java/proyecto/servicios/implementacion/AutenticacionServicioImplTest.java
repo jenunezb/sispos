@@ -147,6 +147,16 @@ class AutenticacionServicioImplTest {
             public Long getEmpresaTelefono() {
                 return empresaTelefono;
             }
+
+            @Override
+            public Boolean getEsSuperAdmin() {
+                return false;
+            }
+
+            @Override
+            public Boolean getEsAdministradorEmpresa() {
+                return false;
+            }
         };
     }
 }

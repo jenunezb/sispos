@@ -1,6 +1,8 @@
 package proyecto.repositorios;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import proyecto.entidades.Sede;
 
@@ -11,4 +13,15 @@ public interface SedeRepository extends JpaRepository<Sede, Long> {
     boolean existsByUbicacionIgnoreCase(String ubicacion);
 
     List<Sede> findByEmpresaNit(Long empresaNit);
+
+    @Query("""
+            SELECT DISTINCT s
+            FROM Sede s
+            JOIN s.administradoresAsignados admin
+            WHERE admin.codigo = :administradorCodigo
+            ORDER BY s.ubicacion ASC
+            """)
+    List<Sede> findByAdministradorAsignado(@Param("administradorCodigo") Integer administradorCodigo);
+
+    List<Sede> findByEmpresaNitAndIdIn(Long empresaNit, List<Long> ids);
 }

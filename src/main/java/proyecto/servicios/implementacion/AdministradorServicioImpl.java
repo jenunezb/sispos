@@ -14,6 +14,7 @@ import proyecto.servicios.interfaces.AdministradorServicio;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,6 +78,40 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         Vendedor vendedorNuevo = vendedorRepository.save(vendedor);
 
         return vendedorNuevo.getCodigo();
+    }
+
+    @Override
+    @Transactional
+    public int crearAdministradorDelegado(AdministradorEmpresaCrearDTO dto, Integer administradorDeleganteCodigo) throws Exception {
+        if (estaRepetidoCorreo(dto.correo())) {
+            throw new Exception("El correo ya se encuentra registrado");
+        }
+
+        Administrador administradorDelegante = administradorRepository.findDetalleByCodigo(administradorDeleganteCodigo)
+                .orElseThrow(() -> new RuntimeException("Administrador delegante no encontrado"));
+
+        if (administradorDelegante.getEmpresa() == null) {
+            throw new RuntimeException("El administrador delegante no tiene una empresa asociada");
+        }
+
+        Empresa empresa = empresaRepository.findById(administradorDelegante.getEmpresa().getNit())
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        List<Sede> sedesAsignadas = obtenerSedesValidasDeEmpresa(dto.sedeIds(), empresa.getNit());
+
+        Administrador admin = new Administrador();
+        admin.setCorreo(dto.correo());
+        admin.setPassword(passwordEncoder.encode(dto.password()));
+        admin.setNombre(dto.nombre());
+        admin.setApellido(dto.apellido());
+        admin.setCelular(dto.celular());
+        admin.setEmpresa(empresa);
+        admin.setEsSuperAdmin(false);
+        admin.setEsAdministradorEmpresa(false);
+        admin.setSedesAsignadas(new ArrayList<>(sedesAsignadas));
+
+        administradorRepository.save(admin);
+        return admin.getCodigo();
     }
 
 
@@ -154,6 +189,47 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         }
 
         vendedorRepository.save(vendedor);
+    }
+
+    @Override
+    public List<AdministradorEmpresaDTO> listarAdministradoresEmpresa(Long empresaNit) {
+        return administradorRepository.findDetalleByEmpresaNit(empresaNit)
+                .stream()
+                .map(admin -> new AdministradorEmpresaDTO(
+                        admin.getCodigo(),
+                        admin.getNombre(),
+                        admin.getApellido(),
+                        admin.getCorreo(),
+                        admin.getCelular(),
+                        admin.isEsAdministradorEmpresa(),
+                        admin.getSedesAsignadas().stream()
+                                .map(Sede::getId)
+                                .sorted()
+                                .toList()
+                ))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void actualizarSedesAdministrador(Integer administradorCodigo, AdministradorSedesDTO dto, Long empresaNit) {
+        Administrador admin = administradorRepository.findDetalleByCodigo(administradorCodigo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        if (admin.isEsSuperAdmin()) {
+            throw new RuntimeException("No se pueden modificar las sedes del administrador del sistema");
+        }
+
+        if (admin.getEmpresa() == null || !empresaNit.equals(admin.getEmpresa().getNit())) {
+            throw new RuntimeException("El administrador no pertenece a la empresa indicada");
+        }
+
+        if (admin.isEsAdministradorEmpresa()) {
+            throw new RuntimeException("Las sedes del administrador principal no se gestionan manualmente");
+        }
+
+        admin.setSedesAsignadas(new ArrayList<>(obtenerSedesValidasDeEmpresa(dto.sedeIds(), empresaNit)));
+        administradorRepository.save(admin);
     }
 
     @Override
@@ -256,6 +332,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         admin.setApellido(dto.apellido());
         admin.setCelular(dto.celular());
         admin.setEmpresa(empresa);
+        admin.setEsAdministradorEmpresa(true);
 
         administradorRepository.save(admin);
 
@@ -266,6 +343,8 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         sede.setAdministrador(admin);
 
         sedeRepository.save(sede);
+        admin.setSedesAsignadas(new ArrayList<>(List.of(sede)));
+        administradorRepository.save(admin);
 
         return admin.getCodigo();
     }
@@ -289,10 +368,21 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         admin.setApellido(dto.apellido());
         admin.setCelular(dto.celular());
         admin.setEsSuperAdmin(true);
+        admin.setEsAdministradorEmpresa(false);
         admin.setEmpresa(null);
 
         administradorRepository.save(admin);
         return admin.getCodigo();
+    }
+
+    private List<Sede> obtenerSedesValidasDeEmpresa(List<Long> sedeIds, Long empresaNit) {
+        List<Sede> sedes = sedeRepository.findByEmpresaNitAndIdIn(empresaNit, sedeIds);
+
+        if (sedes.size() != sedeIds.size()) {
+            throw new RuntimeException("Una o mas sedes no pertenecen a la empresa");
+        }
+
+        return sedes;
     }
 
 }
