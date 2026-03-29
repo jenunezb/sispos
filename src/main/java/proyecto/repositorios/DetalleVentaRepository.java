@@ -16,6 +16,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         JOIN d.producto p
         JOIN d.venta v
         LEFT JOIN v.vendedor vend
+        WHERE v.anulado = false
     """)
     Double costoProduccionTotal();
 
@@ -26,6 +27,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         JOIN d.venta v
         LEFT JOIN v.vendedor vend
         WHERE v.sede.id = :sedeId
+          AND v.anulado = false
           AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     Double costoProduccionPorSede(@Param("sedeId") Long sedeId);
@@ -37,6 +39,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     JOIN d.venta v
         LEFT JOIN v.vendedor vend
     WHERE v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double costoProduccionEntreFechas(
             @Param("desde") LocalDateTime desde,
@@ -51,6 +54,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double costoProduccionPorSedeEntreFechas(
@@ -66,6 +70,7 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     JOIN d.venta v
     WHERE v.sede.empresa.nit = :empresaNit
       AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double costoProduccionEntreFechasPorEmpresa(
             @Param("empresaNit") Long empresaNit,
