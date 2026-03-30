@@ -37,6 +37,8 @@ public interface VentaServicio {
             LocalDateTime hasta
     );
 
+    VentaResponseDTO obtenerVentaPorId(Long ventaId);
+
     VentaResponseDTO mapToResponse(Venta venta);
 
     void anularVenta(Long ventaId);

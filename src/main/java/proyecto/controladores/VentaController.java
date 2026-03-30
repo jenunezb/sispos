@@ -25,6 +25,11 @@ public class VentaController {
         return ResponseEntity.ok(ventaService.mapToResponse(venta));
     }
 
+    @GetMapping("/{ventaId}")
+    public ResponseEntity<VentaResponseDTO> obtenerVentaPorId(@PathVariable Long ventaId) {
+        return ResponseEntity.ok(ventaService.obtenerVentaPorId(ventaId));
+    }
+
     @GetMapping("/vendedor/{vendedorId}")
     public ResponseEntity<List<VentaResponseDTO>> misVentas(@PathVariable Long vendedorId) {
         return ResponseEntity.ok(ventaService.listarVentasPorVendedor(vendedorId));

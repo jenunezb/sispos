@@ -356,6 +356,15 @@ public class VentaServicioImpl implements VentaServicio {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public VentaResponseDTO obtenerVentaPorId(Long ventaId) {
+        Venta venta = ventaRepository.findDetalleById(ventaId)
+                .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+
+        return mapToResponse(venta);
+    }
+
+    @Override
     public VentaResponseDTO mapToResponse(Venta venta) {
         String nombreUsuario;
         if (venta.getVendedor() != null) {
@@ -370,6 +379,7 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getId(),
                 venta.getFecha(),
                 venta.getTotal(),
+                venta.getModoPago() != null ? venta.getModoPago().name() : null,
                 nombreUsuario,
                 venta.getSede().getUbicacion(),
                 venta.getCliente() != null ? venta.getCliente().getId() : null,

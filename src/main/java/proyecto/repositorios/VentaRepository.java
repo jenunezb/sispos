@@ -307,6 +307,20 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         LEFT JOIN FETCH v.vendedor
         LEFT JOIN FETCH v.administrador
         LEFT JOIN FETCH v.cliente
+        WHERE v.id = :ventaId
+    """)
+    Optional<Venta> findDetalleById(@Param("ventaId") Long ventaId);
+
+    @Query("""
+        SELECT DISTINCT v
+        FROM Venta v
+        LEFT JOIN FETCH v.detalles d
+        LEFT JOIN FETCH d.producto
+        LEFT JOIN FETCH v.sede s
+        LEFT JOIN FETCH s.empresa
+        LEFT JOIN FETCH v.vendedor
+        LEFT JOIN FETCH v.administrador
+        LEFT JOIN FETCH v.cliente
         ORDER BY v.fecha DESC
     """)
     List<Venta> findAllConDetalleParaSuperAdmin();

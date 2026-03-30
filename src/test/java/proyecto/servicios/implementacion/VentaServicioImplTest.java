@@ -166,4 +166,27 @@ class VentaServicioImplTest {
         verify(ventaRepository).save(ventaCaptor.capture());
         assertEquals(22L, ventaCaptor.getValue().getSede().getId());
     }
+
+    @Test
+    void obtenerVentaPorIdDebeIncluirModoPagoEnLaRespuesta() {
+        Sede sede = new Sede();
+        sede.setUbicacion("Centro");
+
+        Venta venta = new Venta();
+        venta.setId(15L);
+        venta.setFecha(java.time.LocalDateTime.of(2026, 3, 29, 18, 30));
+        venta.setTotal(25000.0);
+        venta.setModoPago(ModoPago.TRANSFERENCIA);
+        venta.setSede(sede);
+        venta.setDetalles(List.of());
+        venta.setAnulado(false);
+
+        when(ventaRepository.findDetalleById(15L)).thenReturn(Optional.of(venta));
+
+        var respuesta = ventaServicio.obtenerVentaPorId(15L);
+
+        assertEquals(15L, respuesta.id());
+        assertEquals("TRANSFERENCIA", respuesta.modoPago());
+        assertEquals("Centro", respuesta.sedeUbicacion());
+    }
 }
