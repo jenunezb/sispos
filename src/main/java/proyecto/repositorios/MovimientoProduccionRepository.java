@@ -10,5 +10,7 @@ import java.util.List;
 @Repository
 public interface MovimientoProduccionRepository extends JpaRepository<MovimientoProduccion, Long> {
 
+    boolean existsByVendedorCodigo(Long vendedorId);
+
     List<MovimientoProduccion> findBySedeIdAndFechaBetweenOrderByFechaAsc(Long sedeId, LocalDateTime inicio, LocalDateTime fin);
 }

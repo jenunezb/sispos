@@ -178,6 +178,26 @@ public class AdministradorController {
         );
     }
 
+    @DeleteMapping("/vendedores/{codigo}")
+    public ResponseEntity<MensajeDTO<String>> eliminarVendedor(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long codigo,
+            @RequestParam(required = false) Long empresaNit
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        Long empresaNitResuelta = resolverEmpresaNit(authorization, empresaNit);
+
+        List<Long> sedesVisibles = admin.isEsSuperAdmin() || admin.isEsAdministradorEmpresa()
+                ? null
+                : administradorAccesoService.obtenerSedesVisibles(admin).stream()
+                        .map(sede -> sede.getId())
+                        .toList();
+
+        vendedorServicio.eliminarVendedor(codigo, empresaNitResuelta, sedesVisibles);
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Usuario eliminado correctamente"));
+    }
+
     @PostMapping("/productos/importar-csv")
     public ResponseEntity<MensajeDTO<String>> importarProductosCsv(
             @RequestHeader("Authorization") String authorization,

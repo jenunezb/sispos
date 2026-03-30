@@ -3,12 +3,14 @@ package proyecto.servicios.implementacion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import proyecto.dto.BalanceSedeVendedor;
 import proyecto.dto.VendedorDTO;
 import proyecto.entidades.ModoPago;
 import proyecto.entidades.Sede;
 import proyecto.entidades.Vendedor;
 import proyecto.entidades.Venta;
+import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
 import proyecto.repositorios.VentaRepository;
@@ -16,7 +18,6 @@ import proyecto.servicios.interfaces.VendedorServicio;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,7 @@ public class VendedorServicioImpl implements VendedorServicio {
     private final VendedorRepository vendedorRepository;
     private final SedeRepository sedeRepository;
     private final VentaRepository ventaRepository;
+    private final MovimientoProduccionRepository movimientoProduccionRepository;
 
     @Override
     public void cambiarEstado(Long codigo, Boolean estado) {
@@ -45,6 +47,26 @@ public class VendedorServicioImpl implements VendedorServicio {
     @Override
     public List<VendedorDTO> listarVendedores(Long empresaNit, List<Long> sedeIds) {
         return mapVendedores(vendedorRepository.findVisiblesByEmpresaNitAndSedeIdIn(empresaNit, sedeIds));
+    }
+
+    @Override
+    @Transactional
+    public void eliminarVendedor(Long codigo, Long empresaNit, List<Long> sedeIdsVisibles) {
+        Vendedor vendedor = vendedorRepository.findVisibleByCodigoAndEmpresaNit(codigo, empresaNit)
+                .orElseThrow(() -> new RuntimeException("Usuario comercial no encontrado"));
+
+        if (sedeIdsVisibles != null && !sedeIdsVisibles.isEmpty()) {
+            Long sedeId = vendedor.getSede() != null ? vendedor.getSede().getId() : null;
+            if (sedeId == null || !sedeIdsVisibles.contains(sedeId)) {
+                throw new RuntimeException("No tiene permisos para eliminar este usuario");
+            }
+        }
+
+        if (ventaRepository.existsByVendedorCodigo(codigo) || movimientoProduccionRepository.existsByVendedorCodigo(codigo)) {
+            throw new RuntimeException("No se puede eliminar el usuario porque tiene ventas o movimientos registrados");
+        }
+
+        vendedorRepository.delete(vendedor);
     }
 
     private List<VendedorDTO> mapVendedores(List<Vendedor> vendedores) {

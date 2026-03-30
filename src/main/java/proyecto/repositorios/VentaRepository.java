@@ -13,6 +13,8 @@ import java.util.Optional;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
+    boolean existsByVendedorCodigo(Long vendedorId);
+
     List<Venta> findByVendedorCodigoAndAnuladoFalse(Long vendedorId);
 
     List<Venta> findByVendedorCodigoAndAnuladoFalseAndFechaBetween(
