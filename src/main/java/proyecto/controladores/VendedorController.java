@@ -1,19 +1,20 @@
 package proyecto.controladores;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
-import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import proyecto.dto.BalanceSedeDTO;
 import proyecto.dto.BalanceSedeVendedor;
 import proyecto.dto.InventarioDTO;
 import proyecto.dto.InventarioVendedorResponseDTO;
-import proyecto.entidades.Usuario;
+import proyecto.dto.MensajeDTO;
 import proyecto.entidades.Vendedor;
 import proyecto.servicios.interfaces.AdministradorServicio;
 import proyecto.servicios.interfaces.InventarioServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
+import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,8 +26,10 @@ import java.util.List;
 @AllArgsConstructor
 public class VendedorController {
 
-    private InventarioServicio inventarioServicio;
-    private VendedorServicio vendedorServicio;
+    private final InventarioServicio inventarioServicio;
+    private final VendedorServicio vendedorServicio;
+    private final AdministradorServicio administradorServicio;
+    private final JWTUtils jwtUtils;
 
     @GetMapping("/inventario")
     public InventarioVendedorResponseDTO inventarioVendedor(@RequestParam("correo") String correo) {
@@ -58,6 +61,20 @@ public class VendedorController {
         }
 
         return vendedorServicio.balancePorSedeId(correo, fDesde, fHasta);
+    }
+
+    @GetMapping("/logo")
+    public ResponseEntity<MensajeDTO<String>> obtenerLogoEmpresa(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerLogoEmpresa(correo)));
+    }
+
+    private String obtenerCorreo(String authorization) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        return claims.getBody().getSubject();
     }
 }
 

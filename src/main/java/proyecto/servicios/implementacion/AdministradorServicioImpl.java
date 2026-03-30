@@ -337,16 +337,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
 
     @Override
     public String obtenerLogoEmpresa(String correo) {
-        Administrador admin = administradorRepository.findByCorreoIgnoreCase(correo)
-                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
-
-        if (admin.getEmpresa() == null) {
-            return null;
-        }
-
-        Empresa empresa = empresaRepository.findById(admin.getEmpresa().getNit())
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-
+        Empresa empresa = obtenerEmpresaPorCorreo(correo);
         return empresa.getLogo() != null ? empresa.getLogo().getUrl() : null;
     }
 
@@ -444,6 +435,38 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         }
 
         return sedes;
+    }
+
+    private Empresa obtenerEmpresaPorCorreo(String correo) {
+        Optional<Administrador> adminOpt = administradorRepository.findByCorreoIgnoreCase(correo);
+        if (adminOpt.isPresent()) {
+            Administrador admin = adminOpt.get();
+            if (admin.getEmpresa() == null) {
+                throw new RuntimeException("La cuenta no tiene empresa asociada");
+            }
+            return empresaRepository.findById(admin.getEmpresa().getNit())
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        }
+
+        Optional<Vendedor> vendedorOpt = vendedorRepository.findByCorreoIgnoreCase(correo);
+        if (vendedorOpt.isPresent()) {
+            Vendedor vendedor = vendedorOpt.get();
+            Empresa empresa = vendedor.getEmpresa();
+
+            if (empresa == null && vendedor.getSede() != null) {
+                empresa = vendedor.getSede().getEmpresa();
+            }
+
+            if (empresa == null) {
+                throw new RuntimeException("La cuenta no tiene empresa asociada");
+            }
+
+            Long nit = empresa.getNit();
+            return empresaRepository.findById(nit)
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        }
+
+        throw new RuntimeException("Cuenta no encontrada");
     }
 
 }

@@ -14,6 +14,7 @@ import proyecto.dto.UsuarioDTO;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.Ciudad;
 import proyecto.entidades.Empresa;
+import proyecto.entidades.Imagen;
 import proyecto.entidades.Sede;
 import proyecto.entidades.Vendedor;
 import proyecto.repositorios.AdministradorRepository;
@@ -256,5 +257,39 @@ class AdministradorServicioImplTest {
 
         assertEquals(1, delegado.getSedesAsignadas().size());
         assertEquals(20L, delegado.getSedesAsignadas().get(0).getId());
+    }
+
+    @Test
+    void obtenerLogoEmpresaDebeResolverEmpresaDesdeVendedor() {
+        Imagen logo = new Imagen();
+        logo.setUrl("https://cdn/logo.png");
+
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+        empresa.setLogo(logo);
+
+        Sede sede = new Sede();
+        sede.setId(30L);
+        sede.setEmpresa(empresa);
+
+        Vendedor vendedor = new Vendedor();
+        vendedor.setCorreo("jhonfredy@correo.com");
+        vendedor.setSede(sede);
+
+        when(administradorRepository.findByCorreoIgnoreCase("jhonfredy@correo.com")).thenReturn(Optional.empty());
+        when(vendedorRepository.findByCorreoIgnoreCase("jhonfredy@correo.com")).thenReturn(Optional.of(vendedor));
+        when(empresaRepository.findById(900123456L)).thenReturn(Optional.of(empresa));
+
+        String resultado = administradorServicio.obtenerLogoEmpresa("jhonfredy@correo.com");
+
+        assertEquals("https://cdn/logo.png", resultado);
+    }
+
+    @Test
+    void obtenerLogoEmpresaDebeFallarSiLaCuentaNoExiste() {
+        when(administradorRepository.findByCorreoIgnoreCase("inexistente@correo.com")).thenReturn(Optional.empty());
+        when(vendedorRepository.findByCorreoIgnoreCase("inexistente@correo.com")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> administradorServicio.obtenerLogoEmpresa("inexistente@correo.com"));
     }
 }
