@@ -27,6 +27,9 @@ public interface AdministradorServicio {
             LocalDate fechaInicio,
             LocalDate fechaFin
     );
-        void cambiarPassword(String correo, String passwordActual, String passwordNueva) throws Exception;
+
+    void cambiarPassword(String correo, String passwordActual, String passwordNueva) throws Exception;
+
+    String actualizarLogoEmpresa(String correo, MultipartFile logo) throws Exception;
 
 }

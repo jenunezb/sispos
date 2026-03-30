@@ -252,6 +252,22 @@ public class AdministradorController {
         );
     }
 
+    @PutMapping("/cuentas/{correo}/logo")
+    public ResponseEntity<MensajeDTO<String>> actualizarLogoEmpresa(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable String correo,
+            @RequestParam("logo") MultipartFile logo
+    ) throws Exception {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+
+        if (!admin.getCorreo().equalsIgnoreCase(correo)) {
+            throw new RuntimeException("No autorizado para actualizar este logo");
+        }
+
+        String mensaje = administradorServicio.actualizarLogoEmpresa(correo, logo);
+        return ResponseEntity.ok(new MensajeDTO<>(false, mensaje));
+    }
+
     @PatchMapping("/ventas/estado")
     public ResponseEntity<MensajeDTO> cambiarEstadoVenta(
             @RequestHeader("Authorization") String authorization,

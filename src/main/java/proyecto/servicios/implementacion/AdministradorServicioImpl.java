@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 @Service
@@ -287,6 +288,51 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         // 🔐 Encriptar y guardar
         cuenta.setPassword(passwordEncoder.encode(passwordNueva));
         cuentaRepo.save(cuenta);
+    }
+
+    @Override
+    @Transactional
+    public String actualizarLogoEmpresa(String correo, MultipartFile logo) throws Exception {
+        if (logo == null || logo.isEmpty()) {
+            throw new RuntimeException("Debe seleccionar una imagen");
+        }
+
+        Administrador admin = administradorRepository.findByCorreoIgnoreCase(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        if (admin.getEmpresa() == null) {
+            throw new RuntimeException("El administrador no tiene empresa asociada");
+        }
+
+        Empresa empresa = empresaRepository.findById(admin.getEmpresa().getNit())
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        Imagen anterior = empresa.getLogo();
+
+        Map<String, Object> opciones = new HashMap<>();
+        opciones.put("folder", "logos_empresas");
+
+        Map<?, ?> resultado = cloudinary.uploader().upload(logo.getBytes(), opciones);
+
+        Imagen nuevaImagen = new Imagen();
+        nuevaImagen.setUrl(resultado.get("secure_url").toString());
+        nuevaImagen.setPublicId(resultado.get("public_id").toString());
+        nuevaImagen.setTipo(TipoImagen.LOGO);
+        imagenRepository.save(nuevaImagen);
+
+        empresa.setLogo(nuevaImagen);
+        empresaRepository.save(empresa);
+
+        if (anterior != null) {
+            try {
+                cloudinary.uploader().destroy(anterior.getPublicId(), Map.of());
+            } catch (Exception ignored) {
+                // Si falla Cloudinary, al menos dejamos la referencia nueva guardada.
+            }
+            imagenRepository.delete(anterior);
+        }
+
+        return "Logo actualizado correctamente";
     }
 
     @Transactional
