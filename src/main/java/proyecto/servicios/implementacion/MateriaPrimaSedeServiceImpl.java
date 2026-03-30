@@ -247,6 +247,30 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                     inventarioRepository.save(inventario);
                 });
     }
+
+    @Override
+    public List<MateriaPrimaProductoDTO> listarProductosVinculados(Long materiaPrimaId) {
+        materiaPrimaRepository.findById(materiaPrimaId)
+                .orElseThrow(() -> new IllegalStateException("Materia prima no encontrada"));
+
+        return productoMateriaPrimaRepository.findByMateriaPrimaCodigoOrderByProductoNombreAsc(materiaPrimaId)
+                .stream()
+                .map(relacion -> new MateriaPrimaProductoDTO(
+                        relacion.getProducto().getCodigo(),
+                        relacion.getProducto().getNombre(),
+                        relacion.getMlConsumidos()
+                ))
+                .toList();
+    }
+
+    @Override
+    public void desvincularProducto(Long materiaPrimaId, Long productoId) {
+        ProductoMateriaPrima relacion = productoMateriaPrimaRepository
+                .findByMateriaPrimaCodigoAndProductoCodigo(materiaPrimaId, productoId)
+                .orElseThrow(() -> new IllegalStateException("El producto no está vinculado a esta materia prima"));
+
+        productoMateriaPrimaRepository.delete(relacion);
+    }
 }
 
 

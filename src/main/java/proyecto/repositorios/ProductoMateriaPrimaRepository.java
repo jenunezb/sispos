@@ -8,6 +8,7 @@ import proyecto.entidades.Producto;
 import proyecto.entidades.ProductoMateriaPrima;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductoMateriaPrimaRepository
         extends JpaRepository<ProductoMateriaPrima, Long> {
@@ -24,6 +25,10 @@ public interface ProductoMateriaPrimaRepository
     );
 
     List<ProductoMateriaPrima> findByProductoCodigo(Long productoCodigo);
+
+    List<ProductoMateriaPrima> findByMateriaPrimaCodigoOrderByProductoNombreAsc(Long materiaPrimaId);
+
+    Optional<ProductoMateriaPrima> findByMateriaPrimaCodigoAndProductoCodigo(Long materiaPrimaId, Long productoId);
 }
 
 

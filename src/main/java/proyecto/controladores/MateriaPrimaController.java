@@ -88,4 +88,20 @@ public class MateriaPrimaController {
         return ResponseEntity.ok(Map.of("mensaje", "Producto vinculado correctamente"));
     }
 
+    @GetMapping("/{materiaPrimaId}/productos")
+    public ResponseEntity<List<MateriaPrimaProductoDTO>> listarProductosVinculados(
+            @PathVariable Long materiaPrimaId
+    ) {
+        return ResponseEntity.ok(materiaPrimaSedeService.listarProductosVinculados(materiaPrimaId));
+    }
+
+    @DeleteMapping("/{materiaPrimaId}/productos/{productoId}")
+    public ResponseEntity<Map<String, String>> desvincularProducto(
+            @PathVariable Long materiaPrimaId,
+            @PathVariable Long productoId
+    ) {
+        materiaPrimaSedeService.desvincularProducto(materiaPrimaId, productoId);
+        return ResponseEntity.ok(Map.of("mensaje", "Producto desvinculado correctamente"));
+    }
+
 }
