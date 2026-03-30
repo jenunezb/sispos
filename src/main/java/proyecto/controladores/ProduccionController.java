@@ -4,12 +4,17 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.*;
+import proyecto.entidades.Venta;
 import proyecto.servicios.interfaces.ProduccionServicio;
+import proyecto.servicios.interfaces.VentaServicio;
 import proyecto.utils.JWTUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -18,6 +23,7 @@ import java.util.List;
 public class ProduccionController {
 
     private final ProduccionServicio produccionServicio;
+    private final VentaServicio ventaServicio;
     private final JWTUtils jwtUtils;
 
     @PostMapping("/clientes")
@@ -39,14 +45,32 @@ public class ProduccionController {
         );
     }
 
-
-
     @GetMapping("/productos")
     public ResponseEntity<List<ProductoProduccionDTO>> listarProductos(
             @RequestHeader("Authorization") String authorization
     ) {
         return ResponseEntity.ok(
                 produccionServicio.listarProductos(obtenerCorreo(authorization))
+        );
+    }
+
+    @PostMapping("/inventario/produccion")
+    public ResponseEntity<MensajeDTO<String>> registrarProduccion(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProduccionRegistroDTO dto
+    ) {
+        return ResponseEntity.ok(new MensajeDTO<>(
+                false,
+                produccionServicio.registrarProduccion(obtenerCorreo(authorization), dto)
+        ));
+    }
+
+    @GetMapping("/inventario")
+    public ResponseEntity<List<InventarioProduccionDTO>> listarInventario(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarInventario(obtenerCorreo(authorization))
         );
     }
 
@@ -68,6 +92,45 @@ public class ProduccionController {
     ) {
         return ResponseEntity.ok(
                 produccionServicio.listarPreciosCliente(obtenerCorreo(authorization), clienteId)
+        );
+    }
+
+    @PostMapping("/ventas")
+    public ResponseEntity<VentaResponseDTO> crearVentaProduccion(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody VentaRecuestDTO dto
+    ) {
+        Venta venta = ventaServicio.crearVentaProduccion(obtenerCorreo(authorization), dto);
+        return ResponseEntity.ok(ventaServicio.mapToResponse(venta));
+    }
+
+    @GetMapping("/ventas")
+    public ResponseEntity<List<VentaResponseDTO>> listarVentas(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarVentas(obtenerCorreo(authorization))
+        );
+    }
+
+    @GetMapping("/ventas/rango")
+    public ResponseEntity<List<VentaResponseDTO>> listarVentasRango(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarVentasRango(obtenerCorreo(authorization), desde, hasta)
+        );
+    }
+
+    @GetMapping("/informe-diario")
+    public ResponseEntity<InformeProduccionDiaDTO> obtenerInformeDiario(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.obtenerInformeDiario(obtenerCorreo(authorization), fecha)
         );
     }
 
