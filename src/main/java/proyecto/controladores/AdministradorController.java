@@ -268,6 +268,20 @@ public class AdministradorController {
         return ResponseEntity.ok(new MensajeDTO<>(false, mensaje));
     }
 
+    @GetMapping("/cuentas/{correo}/logo")
+    public ResponseEntity<MensajeDTO<String>> obtenerLogoEmpresa(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable String correo
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+
+        if (!admin.getCorreo().equalsIgnoreCase(correo)) {
+            throw new RuntimeException("No autorizado para consultar este logo");
+        }
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerLogoEmpresa(correo)));
+    }
+
     @PatchMapping("/ventas/estado")
     public ResponseEntity<MensajeDTO> cambiarEstadoVenta(
             @RequestHeader("Authorization") String authorization,

@@ -32,4 +32,6 @@ public interface AdministradorServicio {
 
     String actualizarLogoEmpresa(String correo, MultipartFile logo) throws Exception;
 
+    String obtenerLogoEmpresa(String correo);
+
 }

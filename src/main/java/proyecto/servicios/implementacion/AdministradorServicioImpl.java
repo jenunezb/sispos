@@ -335,6 +335,21 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         return "Logo actualizado correctamente";
     }
 
+    @Override
+    public String obtenerLogoEmpresa(String correo) {
+        Administrador admin = administradorRepository.findByCorreoIgnoreCase(correo)
+                .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+
+        if (admin.getEmpresa() == null) {
+            return null;
+        }
+
+        Empresa empresa = empresaRepository.findById(admin.getEmpresa().getNit())
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        return empresa.getLogo() != null ? empresa.getLogo().getUrl() : null;
+    }
+
     @Transactional
     public int registrarEmpresa(RegistroEmpresaDTO dto, MultipartFile archivo) throws Exception {
 
