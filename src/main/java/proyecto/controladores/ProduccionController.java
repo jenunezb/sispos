@@ -8,8 +8,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.*;
+import proyecto.entidades.EstadoComandaCocina;
 import proyecto.entidades.Venta;
 import proyecto.servicios.interfaces.AdministradorServicio;
+import proyecto.servicios.interfaces.ComandaCocinaServicio;
 import proyecto.servicios.interfaces.ProduccionServicio;
 import proyecto.servicios.interfaces.VentaServicio;
 import proyecto.utils.JWTUtils;
@@ -26,6 +28,7 @@ public class ProduccionController {
     private final ProduccionServicio produccionServicio;
     private final VentaServicio ventaServicio;
     private final AdministradorServicio administradorServicio;
+    private final ComandaCocinaServicio comandaCocinaServicio;
     private final JWTUtils jwtUtils;
 
     @PostMapping("/clientes")
@@ -150,6 +153,27 @@ public class ProduccionController {
     ) {
         String correo = obtenerCorreo(authorization);
         return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerImpresionCocinaHabilitada(correo)));
+    }
+
+    @GetMapping("/comandas-cocina")
+    public ResponseEntity<MensajeDTO<List<ComandaCocinaResponseDTO>>> listarComandasCocina(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(false, comandaCocinaServicio.listarComandasActivas(correo)));
+    }
+
+    @PatchMapping("/comandas-cocina/{comandaId}/estado")
+    public ResponseEntity<MensajeDTO<ComandaCocinaResponseDTO>> actualizarEstadoComanda(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long comandaId,
+            @Valid @RequestBody ComandaCocinaEstadoDTO dto
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(
+                false,
+                comandaCocinaServicio.actualizarEstado(correo, comandaId, dto.estado())
+        ));
     }
 
     private String obtenerCorreo(String authorization) {

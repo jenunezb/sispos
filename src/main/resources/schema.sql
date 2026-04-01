@@ -48,3 +48,27 @@ CREATE TABLE IF NOT EXISTS pago_suscripcion_sede (
     CONSTRAINT fk_pago_suscripcion_sede_suscripcion FOREIGN KEY (suscripcion_id) REFERENCES suscripcion_sede(id),
     CONSTRAINT fk_pago_suscripcion_sede_sede FOREIGN KEY (sede_id) REFERENCES sede(id)
 );
+
+CREATE TABLE IF NOT EXISTS comanda_cocina (
+    id BIGSERIAL PRIMARY KEY,
+    fecha_creacion TIMESTAMP NOT NULL,
+    fecha_actualizacion TIMESTAMP NOT NULL,
+    nombre_mesa VARCHAR(120) NOT NULL,
+    observaciones VARCHAR(1000) NULL,
+    estado VARCHAR(30) NOT NULL,
+    total_items INTEGER NOT NULL DEFAULT 0,
+    sede_id BIGINT NOT NULL,
+    vendedor_id INTEGER NULL,
+    administrador_id INTEGER NULL,
+    CONSTRAINT fk_comanda_cocina_sede FOREIGN KEY (sede_id) REFERENCES sede(id),
+    CONSTRAINT fk_comanda_cocina_vendedor FOREIGN KEY (vendedor_id) REFERENCES vendedor(codigo),
+    CONSTRAINT fk_comanda_cocina_administrador FOREIGN KEY (administrador_id) REFERENCES administrador(codigo)
+);
+
+CREATE TABLE IF NOT EXISTS comanda_cocina_detalle (
+    id BIGSERIAL PRIMARY KEY,
+    comanda_id BIGINT NOT NULL,
+    producto_nombre VARCHAR(255) NOT NULL,
+    cantidad INTEGER NOT NULL,
+    CONSTRAINT fk_comanda_cocina_detalle_comanda FOREIGN KEY (comanda_id) REFERENCES comanda_cocina(id) ON DELETE CASCADE
+);

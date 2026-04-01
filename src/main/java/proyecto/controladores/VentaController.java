@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import proyecto.dto.ComandaCocinaCrearDTO;
+import proyecto.dto.ComandaCocinaResponseDTO;
 import proyecto.dto.VentaRecuestDTO;
 import proyecto.dto.VentaResponseDTO;
 import proyecto.entidades.Venta;
+import proyecto.servicios.interfaces.ComandaCocinaServicio;
 import proyecto.servicios.interfaces.VentaServicio;
 
 import java.time.LocalDateTime;
@@ -18,11 +21,19 @@ import java.util.List;
 public class VentaController {
 
     private final VentaServicio ventaService;
+    private final ComandaCocinaServicio comandaCocinaServicio;
 
     @PostMapping
     public ResponseEntity<VentaResponseDTO> crearVenta(@RequestBody VentaRecuestDTO dto) {
         Venta venta = ventaService.crearVenta(dto);
         return ResponseEntity.ok(ventaService.mapToResponse(venta));
+    }
+
+    @PostMapping("/comandas-cocina")
+    public ResponseEntity<ComandaCocinaResponseDTO> crearComandaCocina(
+            @RequestBody ComandaCocinaCrearDTO dto
+    ) {
+        return ResponseEntity.ok(comandaCocinaServicio.crearComanda(dto));
     }
 
     @GetMapping("/{ventaId}")
