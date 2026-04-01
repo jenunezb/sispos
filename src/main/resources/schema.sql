@@ -72,3 +72,33 @@ CREATE TABLE IF NOT EXISTS comanda_cocina_detalle (
     cantidad INTEGER NOT NULL,
     CONSTRAINT fk_comanda_cocina_detalle_comanda FOREIGN KEY (comanda_id) REFERENCES comanda_cocina(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS mesa_estado (
+    id BIGSERIAL PRIMARY KEY,
+    sede_id BIGINT NOT NULL,
+    mesa_referencia_id BIGINT NOT NULL,
+    numero INTEGER NOT NULL DEFAULT 0,
+    nombre VARCHAR(120) NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'LIBRE',
+    fecha_actualizacion TIMESTAMP NOT NULL,
+    CONSTRAINT fk_mesa_estado_sede FOREIGN KEY (sede_id) REFERENCES sede(id),
+    CONSTRAINT uk_mesa_estado_sede_mesa UNIQUE (sede_id, mesa_referencia_id)
+);
+
+CREATE TABLE IF NOT EXISTS mesa_estado_item (
+    id BIGSERIAL PRIMARY KEY,
+    mesa_estado_id BIGINT NOT NULL,
+    producto_id BIGINT NULL,
+    producto_nombre VARCHAR(255) NULL,
+    stock_actual INTEGER NULL,
+    entradas INTEGER NULL,
+    salidas INTEGER NULL,
+    perdidas INTEGER NULL,
+    stock_minimo INTEGER NULL,
+    precio_venta DOUBLE PRECISION NULL,
+    nombre_libre VARCHAR(255) NULL,
+    precio_unitario DOUBLE PRECISION NOT NULL,
+    cantidad INTEGER NOT NULL,
+    total DOUBLE PRECISION NOT NULL,
+    CONSTRAINT fk_mesa_estado_item_mesa_estado FOREIGN KEY (mesa_estado_id) REFERENCES mesa_estado(id) ON DELETE CASCADE
+);
