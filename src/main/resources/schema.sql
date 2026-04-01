@@ -7,6 +7,9 @@ ALTER TABLE administrador
 ALTER TABLE administrador
     ADD COLUMN IF NOT EXISTS es_administrador_empresa BOOLEAN NOT NULL DEFAULT FALSE;
 
+ALTER TABLE empresa
+    ADD COLUMN IF NOT EXISTS impresion_cocina_habilitada BOOLEAN NOT NULL DEFAULT TRUE;
+
 CREATE TABLE IF NOT EXISTS administrador_sede (
     administrador_id INTEGER NOT NULL,
     sede_id BIGINT NOT NULL,

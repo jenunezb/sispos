@@ -144,6 +144,14 @@ public class ProduccionController {
         return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerLogoEmpresa(correo)));
     }
 
+    @GetMapping("/impresion-cocina")
+    public ResponseEntity<MensajeDTO<Boolean>> obtenerImpresionCocina(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerImpresionCocinaHabilitada(correo)));
+    }
+
     private String obtenerCorreo(String authorization) {
         String token = authorization.replace("Bearer ", "");
         Jws<Claims> claims = jwtUtils.parseJwt(token);

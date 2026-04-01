@@ -34,4 +34,8 @@ public interface AdministradorServicio {
 
     String obtenerLogoEmpresa(String correo);
 
+    Boolean obtenerImpresionCocinaHabilitada(String correo);
+
+    String actualizarImpresionCocinaHabilitada(String correo, Boolean habilitada);
+
 }

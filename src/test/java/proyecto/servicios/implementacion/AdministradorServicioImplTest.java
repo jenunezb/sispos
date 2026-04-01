@@ -292,4 +292,47 @@ class AdministradorServicioImplTest {
 
         assertThrows(RuntimeException.class, () -> administradorServicio.obtenerLogoEmpresa("inexistente@correo.com"));
     }
+
+    @Test
+    void actualizarImpresionCocinaDebeGuardarPreferenciaEnEmpresa() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+        empresa.setImpresionCocinaHabilitada(true);
+
+        Administrador admin = new Administrador();
+        admin.setCorreo("admin@correo.com");
+        admin.setEmpresa(empresa);
+
+        when(administradorRepository.findByCorreoIgnoreCase("admin@correo.com")).thenReturn(Optional.of(admin));
+        when(empresaRepository.findById(900123456L)).thenReturn(Optional.of(empresa));
+        when(empresaRepository.save(any(Empresa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String mensaje = administradorServicio.actualizarImpresionCocinaHabilitada("admin@correo.com", false);
+
+        assertEquals("Impresion de cocina deshabilitada correctamente", mensaje);
+        assertFalse(empresa.getImpresionCocinaHabilitada());
+    }
+
+    @Test
+    void obtenerImpresionCocinaDebeUsarEmpresaDelVendedor() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+        empresa.setImpresionCocinaHabilitada(false);
+
+        Sede sede = new Sede();
+        sede.setId(44L);
+        sede.setEmpresa(empresa);
+
+        Vendedor vendedor = new Vendedor();
+        vendedor.setCorreo("vendedor@correo.com");
+        vendedor.setSede(sede);
+
+        when(administradorRepository.findByCorreoIgnoreCase("vendedor@correo.com")).thenReturn(Optional.empty());
+        when(vendedorRepository.findByCorreoIgnoreCase("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
+        when(empresaRepository.findById(900123456L)).thenReturn(Optional.of(empresa));
+
+        Boolean habilitada = administradorServicio.obtenerImpresionCocinaHabilitada("vendedor@correo.com");
+
+        assertFalse(habilitada);
+    }
 }

@@ -341,6 +341,28 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         return empresa.getLogo() != null ? empresa.getLogo().getUrl() : null;
     }
 
+    @Override
+    @Transactional
+    public String actualizarImpresionCocinaHabilitada(String correo, Boolean habilitada) {
+        if (habilitada == null) {
+            throw new RuntimeException("El estado de impresion de cocina es obligatorio");
+        }
+
+        Empresa empresa = obtenerEmpresaPorCorreo(correo);
+        empresa.setImpresionCocinaHabilitada(habilitada);
+        empresaRepository.save(empresa);
+
+        return habilitada
+                ? "Impresion de cocina habilitada correctamente"
+                : "Impresion de cocina deshabilitada correctamente";
+    }
+
+    @Override
+    public Boolean obtenerImpresionCocinaHabilitada(String correo) {
+        Empresa empresa = obtenerEmpresaPorCorreo(correo);
+        return !Boolean.FALSE.equals(empresa.getImpresionCocinaHabilitada());
+    }
+
     @Transactional
     public int registrarEmpresa(RegistroEmpresaDTO dto, MultipartFile archivo) throws Exception {
 

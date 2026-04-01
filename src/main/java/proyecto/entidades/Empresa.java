@@ -24,6 +24,9 @@ public class Empresa implements Serializable {
     @OneToOne
     private Imagen logo;
 
+    @Column(nullable = false)
+    private Boolean impresionCocinaHabilitada = true;
+
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL)
     private List<Sede> sedes;
 

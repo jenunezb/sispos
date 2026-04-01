@@ -302,6 +302,36 @@ public class AdministradorController {
         return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerLogoEmpresa(correo)));
     }
 
+    @GetMapping("/cuentas/{correo}/impresion-cocina")
+    public ResponseEntity<MensajeDTO<Boolean>> obtenerImpresionCocina(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable String correo
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+
+        if (!admin.getCorreo().equalsIgnoreCase(correo)) {
+            throw new RuntimeException("No autorizado para consultar esta configuracion");
+        }
+
+        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerImpresionCocinaHabilitada(correo)));
+    }
+
+    @PutMapping("/cuentas/{correo}/impresion-cocina")
+    public ResponseEntity<MensajeDTO<String>> actualizarImpresionCocina(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable String correo,
+            @RequestBody ConfigImpresionCocinaDTO dto
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+
+        if (!admin.getCorreo().equalsIgnoreCase(correo)) {
+            throw new RuntimeException("No autorizado para actualizar esta configuracion");
+        }
+
+        String mensaje = administradorServicio.actualizarImpresionCocinaHabilitada(correo, dto.habilitada());
+        return ResponseEntity.ok(new MensajeDTO<>(false, mensaje));
+    }
+
     @PatchMapping("/ventas/estado")
     public ResponseEntity<MensajeDTO> cambiarEstadoVenta(
             @RequestHeader("Authorization") String authorization,
