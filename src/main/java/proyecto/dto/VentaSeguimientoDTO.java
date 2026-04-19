@@ -5,6 +5,7 @@ import java.util.List;
 
 public record VentaSeguimientoDTO(
         Long id,
+        Long consecutivo,
         LocalDateTime fecha,
         Double total,
         Boolean anulado,

@@ -102,3 +102,26 @@ CREATE TABLE IF NOT EXISTS mesa_estado_item (
     total DOUBLE PRECISION NOT NULL,
     CONSTRAINT fk_mesa_estado_item_mesa_estado FOREIGN KEY (mesa_estado_id) REFERENCES mesa_estado(id) ON DELETE CASCADE
 );
+
+ALTER TABLE venta
+    ADD COLUMN IF NOT EXISTS numero_consecutivo BIGINT;
+
+WITH ventas_ordenadas AS (
+    SELECT id,
+           ROW_NUMBER() OVER (
+               PARTITION BY sede_id
+               ORDER BY fecha ASC, id ASC
+           ) AS consecutivo
+    FROM venta
+)
+UPDATE venta v
+SET numero_consecutivo = vo.consecutivo
+FROM ventas_ordenadas vo
+WHERE v.id = vo.id
+  AND v.numero_consecutivo IS NULL;
+
+ALTER TABLE venta
+    ALTER COLUMN numero_consecutivo SET NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_venta_sede_numero_consecutivo
+    ON venta (sede_id, numero_consecutivo);

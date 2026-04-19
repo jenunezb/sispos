@@ -480,6 +480,7 @@ public class AdministradorController {
 
         return new VentaSeguimientoDTO(
                 venta.getId(),
+                venta.getNumeroConsecutivo(),
                 venta.getFecha(),
                 venta.getTotal(),
                 venta.getAnulado(),

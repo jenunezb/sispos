@@ -5,6 +5,7 @@ import java.util.List;
 
 public record SuperAdminVentaDTO(
         Long ventaId,
+        Long consecutivo,
         LocalDateTime fecha,
         Double total,
         Boolean anulado,

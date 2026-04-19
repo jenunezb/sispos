@@ -94,6 +94,7 @@ public class SuperAdminController {
 
         return new SuperAdminVentaDTO(
                 venta.getId(),
+                venta.getNumeroConsecutivo(),
                 venta.getFecha(),
                 venta.getTotal(),
                 venta.getAnulado(),

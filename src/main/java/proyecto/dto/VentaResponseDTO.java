@@ -5,6 +5,7 @@ import java.util.List;
 
 public record VentaResponseDTO(
         Long id,
+        Long consecutivo,
         LocalDateTime fecha,
         Double total,
         String modoPago,

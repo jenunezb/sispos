@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -117,8 +118,10 @@ class VentaServicioImplTest {
         when(vendedorRepository.findByCorreoIgnoreCase("prod@correo.com")).thenReturn(Optional.of(vendedor));
         when(clienteRepository.findById(7L)).thenReturn(Optional.of(cliente));
         when(productoRepository.findById(99L)).thenReturn(Optional.of(producto));
+        when(sedeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(sedeProduccion));
         when(inventarioProduccionRepository.findByProductoCodigoAndSedeId(99L, 10L)).thenReturn(Optional.of(inventario));
         when(precioClienteProductoRepository.findByClienteIdAndProductoCodigo(7L, 99L)).thenReturn(Optional.empty());
+        when(ventaRepository.findMaxNumeroConsecutivoBySedeId(10L)).thenReturn(0L);
         when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ventaServicio.crearVentaProduccion("prod@correo.com", dto);
@@ -126,6 +129,7 @@ class VentaServicioImplTest {
         ArgumentCaptor<Venta> ventaCaptor = ArgumentCaptor.forClass(Venta.class);
         verify(ventaRepository).save(ventaCaptor.capture());
         assertEquals(10L, ventaCaptor.getValue().getSede().getId());
+        assertEquals(1L, ventaCaptor.getValue().getNumeroConsecutivo());
     }
 
     @Test
@@ -155,9 +159,10 @@ class VentaServicioImplTest {
         );
 
         when(vendedorRepository.findByCorreoIgnoreCase("vend@correo.com")).thenReturn(Optional.of(vendedor));
-        when(sedeRepository.findById(22L)).thenReturn(Optional.of(sedeRequest));
+        when(sedeRepository.findByIdForUpdate(22L)).thenReturn(Optional.of(sedeRequest));
         when(productoRepository.findById(40L)).thenReturn(Optional.of(producto));
         when(inventarioRepository.findByProductoCodigoAndSedeId(40L, 22L)).thenReturn(Optional.of(inventario));
+        when(ventaRepository.findMaxNumeroConsecutivoBySedeId(22L)).thenReturn(3L);
         when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ventaServicio.crearVenta(dto);
@@ -165,6 +170,7 @@ class VentaServicioImplTest {
         ArgumentCaptor<Venta> ventaCaptor = ArgumentCaptor.forClass(Venta.class);
         verify(ventaRepository).save(ventaCaptor.capture());
         assertEquals(22L, ventaCaptor.getValue().getSede().getId());
+        assertEquals(4L, ventaCaptor.getValue().getNumeroConsecutivo());
     }
 
     @Test
@@ -174,6 +180,7 @@ class VentaServicioImplTest {
 
         Venta venta = new Venta();
         venta.setId(15L);
+        venta.setNumeroConsecutivo(8L);
         venta.setFecha(java.time.LocalDateTime.of(2026, 3, 29, 18, 30));
         venta.setTotal(25000.0);
         venta.setModoPago(ModoPago.TRANSFERENCIA);
@@ -186,7 +193,48 @@ class VentaServicioImplTest {
         var respuesta = ventaServicio.obtenerVentaPorId(15L);
 
         assertEquals(15L, respuesta.id());
+        assertEquals(8L, respuesta.consecutivo());
         assertEquals("TRANSFERENCIA", respuesta.modoPago());
         assertEquals("Centro", respuesta.sedeUbicacion());
+    }
+
+    @Test
+    void crearVentaDebeCalcularConsecutivoIndependientePorSede() {
+        Sede sede = new Sede();
+        sede.setId(55L);
+
+        Vendedor vendedor = new Vendedor();
+        vendedor.setCorreo("sede55@correo.com");
+        vendedor.setTipoPerfil(TipoPerfilVendedor.VENDEDOR);
+
+        Producto producto = new Producto();
+        producto.setCodigo(11L);
+        producto.setPrecioVenta(5000.0);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(10);
+
+        VentaRecuestDTO dto = new VentaRecuestDTO(
+                "sede55@correo.com",
+                55L,
+                null,
+                List.of(new DetalleVentaDTO(11L, null, null, 1)),
+                ModoPago.EFECTIVO
+        );
+
+        when(vendedorRepository.findByCorreoIgnoreCase("sede55@correo.com")).thenReturn(Optional.of(vendedor));
+        when(sedeRepository.findByIdForUpdate(55L)).thenReturn(Optional.of(sede));
+        when(productoRepository.findById(11L)).thenReturn(Optional.of(producto));
+        when(inventarioRepository.findByProductoCodigoAndSedeId(11L, 55L)).thenReturn(Optional.of(inventario));
+        when(ventaRepository.findMaxNumeroConsecutivoBySedeId(eq(55L))).thenReturn(7L);
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ventaServicio.crearVenta(dto);
+
+        ArgumentCaptor<Venta> ventaCaptor = ArgumentCaptor.forClass(Venta.class);
+        verify(ventaRepository).save(ventaCaptor.capture());
+        assertEquals(8L, ventaCaptor.getValue().getNumeroConsecutivo());
     }
 }

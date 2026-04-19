@@ -343,4 +343,11 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     Optional<Venta> findByIdAndSedeEmpresaNit(Long id, Long empresaNit);
 
+    @Query("""
+        SELECT COALESCE(MAX(v.numeroConsecutivo), 0)
+        FROM Venta v
+        WHERE v.sede.id = :sedeId
+    """)
+    Long findMaxNumeroConsecutivoBySedeId(@Param("sedeId") Long sedeId);
+
 }

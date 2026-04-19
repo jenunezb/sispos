@@ -90,12 +90,13 @@ public class VentaServicioImpl implements VentaServicio {
         Sede sede;
         if (esVendedorProduccion(vendedor)) {
             Sede sedeProduccion = obtenerSedeDesdeVendedor(vendedor);
-            sede = sedeProduccion;
+            sede = sedeRepository.findByIdForUpdate(sedeProduccion.getId())
+                    .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
         } else {
             if (dto.sedeId() == null) {
                 throw new RuntimeException("Sede no encontrada");
             }
-            sede = sedeRepository.findById(dto.sedeId())
+            sede = sedeRepository.findByIdForUpdate(dto.sedeId())
                     .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
         }
 
@@ -122,6 +123,7 @@ public class VentaServicioImpl implements VentaServicio {
         venta.setVendedor(vendedor);
         venta.setAdministrador(administrador);
         venta.setSede(sede);
+        venta.setNumeroConsecutivo(siguienteConsecutivoPorSede(sede.getId()));
         venta.setCliente(cliente);
         venta.setModoPago(dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO);
 
@@ -377,6 +379,7 @@ public class VentaServicioImpl implements VentaServicio {
 
         return new VentaResponseDTO(
                 venta.getId(),
+                venta.getNumeroConsecutivo(),
                 venta.getFecha(),
                 venta.getTotal(),
                 venta.getModoPago() != null ? venta.getModoPago().name() : null,
@@ -397,6 +400,10 @@ public class VentaServicioImpl implements VentaServicio {
                         ))
                         .toList()
         );
+    }
+
+    private Long siguienteConsecutivoPorSede(Long sedeId) {
+        return ventaRepository.findMaxNumeroConsecutivoBySedeId(sedeId) + 1;
     }
 
     @Override
