@@ -235,7 +235,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
 
         // 🔥 NUEVA LÓGICA: INVENTARIO A CERO
         inventarioRepository
-                .findByProductoCodigoAndSedeId(
+                .findVisibleByProductoCodigoAndSedeId(
                         producto.getCodigo(),
                         mpSede.getSede().getId()
                 )

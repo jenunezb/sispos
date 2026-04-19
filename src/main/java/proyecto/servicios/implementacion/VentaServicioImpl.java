@@ -216,7 +216,7 @@ public class VentaServicioImpl implements VentaServicio {
                 materiaPrimaSedeRepository.save(mpSede);
             }
 
-            inventarioRepository.findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+            inventarioRepository.findVisibleByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
                     .ifPresent(inventario -> notificacionStockMinimoService.evaluarYNotificar(
                             inventario,
                             calcularStockDisponibleDesdeMateriaPrima(producto, sede)
@@ -225,7 +225,7 @@ public class VentaServicioImpl implements VentaServicio {
         } else {
 
             Inventario inventario = inventarioRepository
-                    .findByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                    .findVisibleByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
                     .orElseThrow(() -> new RuntimeException(
                             "No hay inventario para " + producto.getNombre()
                     ));

@@ -161,7 +161,7 @@ class VentaServicioImplTest {
         when(vendedorRepository.findByCorreoIgnoreCase("vend@correo.com")).thenReturn(Optional.of(vendedor));
         when(sedeRepository.findByIdForUpdate(22L)).thenReturn(Optional.of(sedeRequest));
         when(productoRepository.findById(40L)).thenReturn(Optional.of(producto));
-        when(inventarioRepository.findByProductoCodigoAndSedeId(40L, 22L)).thenReturn(Optional.of(inventario));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(40L, 22L)).thenReturn(Optional.of(inventario));
         when(ventaRepository.findMaxNumeroConsecutivoBySedeId(22L)).thenReturn(3L);
         when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -227,7 +227,7 @@ class VentaServicioImplTest {
         when(vendedorRepository.findByCorreoIgnoreCase("sede55@correo.com")).thenReturn(Optional.of(vendedor));
         when(sedeRepository.findByIdForUpdate(55L)).thenReturn(Optional.of(sede));
         when(productoRepository.findById(11L)).thenReturn(Optional.of(producto));
-        when(inventarioRepository.findByProductoCodigoAndSedeId(11L, 55L)).thenReturn(Optional.of(inventario));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(11L, 55L)).thenReturn(Optional.of(inventario));
         when(ventaRepository.findMaxNumeroConsecutivoBySedeId(eq(55L))).thenReturn(7L);
         when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 

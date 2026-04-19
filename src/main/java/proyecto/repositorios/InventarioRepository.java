@@ -15,10 +15,32 @@ import java.util.Optional;
 @Repository
 public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     // Listar todo el inventario de una sede
-    List<Inventario> findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(Long sedeId);
+    @Query("""
+        SELECT i
+        FROM Inventario i
+        JOIN i.producto p
+        JOIN i.sede s
+        WHERE s.id = :sedeId
+          AND p.activo = true
+          AND p.empresa.nit = s.empresa.nit
+        ORDER BY p.codigo ASC
+    """)
+    List<Inventario> findVisiblesBySedeIdOrderByProductoCodigoAsc(@Param("sedeId") Long sedeId);
 
     // Obtener inventario de un producto especÃ­fico en una sede
-    Optional<Inventario> findByProductoCodigoAndSedeId(Long productoId, Long sedeId);
+    @Query("""
+        SELECT i
+        FROM Inventario i
+        JOIN i.producto p
+        JOIN i.sede s
+        WHERE s.id = :sedeId
+          AND p.codigo = :productoId
+          AND p.empresa.nit = s.empresa.nit
+    """)
+    Optional<Inventario> findVisibleByProductoCodigoAndSedeId(
+            @Param("productoId") Long productoId,
+            @Param("sedeId") Long sedeId
+    );
 
     // Verificar si existe inventario para producto + sede
     boolean existsByProductoCodigoAndSedeId(Long productoId, Long sedeId);
@@ -36,9 +58,14 @@ SELECT new proyecto.dto.InventarioDTO(
     p.precioVenta
 )
 FROM Producto p
+JOIN p.empresa e
+JOIN Sede s
+    ON s.id = :sedeId
 LEFT JOIN Inventario i
     ON i.producto = p
     AND i.sede.id = :sedeId
+WHERE p.activo = true
+  AND e.nit = s.empresa.nit
 """)
     List<InventarioDTO> listarInventarioCompletoPorSede(@Param("sedeId") Long sedeId);
 

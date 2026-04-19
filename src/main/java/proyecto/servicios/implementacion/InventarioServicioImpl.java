@@ -31,7 +31,7 @@ public class InventarioServicioImpl implements InventarioServicio {
 
     @Override
     public List<InventarioDTO> listarPorSede(Long sedeId) {
-        return inventarioRepository.findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(sedeId)
+        return inventarioRepository.findVisiblesBySedeIdOrderByProductoCodigoAsc(sedeId)
                 .stream()
                 .map(this::toDTO)
                 .toList();
@@ -40,7 +40,7 @@ public class InventarioServicioImpl implements InventarioServicio {
     @Override
     public InventarioDTO obtenerPorProductoYSede(Long productoId, Long sedeId) {
         Inventario inventario = inventarioRepository
-                .findByProductoCodigoAndSedeId(productoId, sedeId)
+                .findVisibleByProductoCodigoAndSedeId(productoId, sedeId)
                 .orElseThrow(() -> new RuntimeException("Inventario no encontrado"));
         return toDTO(inventario);
     }
@@ -327,7 +327,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         // 1?? INVENTARIO BASE POR SEDE
         // ===============================
         List<Inventario> inventarios =
-                inventarioRepository.findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(sedeId);
+                inventarioRepository.findVisiblesBySedeIdOrderByProductoCodigoAsc(sedeId);
 
         // ===============================
         // 2?? MOVIMIENTOS DEL DIA
@@ -438,12 +438,17 @@ public class InventarioServicioImpl implements InventarioServicio {
 
     private Inventario obtenerOcrearInventario(Long productoId, Long sedeId) {
         return inventarioRepository
-                .findByProductoCodigoAndSedeId(productoId, sedeId)
+                .findVisibleByProductoCodigoAndSedeId(productoId, sedeId)
                 .orElseGet(() -> {
                     Producto producto = productoRepository.findById(productoId)
                             .orElseThrow(() -> new RuntimeException("Producto no existe"));
                     Sede sede = sedeRepository.findById(sedeId)
                             .orElseThrow(() -> new RuntimeException("Sede no existe"));
+                    if (producto.getEmpresa() == null
+                            || sede.getEmpresa() == null
+                            || !producto.getEmpresa().getNit().equals(sede.getEmpresa().getNit())) {
+                        throw new RuntimeException("El producto no pertenece a la empresa de la sede");
+                    }
                     Inventario nuevo = new Inventario();
                     nuevo.setProducto(producto);
                     nuevo.setSede(sede);
