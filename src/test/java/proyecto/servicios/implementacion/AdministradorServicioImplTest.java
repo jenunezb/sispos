@@ -128,6 +128,7 @@ class AdministradorServicioImplTest {
                 "Principal",
                 3001234567L,
                 900123456L,
+                null,
                 "Empresa Demo",
                 "Sede Principal",
                 "Centro"
@@ -162,6 +163,7 @@ class AdministradorServicioImplTest {
                 "Principal",
                 3001234567L,
                 900123456L,
+                "1",
                 "Empresa Demo",
                 "Sede Principal",
                 "Centro"
@@ -179,6 +181,8 @@ class AdministradorServicioImplTest {
 
         administradorServicio.registrarEmpresa(dto, null);
 
+        ArgumentCaptor<Empresa> empresaCaptor = ArgumentCaptor.forClass(Empresa.class);
+        verify(empresaRepository).save(empresaCaptor.capture());
         ArgumentCaptor<Administrador> captor = ArgumentCaptor.forClass(Administrador.class);
         verify(administradorRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
 
@@ -186,6 +190,7 @@ class AdministradorServicioImplTest {
         assertTrue(ultimoGuardado.isEsAdministradorEmpresa());
         assertEquals(1, ultimoGuardado.getSedesAsignadas().size());
         assertEquals(1L, ultimoGuardado.getSedesAsignadas().get(0).getId());
+        assertEquals("1", empresaCaptor.getValue().getDv());
     }
 
     @Test

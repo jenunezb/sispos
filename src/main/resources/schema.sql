@@ -125,3 +125,6 @@ ALTER TABLE venta
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_venta_sede_numero_consecutivo
     ON venta (sede_id, numero_consecutivo);
+
+ALTER TABLE empresa
+    ADD COLUMN IF NOT EXISTS dv VARCHAR(5);

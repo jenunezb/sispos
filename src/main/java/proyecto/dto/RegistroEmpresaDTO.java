@@ -13,6 +13,7 @@ public record RegistroEmpresaDTO(
 
         // Empresa
         Long nit,
+        String dv,
         String nombreEmpresa,
 
         // Sede principal

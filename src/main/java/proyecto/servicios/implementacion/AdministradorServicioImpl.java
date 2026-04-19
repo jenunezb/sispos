@@ -393,6 +393,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         // 2️⃣ Crear empresa
         Empresa empresa = new Empresa();
         empresa.setNit(dto.nit());
+        empresa.setDv(normalizarDv(dto.dv()));
         empresa.setNombre(dto.nombreEmpresa());
         empresa.setLogo(imagen);
 
@@ -489,6 +490,11 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         }
 
         throw new RuntimeException("Cuenta no encontrada");
+    }
+
+    private String normalizarDv(String dv) {
+        String dvNormalizado = dv == null ? "" : dv.trim();
+        return dvNormalizado.isEmpty() ? null : dvNormalizado;
     }
 
 }
