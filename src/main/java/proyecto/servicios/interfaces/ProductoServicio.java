@@ -17,7 +17,7 @@ public interface ProductoServicio {
 
     ProductoDTO obtenerProductoPorCodigo(Long codigo);
 
-    List<ProductoDTO> listarProductos(Long empresaNit);
+    List<ProductoDTO> listarProductos(Long empresaNit, Long sedeId);
 
     int importarProductosCsv(MultipartFile archivo, Long empresaNit);
 

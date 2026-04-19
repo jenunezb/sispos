@@ -217,11 +217,17 @@ public class AdministradorController {
     @GetMapping("/listar-productos")
     public ResponseEntity<MensajeDTO<List<ProductoDTO>>> listarProductos(
             @RequestHeader("Authorization") String authorization,
-            @RequestParam(required = false) Long empresaNit
+            @RequestParam(required = false) Long empresaNit,
+            @RequestParam(required = false) Long sedeId
     ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        if (sedeId != null) {
+            administradorAccesoService.validarAccesoASede(admin, sedeId);
+        }
 
         List<ProductoDTO> productoDTOS = productoService.listarProductos(
-                resolverEmpresaNit(authorization, empresaNit)
+                administradorAccesoService.resolverEmpresaNit(admin, empresaNit),
+                sedeId
         );
 
         return ResponseEntity.ok(

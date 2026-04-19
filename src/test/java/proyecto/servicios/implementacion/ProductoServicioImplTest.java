@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -73,5 +74,29 @@ class ProductoServicioImplTest {
         assertEquals(empresa, captorProducto.getValue().getEmpresa());
 
         verify(inventarioRepository).save(any(Inventario.class));
+    }
+
+    @Test
+    void listarProductosDebeFiltrarPorSedeCuandoSeIndica() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(1097726190L);
+
+        Producto producto = new Producto();
+        producto.setCodigo(235L);
+        producto.setNombre("Pastel de pollo");
+        producto.setDescripcion("Desc");
+        producto.setPrecioProduccion(2450D);
+        producto.setPrecioVenta(5500D);
+        producto.setEstado(true);
+        producto.setEmpresa(empresa);
+
+        when(productoRepository.findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(1097726190L, 7L))
+                .thenReturn(List.of(producto));
+
+        var respuesta = productoServicio.listarProductos(1097726190L, 7L);
+
+        assertEquals(1, respuesta.size());
+        assertEquals(235L, respuesta.get(0).codigo());
+        verify(productoRepository).findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(eq(1097726190L), eq(7L));
     }
 }

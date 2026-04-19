@@ -85,9 +85,13 @@ public class ProductoServicioImpl implements ProductoServicio {
     }
 
     @Override
-    public List<ProductoDTO> listarProductos(Long empresaNit) {
+    public List<ProductoDTO> listarProductos(Long empresaNit, Long sedeId) {
 
-        return productoRepository.findByActivoTrueAndEmpresaNitOrderByCodigoAsc(empresaNit)
+        List<Producto> productos = sedeId != null
+                ? productoRepository.findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(empresaNit, sedeId)
+                : productoRepository.findByActivoTrueAndEmpresaNitOrderByCodigoAsc(empresaNit);
+
+        return productos
                 .stream()
                 .map(this::mapToDTO)
                 .toList();
