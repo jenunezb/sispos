@@ -33,9 +33,9 @@ public interface MateriaPrimaSedeService {
 
     void vincularProducto(VincularProductoDTO dto);
 
-    List<MateriaPrimaProductoDTO> listarProductosVinculados(Long materiaPrimaId);
+    List<MateriaPrimaProductoDTO> listarProductosVinculados(Long materiaPrimaSedeId);
 
-    void desvincularProducto(Long materiaPrimaId, Long productoId);
+    void desvincularProducto(Long materiaPrimaSedeId, Long productoId);
 
 }
 

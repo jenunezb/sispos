@@ -28,6 +28,19 @@ public interface ProductoMateriaPrimaRepository
 
     List<ProductoMateriaPrima> findByMateriaPrimaCodigoOrderByProductoNombreAsc(Long materiaPrimaId);
 
+    @Query("""
+        SELECT pmp
+        FROM ProductoMateriaPrima pmp
+        JOIN Inventario i ON i.producto = pmp.producto
+        WHERE pmp.materiaPrima.codigo = :materiaPrimaId
+          AND i.sede.id = :sedeId
+        ORDER BY pmp.producto.nombre ASC
+    """)
+    List<ProductoMateriaPrima> findByMateriaPrimaCodigoAndSedeIdOrderByProductoNombreAsc(
+            @Param("materiaPrimaId") Long materiaPrimaId,
+            @Param("sedeId") Long sedeId
+    );
+
     Optional<ProductoMateriaPrima> findByMateriaPrimaCodigoAndProductoCodigo(Long materiaPrimaId, Long productoId);
 }
 
