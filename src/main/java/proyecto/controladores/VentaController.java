@@ -57,6 +57,22 @@ public class VentaController {
         );
     }
 
+    @GetMapping("/vendedor/correo/{correo}")
+    public ResponseEntity<List<VentaResponseDTO>> misVentasPorCorreo(@PathVariable String correo) {
+        return ResponseEntity.ok(ventaService.listarVentasPorCorreoVendedor(correo));
+    }
+
+    @GetMapping("/vendedor/correo/{correo}/rango")
+    public ResponseEntity<List<VentaResponseDTO>> misVentasPorCorreoYFecha(
+            @PathVariable String correo,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta
+    ) {
+        return ResponseEntity.ok(
+                ventaService.listarVentasPorCorreoVendedorEntreFechas(correo, desde, hasta)
+        );
+    }
+
     @GetMapping("/sede/{sedeId}")
     public ResponseEntity<List<VentaResponseDTO>> ventasPorSede(@PathVariable Long sedeId) {
         return ResponseEntity.ok(ventaService.listarVentasPorSede(sedeId));
