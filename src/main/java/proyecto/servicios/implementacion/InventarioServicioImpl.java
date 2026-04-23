@@ -54,7 +54,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-        if (!producto.getMateriasPrimas().isEmpty()) {
+        if (tieneRecetaEnSede(productoId, sedeId)) {
             throw new RuntimeException(
                     "No se permiten entradas manuales a productos con materia prima"
             );
@@ -80,27 +80,19 @@ public class InventarioServicioImpl implements InventarioServicio {
 
         Inventario inventario = obtenerOcrearInventario(productoId, sedeId);
         Sede sede = inventario.getSede();
+        List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(productoId, sedeId);
 
-        if (!producto.getMateriasPrimas().isEmpty()) {
+        if (!receta.isEmpty()) {
             // validar y descontar materias primas por sede
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
                 double mlNecesarios = pmp.getMlConsumidos() * cantidad;
                 if (mpSede.getCantidadActualMl() < mlNecesarios) {
                     throw new RuntimeException("Materia prima insuficiente: " + mpSede.getMateriaPrima().getNombre());
                 }
             }
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
                 double mlNecesarios = pmp.getMlConsumidos() * cantidad;
 
@@ -150,23 +142,19 @@ public class InventarioServicioImpl implements InventarioServicio {
 
         Inventario inventario = obtenerOcrearInventario(productoId, sedeId);
         Sede sede = inventario.getSede();
+        List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(productoId, sedeId);
 
-        if (!producto.getMateriasPrimas().isEmpty()) {
+        if (!receta.isEmpty()) {
             // validar y descontar materias primas
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
                 double mlPerdidos = pmp.getMlConsumidos() * cantidad;
                 if (mpSede.getCantidadActualMl() < mlPerdidos) {
                     throw new RuntimeException("Materia prima insuficiente: " + mpSede.getMateriaPrima().getNombre());
                 }
             }
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede).get();
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
                 mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - pmp.getMlConsumidos() * cantidad);
             }
             inventario.setPerdidas(inventario.getPerdidas() + cantidad);
@@ -194,7 +182,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         Producto producto = productoRepository.findById(dto.productoId())
                 .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-        if (!producto.getMateriasPrimas().isEmpty() && dto.tipo() == TipoMovimiento.ENTRADA) {
+        if (tieneRecetaEnSede(dto.productoId(), dto.sedeId()) && dto.tipo() == TipoMovimiento.ENTRADA) {
             throw new RuntimeException("No se permiten entradas manuales a productos con materia prima");
         }
 
@@ -216,19 +204,12 @@ public class InventarioServicioImpl implements InventarioServicio {
             case PERDIDA -> {
 
                 // ?? PRODUCTO CON RECETA (vasos, preparados, etc.)
-                if (!producto.getMateriasPrimas().isEmpty()) {
+                List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(dto.productoId(), dto.sedeId());
+                if (!receta.isEmpty()) {
 
                     // 1?? Validar materia prima suficiente
-                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                                .findByMateriaPrimaAndSede(
-                                        pmp.getMateriaPrima(),
-                                        sede
-                                )
-                                .orElseThrow(() -> new RuntimeException(
-                                        "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                                ));
+                    for (ProductoMateriaPrima pmp : receta) {
+                        MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
                         double mlNecesarios = pmp.getMlConsumidos() * dto.cantidad();
 
@@ -240,14 +221,8 @@ public class InventarioServicioImpl implements InventarioServicio {
                     }
 
                     // 2?? Descontar materia prima
-                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                                .findByMateriaPrimaAndSede(
-                                        pmp.getMateriaPrima(),
-                                        sede
-                                )
-                                .get();
+                    for (ProductoMateriaPrima pmp : receta) {
+                        MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
                         double mlNecesarios = pmp.getMlConsumidos() * dto.cantidad();
 
@@ -360,7 +335,7 @@ public class InventarioServicioImpl implements InventarioServicio {
             Producto producto = inv.getProducto();
             Long codigoProducto = producto.getCodigo();
 
-            boolean tieneReceta = !producto.getMateriasPrimas().isEmpty();
+            boolean tieneReceta = tieneRecetaEnSede(codigoProducto, sedeId);
 
             // -------------------------------
             // MOVIMIENTOS DEL PRODUCTO
@@ -479,23 +454,21 @@ public class InventarioServicioImpl implements InventarioServicio {
 
     private int calcularStockReal(Inventario inv) {
         Producto p = inv.getProducto();
+        List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(
+                p.getCodigo(),
+                inv.getSede().getId()
+        );
 
         // ?? Si NO tiene receta ? stock normal
-        if (p.getMateriasPrimas().isEmpty()) {
+        if (receta.isEmpty()) {
             return inv.getStockActual();
         }
 
         Sede sede = inv.getSede();
         int maxUnidades = Integer.MAX_VALUE;
 
-        for (ProductoMateriaPrima pmp : p.getMateriasPrimas()) {
-
-            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                    .findByMateriaPrimaCodigoAndSedeId(
-                            pmp.getMateriaPrima().getCodigo(),
-                            sede.getId()
-                    )
-                    .orElse(null);
+        for (ProductoMateriaPrima pmp : receta) {
+            MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
             if (mpSede == null) {
                 System.out.println(
@@ -528,18 +501,13 @@ public class InventarioServicioImpl implements InventarioServicio {
     private int calcularStockDesdeMateriaPrima(Producto producto, Long sedeId) {
 
         List<ProductoMateriaPrima> receta =
-                productoMateriaPrimaRepository.findByProductoCodigo(producto.getCodigo());
+                obtenerRecetaProductoEnSede(producto.getCodigo(), sedeId);
 
         int stock = Integer.MAX_VALUE;
 
         for (ProductoMateriaPrima pmp : receta) {
 
-            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                    .findByMateriaPrimaCodigoAndSedeId(
-                            pmp.getMateriaPrima().getCodigo(),
-                            sedeId
-                    )
-                    .orElse(null);
+            MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
             if (mpSede == null) {
                 return 0;
@@ -617,7 +585,7 @@ public class InventarioServicioImpl implements InventarioServicio {
 
             // ?? Buscar receta del producto
             List<ProductoMateriaPrima> receta =
-                    productoMateriaPrimaRepository.findByProductoCodigo(productoId);
+                    obtenerRecetaProductoEnSede(productoId, sedeId);
 
             for (ProductoMateriaPrima pmp : receta) {
                 if (pmp.getMateriaPrima().getCodigo().equals(materiaPrimaCodigo)) {
@@ -627,6 +595,14 @@ public class InventarioServicioImpl implements InventarioServicio {
         }
 
         return totalConsumido;
+    }
+
+    private List<ProductoMateriaPrima> obtenerRecetaProductoEnSede(Long productoId, Long sedeId) {
+        return productoMateriaPrimaRepository.findByProductoCodigoAndMateriaPrimaSedeSedeId(productoId, sedeId);
+    }
+
+    private boolean tieneRecetaEnSede(Long productoId, Long sedeId) {
+        return !obtenerRecetaProductoEnSede(productoId, sedeId).isEmpty();
     }
 
     @Override

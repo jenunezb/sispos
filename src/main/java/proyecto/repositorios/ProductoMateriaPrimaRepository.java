@@ -24,24 +24,15 @@ public interface ProductoMateriaPrimaRepository
             @Param("productoId") Long productoId
     );
 
-    List<ProductoMateriaPrima> findByProductoCodigo(Long productoCodigo);
+    boolean existsByMateriaPrimaSedeIdAndProductoCodigo(Long materiaPrimaSedeId, Long productoCodigo);
+
+    List<ProductoMateriaPrima> findByProductoCodigoAndMateriaPrimaSedeSedeId(Long productoCodigo, Long sedeId);
 
     List<ProductoMateriaPrima> findByMateriaPrimaCodigoOrderByProductoNombreAsc(Long materiaPrimaId);
 
-    @Query("""
-        SELECT pmp
-        FROM ProductoMateriaPrima pmp
-        JOIN Inventario i ON i.producto = pmp.producto
-        WHERE pmp.materiaPrima.codigo = :materiaPrimaId
-          AND i.sede.id = :sedeId
-        ORDER BY pmp.producto.nombre ASC
-    """)
-    List<ProductoMateriaPrima> findByMateriaPrimaCodigoAndSedeIdOrderByProductoNombreAsc(
-            @Param("materiaPrimaId") Long materiaPrimaId,
-            @Param("sedeId") Long sedeId
-    );
+    List<ProductoMateriaPrima> findByMateriaPrimaSedeIdOrderByProductoNombreAsc(Long materiaPrimaSedeId);
 
-    Optional<ProductoMateriaPrima> findByMateriaPrimaCodigoAndProductoCodigo(Long materiaPrimaId, Long productoId);
+    Optional<ProductoMateriaPrima> findByMateriaPrimaSedeIdAndProductoCodigo(Long materiaPrimaSedeId, Long productoCodigo);
 }
 
 

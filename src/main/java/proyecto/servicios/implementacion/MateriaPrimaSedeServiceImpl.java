@@ -219,8 +219,8 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         }
 
         boolean existe = productoMateriaPrimaRepository
-                .existsByMateriaPrimaIdAndProductoId(
-                        mpSede.getMateriaPrima().getCodigo(),
+                .existsByMateriaPrimaSedeIdAndProductoCodigo(
+                        mpSede.getId(),
                         dto.productoId()
                 );
 
@@ -234,6 +234,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         ProductoMateriaPrima nueva = new ProductoMateriaPrima();
         nueva.setProducto(producto);
         nueva.setMateriaPrima(mpSede.getMateriaPrima());
+        nueva.setMateriaPrimaSede(mpSede);
         nueva.setMlConsumidos(dto.mlConsumidos());
 
         productoMateriaPrimaRepository.save(nueva);
@@ -262,7 +263,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 .orElseThrow(() -> new IllegalStateException("El producto no pertenece a la sede seleccionada"));
 
         ProductoMateriaPrima relacion = productoMateriaPrimaRepository
-                .findByMateriaPrimaCodigoAndProductoCodigo(mpSede.getMateriaPrima().getCodigo(), productoId)
+                .findByMateriaPrimaSedeIdAndProductoCodigo(mpSede.getId(), productoId)
                 .orElseThrow(() -> new IllegalStateException("El producto no esta vinculado a esta materia prima"));
 
         relacion.setMlConsumidos(dto.mlConsumidos());
@@ -275,10 +276,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 .orElseThrow(() -> new IllegalStateException("Materia prima de la sede no encontrada"));
 
         return productoMateriaPrimaRepository
-                .findByMateriaPrimaCodigoAndSedeIdOrderByProductoNombreAsc(
-                        mpSede.getMateriaPrima().getCodigo(),
-                        mpSede.getSede().getId()
-                )
+                .findByMateriaPrimaSedeIdOrderByProductoNombreAsc(mpSede.getId())
                 .stream()
                 .map(relacion -> new MateriaPrimaProductoDTO(
                         relacion.getProducto().getCodigo(),
@@ -297,7 +295,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 .orElseThrow(() -> new IllegalStateException("El producto no pertenece a la sede seleccionada"));
 
         ProductoMateriaPrima relacion = productoMateriaPrimaRepository
-                .findByMateriaPrimaCodigoAndProductoCodigo(mpSede.getMateriaPrima().getCodigo(), productoId)
+                .findByMateriaPrimaSedeIdAndProductoCodigo(mpSede.getId(), productoId)
                 .orElseThrow(() -> new IllegalStateException("El producto no está vinculado a esta materia prima"));
 
         productoMateriaPrimaRepository.delete(relacion);

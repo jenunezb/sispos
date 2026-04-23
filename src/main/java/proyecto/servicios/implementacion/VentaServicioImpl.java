@@ -29,6 +29,7 @@ public class VentaServicioImpl implements VentaServicio {
     private final MateriaPrimaSedeRepository materiaPrimaSedeRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final InventarioRepository inventarioRepository;
+    private final ProductoMateriaPrimaRepository productoMateriaPrimaRepository;
     private final AdministradorRepository administradorRepository;
     private final ClienteRepository clienteRepository;
     private final PrecioClienteProductoRepository precioClienteProductoRepository;
@@ -192,17 +193,11 @@ public class VentaServicioImpl implements VentaServicio {
     }
 
     private void procesarDescuentoInventarioGeneral(Producto producto, Sede sede, Integer cantidad) {
-        if (!producto.getMateriasPrimas().isEmpty()) {
+        List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(producto.getCodigo(), sede.getId());
+        if (!receta.isEmpty()) {
 
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaCodigoAndSedeId(
-                                pmp.getMateriaPrima().getCodigo(),
-                                sede.getId())
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
                 double mlNecesarios = pmp.getMlConsumidos() * cantidad;
 
@@ -478,10 +473,8 @@ public class VentaServicioImpl implements VentaServicio {
     private int calcularStockDisponibleDesdeMateriaPrima(Producto producto, Sede sede) {
         int stock = Integer.MAX_VALUE;
 
-        for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                    .findByMateriaPrimaCodigoAndSedeId(pmp.getMateriaPrima().getCodigo(), sede.getId())
-                    .orElse(null);
+        for (ProductoMateriaPrima pmp : obtenerRecetaProductoEnSede(producto.getCodigo(), sede.getId())) {
+            MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
             if (mpSede == null) {
                 return 0;
@@ -492,6 +485,10 @@ public class VentaServicioImpl implements VentaServicio {
         }
 
         return stock == Integer.MAX_VALUE ? 0 : stock;
+    }
+
+    private List<ProductoMateriaPrima> obtenerRecetaProductoEnSede(Long productoId, Long sedeId) {
+        return productoMateriaPrimaRepository.findByProductoCodigoAndMateriaPrimaSedeSedeId(productoId, sedeId);
     }
 
     private boolean esVendedorProduccion(Vendedor vendedor) {

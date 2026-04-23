@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.ActualizarConsumoProductoDTO;
 import proyecto.dto.CrearMateriaPrimaSedeDTO;
+import proyecto.dto.VincularProductoDTO;
 import proyecto.entidades.Empresa;
 import proyecto.entidades.Inventario;
 import proyecto.entidades.MateriaPrima;
@@ -25,6 +26,7 @@ import proyecto.repositorios.SedeRepository;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,16 +90,50 @@ class MateriaPrimaSedeServiceImplTest {
         ProductoMateriaPrima relacion = new ProductoMateriaPrima();
         relacion.setProducto(producto);
         relacion.setMateriaPrima(materiaPrima);
+        relacion.setMateriaPrimaSede(mpSede);
         relacion.setMlConsumidos(80);
 
         when(materiaPrimaSedeRepository.findById(4L)).thenReturn(Optional.of(mpSede));
         when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(99L, 7L)).thenReturn(Optional.of(inventario));
-        when(productoMateriaPrimaRepository.findByMateriaPrimaCodigoAndProductoCodigo(10L, 99L))
+        when(productoMateriaPrimaRepository.findByMateriaPrimaSedeIdAndProductoCodigo(4L, 99L))
                 .thenReturn(Optional.of(relacion));
 
         materiaPrimaSedeService.actualizarConsumoProducto(4L, 99L, new ActualizarConsumoProductoDTO(125));
 
         assertEquals(125, relacion.getMlConsumidos());
         verify(productoMateriaPrimaRepository).save(relacion);
+    }
+
+    @Test
+    void vincularProductoDebePermitirMismoProductoYMateriaPrimaEnOtraSede() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(8L);
+        sede.setEmpresa(empresa);
+
+        MateriaPrima materiaPrima = new MateriaPrima();
+        materiaPrima.setCodigo(20L);
+
+        MateriaPrimaSede mpSede = new MateriaPrimaSede();
+        mpSede.setId(15L);
+        mpSede.setSede(sede);
+        mpSede.setMateriaPrima(materiaPrima);
+
+        Producto producto = new Producto();
+        producto.setCodigo(30L);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+
+        when(materiaPrimaSedeRepository.findById(15L)).thenReturn(Optional.of(mpSede));
+        when(productoRepository.findById(30L)).thenReturn(Optional.of(producto));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(30L, 8L)).thenReturn(Optional.of(inventario));
+        when(productoMateriaPrimaRepository.existsByMateriaPrimaSedeIdAndProductoCodigo(15L, 30L)).thenReturn(false);
+
+        assertDoesNotThrow(() -> materiaPrimaSedeService.vincularProducto(new VincularProductoDTO(15L, 30L, 90)));
+        verify(productoMateriaPrimaRepository).save(org.mockito.ArgumentMatchers.any(ProductoMateriaPrima.class));
     }
 }

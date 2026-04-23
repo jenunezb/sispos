@@ -17,6 +17,7 @@ import proyecto.repositorios.MateriaPrimaSedeRepository;
 import proyecto.repositorios.MovimientoInventarioRepository;
 import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.PrecioClienteProductoRepository;
+import proyecto.repositorios.ProductoMateriaPrimaRepository;
 import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
@@ -44,6 +45,7 @@ class VentaServicioImplTest {
     @Mock private MateriaPrimaSedeRepository materiaPrimaSedeRepository;
     @Mock private MovimientoInventarioRepository movimientoInventarioRepository;
     @Mock private InventarioRepository inventarioRepository;
+    @Mock private ProductoMateriaPrimaRepository productoMateriaPrimaRepository;
     @Mock private AdministradorRepository administradorRepository;
     @Mock private ClienteRepository clienteRepository;
     @Mock private PrecioClienteProductoRepository precioClienteProductoRepository;

@@ -128,3 +128,51 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_venta_sede_numero_consecutivo
 
 ALTER TABLE empresa
     ADD COLUMN IF NOT EXISTS dv VARCHAR(5);
+
+ALTER TABLE producto_materia_prima
+    ADD COLUMN IF NOT EXISTS materia_prima_sede_id BIGINT;
+
+UPDATE producto_materia_prima pmp
+SET materia_prima_sede_id = mps.id
+FROM inventario i
+JOIN materia_prima_sede mps
+  ON mps.sede_id = i.sede_id
+ AND mps.materia_prima_id = pmp.materia_prima_id
+WHERE i.producto_id = pmp.producto_id
+  AND pmp.materia_prima_sede_id IS NULL;
+
+DO $$
+DECLARE constraint_name text;
+BEGIN
+    SELECT tc.constraint_name
+    INTO constraint_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.constraint_column_usage ccu
+      ON tc.constraint_name = ccu.constraint_name
+     AND tc.table_schema = ccu.table_schema
+    WHERE tc.table_name = 'producto_materia_prima'
+      AND tc.constraint_type = 'UNIQUE'
+      AND tc.table_schema = 'public'
+      AND tc.constraint_name <> 'producto_materia_prima_producto_id_materia_prima_sede_id_key'
+      AND ccu.column_name = 'materia_prima_id'
+    LIMIT 1;
+
+    IF constraint_name IS NOT NULL THEN
+        EXECUTE 'ALTER TABLE producto_materia_prima DROP CONSTRAINT ' || quote_ident(constraint_name);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = 'public'
+          AND table_name = 'producto_materia_prima'
+          AND constraint_name = 'fk_producto_materia_prima_materia_prima_sede'
+    ) THEN
+        ALTER TABLE producto_materia_prima
+            ADD CONSTRAINT fk_producto_materia_prima_materia_prima_sede
+            FOREIGN KEY (materia_prima_sede_id) REFERENCES materia_prima_sede(id);
+    END IF;
+END $$;
