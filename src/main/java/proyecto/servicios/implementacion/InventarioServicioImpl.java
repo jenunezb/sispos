@@ -23,6 +23,7 @@ public class InventarioServicioImpl implements InventarioServicio {
     private final MovimientoInventarioRepository movimientoRepository;
     private final ProductoMateriaPrimaRepository productoMateriaPrimaRepository;
     private final MateriaPrimaSedeRepository materiaPrimaSedeRepository;
+    private final NotificacionStockMinimoService notificacionStockMinimoService;
 
     // ===============================
     // LISTADOS
@@ -30,7 +31,7 @@ public class InventarioServicioImpl implements InventarioServicio {
 
     @Override
     public List<InventarioDTO> listarPorSede(Long sedeId) {
-        return inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId)
+        return inventarioRepository.findVisiblesBySedeIdOrderByProductoCodigoAsc(sedeId)
                 .stream()
                 .map(this::toDTO)
                 .toList();
@@ -39,7 +40,7 @@ public class InventarioServicioImpl implements InventarioServicio {
     @Override
     public InventarioDTO obtenerPorProductoYSede(Long productoId, Long sedeId) {
         Inventario inventario = inventarioRepository
-                .findByProductoCodigoAndSedeId(productoId, sedeId)
+                .findVisibleByProductoCodigoAndSedeId(productoId, sedeId)
                 .orElseThrow(() -> new RuntimeException("Inventario no encontrado"));
         return toDTO(inventario);
     }
@@ -53,7 +54,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-        if (!producto.getMateriasPrimas().isEmpty()) {
+        if (tieneRecetaEnSede(productoId, sedeId)) {
             throw new RuntimeException(
                     "No se permiten entradas manuales a productos con materia prima"
             );
@@ -64,6 +65,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         inventario.setStockActual(inventario.getStockActual() + cantidad);
 
         inventarioRepository.save(inventario);
+        notificacionStockMinimoService.evaluarYNotificar(inventario, calcularStockReal(inventario));
     }
 
     // ===============================
@@ -78,27 +80,19 @@ public class InventarioServicioImpl implements InventarioServicio {
 
         Inventario inventario = obtenerOcrearInventario(productoId, sedeId);
         Sede sede = inventario.getSede();
+        List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(productoId, sedeId);
 
-        if (!producto.getMateriasPrimas().isEmpty()) {
+        if (!receta.isEmpty()) {
             // validar y descontar materias primas por sede
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
                 double mlNecesarios = pmp.getMlConsumidos() * cantidad;
                 if (mpSede.getCantidadActualMl() < mlNecesarios) {
                     throw new RuntimeException("Materia prima insuficiente: " + mpSede.getMateriaPrima().getNombre());
                 }
             }
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
                 double mlNecesarios = pmp.getMlConsumidos() * cantidad;
 
@@ -134,10 +128,11 @@ public class InventarioServicioImpl implements InventarioServicio {
         movimiento.setCantidad(cantidad);
         movimiento.setObservacion(observacion);
         movimientoRepository.save(movimiento);
+        notificacionStockMinimoService.evaluarYNotificar(inventario, calcularStockReal(inventario));
     }
 
     // ===============================
-    // PÉRDIDAS
+    // PERDIDAS
     // ===============================
 
     @Override
@@ -147,23 +142,19 @@ public class InventarioServicioImpl implements InventarioServicio {
 
         Inventario inventario = obtenerOcrearInventario(productoId, sedeId);
         Sede sede = inventario.getSede();
+        List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(productoId, sedeId);
 
-        if (!producto.getMateriasPrimas().isEmpty()) {
+        if (!receta.isEmpty()) {
             // validar y descontar materias primas
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
                 double mlPerdidos = pmp.getMlConsumidos() * cantidad;
                 if (mpSede.getCantidadActualMl() < mlPerdidos) {
                     throw new RuntimeException("Materia prima insuficiente: " + mpSede.getMateriaPrima().getNombre());
                 }
             }
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede).get();
+            for (ProductoMateriaPrima pmp : receta) {
+                MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
                 mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - pmp.getMlConsumidos() * cantidad);
             }
             inventario.setPerdidas(inventario.getPerdidas() + cantidad);
@@ -179,6 +170,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         }
 
         inventarioRepository.save(inventario);
+        notificacionStockMinimoService.evaluarYNotificar(inventario, calcularStockReal(inventario));
     }
 
     // ===============================
@@ -190,7 +182,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         Producto producto = productoRepository.findById(dto.productoId())
                 .orElseThrow(() -> new RuntimeException("Producto no existe"));
 
-        if (!producto.getMateriasPrimas().isEmpty() && dto.tipo() == TipoMovimiento.ENTRADA) {
+        if (tieneRecetaEnSede(dto.productoId(), dto.sedeId()) && dto.tipo() == TipoMovimiento.ENTRADA) {
             throw new RuntimeException("No se permiten entradas manuales a productos con materia prima");
         }
 
@@ -211,20 +203,13 @@ public class InventarioServicioImpl implements InventarioServicio {
             }
             case PERDIDA -> {
 
-                // 🔹 PRODUCTO CON RECETA (vasos, preparados, etc.)
-                if (!producto.getMateriasPrimas().isEmpty()) {
+                // ?? PRODUCTO CON RECETA (vasos, preparados, etc.)
+                List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(dto.productoId(), dto.sedeId());
+                if (!receta.isEmpty()) {
 
-                    // 1️⃣ Validar materia prima suficiente
-                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                                .findByMateriaPrimaAndSede(
-                                        pmp.getMateriaPrima(),
-                                        sede
-                                )
-                                .orElseThrow(() -> new RuntimeException(
-                                        "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                                ));
+                    // 1?? Validar materia prima suficiente
+                    for (ProductoMateriaPrima pmp : receta) {
+                        MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
                         double mlNecesarios = pmp.getMlConsumidos() * dto.cantidad();
 
@@ -235,15 +220,9 @@ public class InventarioServicioImpl implements InventarioServicio {
                         }
                     }
 
-                    // 2️⃣ Descontar materia prima
-                    for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                        MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                                .findByMateriaPrimaAndSede(
-                                        pmp.getMateriaPrima(),
-                                        sede
-                                )
-                                .get();
+                    // 2?? Descontar materia prima
+                    for (ProductoMateriaPrima pmp : receta) {
+                        MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
                         double mlNecesarios = pmp.getMlConsumidos() * dto.cantidad();
 
@@ -252,15 +231,15 @@ public class InventarioServicioImpl implements InventarioServicio {
                         );
                     }
 
-                    // 3️⃣ Registrar pérdida (solo histórico)
+                    // 3?? Registrar perdida (solo historico)
                     inventario.setPerdidas(
                             inventario.getPerdidas() + dto.cantidad()
                     );
 
-                    // ❗ NO se toca stockActual
+                    // ? NO se toca stockActual
 
                 }
-                // 🔹 PRODUCTO NORMAL (sin receta)
+                // ?? PRODUCTO NORMAL (sin receta)
                 else {
 
                     if (inventario.getStockActual() < dto.cantidad()) {
@@ -288,11 +267,29 @@ public class InventarioServicioImpl implements InventarioServicio {
         movimiento.setCantidad(dto.cantidad());
         movimiento.setObservacion(dto.observacion());
         movimientoRepository.save(movimiento);
+        notificacionStockMinimoService.evaluarYNotificar(inventario, calcularStockReal(inventario));
     }
 
     // ===============================
-    // INVENTARIO DEL DÍA
+    // INVENTARIO DEL DIA
     // ===============================
+
+    @Override
+    public void actualizarStockMinimo(Long productoId, Long sedeId, Integer stockMinimo) {
+        if (stockMinimo == null || stockMinimo < 0) {
+            throw new IllegalArgumentException("El stock minimo debe ser mayor o igual a 0");
+        }
+
+        Inventario inventario = obtenerOcrearInventario(productoId, sedeId);
+        inventario.setStockMinimo(stockMinimo);
+
+        if (stockMinimo == 0) {
+            inventario.setAlertaStockMinimoActiva(false);
+        }
+
+        inventarioRepository.save(inventario);
+        notificacionStockMinimoService.evaluarYNotificar(inventario, calcularStockReal(inventario));
+    }
 
     @Override
     public List<InventarioDelDia> obtenerInventarioDia(
@@ -302,13 +299,13 @@ public class InventarioServicioImpl implements InventarioServicio {
     ) {
 
         // ===============================
-        // 1️⃣ INVENTARIO BASE POR SEDE
+        // 1?? INVENTARIO BASE POR SEDE
         // ===============================
         List<Inventario> inventarios =
-                inventarioRepository.findBySedeIdOrderByProductoCodigoAsc(sedeId);
+                inventarioRepository.findVisiblesBySedeIdOrderByProductoCodigoAsc(sedeId);
 
         // ===============================
-        // 2️⃣ MOVIMIENTOS DEL DÍA
+        // 2?? MOVIMIENTOS DEL DIA
         // [productoId, ventas, perdidas, salidasManuales, entradas]
         // ===============================
         List<Object[]> movimientos =
@@ -331,14 +328,14 @@ public class InventarioServicioImpl implements InventarioServicio {
         }
 
         // ===============================
-        // 3️⃣ ARMAR INVENTARIO DEL DÍA
+        // 3?? ARMAR INVENTARIO DEL DIA
         // ===============================
         return inventarios.stream().map(inv -> {
 
             Producto producto = inv.getProducto();
             Long codigoProducto = producto.getCodigo();
 
-            boolean tieneReceta = !producto.getMateriasPrimas().isEmpty();
+            boolean tieneReceta = tieneRecetaEnSede(codigoProducto, sedeId);
 
             // -------------------------------
             // MOVIMIENTOS DEL PRODUCTO
@@ -411,17 +408,22 @@ public class InventarioServicioImpl implements InventarioServicio {
 
 
     // ===============================
-    // MÉTODOS PRIVADOS
+    // METODOS PRIVADOS
     // ===============================
 
     private Inventario obtenerOcrearInventario(Long productoId, Long sedeId) {
         return inventarioRepository
-                .findByProductoCodigoAndSedeId(productoId, sedeId)
+                .findVisibleByProductoCodigoAndSedeId(productoId, sedeId)
                 .orElseGet(() -> {
                     Producto producto = productoRepository.findById(productoId)
                             .orElseThrow(() -> new RuntimeException("Producto no existe"));
                     Sede sede = sedeRepository.findById(sedeId)
                             .orElseThrow(() -> new RuntimeException("Sede no existe"));
+                    if (producto.getEmpresa() == null
+                            || sede.getEmpresa() == null
+                            || !producto.getEmpresa().getNit().equals(sede.getEmpresa().getNit())) {
+                        throw new RuntimeException("El producto no pertenece a la empresa de la sede");
+                    }
                     Inventario nuevo = new Inventario();
                     nuevo.setProducto(producto);
                     nuevo.setSede(sede);
@@ -429,6 +431,8 @@ public class InventarioServicioImpl implements InventarioServicio {
                     nuevo.setEntradas(0);
                     nuevo.setSalidas(0);
                     nuevo.setPerdidas(0);
+                    nuevo.setStockMinimo(0);
+                    nuevo.setAlertaStockMinimoActiva(false);
                     return inventarioRepository.save(nuevo);
                 });
     }
@@ -443,33 +447,32 @@ public class InventarioServicioImpl implements InventarioServicio {
                 inv.getEntradas(),
                 inv.getSalidas(),
                 inv.getPerdidas(),
+                inv.getStockMinimo(),
                 inv.getProducto().getPrecioVenta()
         );
     }
 
     private int calcularStockReal(Inventario inv) {
         Producto p = inv.getProducto();
+        List<ProductoMateriaPrima> receta = obtenerRecetaProductoEnSede(
+                p.getCodigo(),
+                inv.getSede().getId()
+        );
 
-        // 🔹 Si NO tiene receta → stock normal
-        if (p.getMateriasPrimas().isEmpty()) {
+        // ?? Si NO tiene receta ? stock normal
+        if (receta.isEmpty()) {
             return inv.getStockActual();
         }
 
         Sede sede = inv.getSede();
         int maxUnidades = Integer.MAX_VALUE;
 
-        for (ProductoMateriaPrima pmp : p.getMateriasPrimas()) {
-
-            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                    .findByMateriaPrimaCodigoAndSedeId(
-                            pmp.getMateriaPrima().getCodigo(),
-                            sede.getId()
-                    )
-                    .orElse(null);
+        for (ProductoMateriaPrima pmp : receta) {
+            MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
             if (mpSede == null) {
                 System.out.println(
-                        "❌ MP no encontrada en sede: "
+                        "? MP no encontrada en sede: "
                                 + pmp.getMateriaPrima().getNombre()
                                 + " | producto: " + p.getNombre()
                 );
@@ -498,18 +501,13 @@ public class InventarioServicioImpl implements InventarioServicio {
     private int calcularStockDesdeMateriaPrima(Producto producto, Long sedeId) {
 
         List<ProductoMateriaPrima> receta =
-                productoMateriaPrimaRepository.findByProductoCodigo(producto.getCodigo());
+                obtenerRecetaProductoEnSede(producto.getCodigo(), sedeId);
 
         int stock = Integer.MAX_VALUE;
 
         for (ProductoMateriaPrima pmp : receta) {
 
-            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                    .findByMateriaPrimaCodigoAndSedeId(
-                            pmp.getMateriaPrima().getCodigo(),
-                            sedeId
-                    )
-                    .orElse(null);
+            MateriaPrimaSede mpSede = pmp.getMateriaPrimaSede();
 
             if (mpSede == null) {
                 return 0;
@@ -540,8 +538,8 @@ public class InventarioServicioImpl implements InventarioServicio {
 
             double stockActual = mpSede.getCantidadActualMl();
 
-            double entradas = 0;   // aún no existen
-            double perdidas = 0;   // aún no existen
+            double entradas = 0;   // aun no existen
+            double perdidas = 0;   // aun no existen
 
             double vendidas = calcularConsumoPorVentas(
                     mp.getCodigo(),
@@ -573,7 +571,7 @@ public class InventarioServicioImpl implements InventarioServicio {
             LocalDateTime fin
     ) {
 
-        // 🔹 Traer ventas por producto en el día
+        // ?? Traer ventas por producto en el dia
         List<Object[]> ventas = movimientoRepository
                 .resumenMovimientosDelDia(sedeId, inicio, fin);
 
@@ -585,9 +583,9 @@ public class InventarioServicioImpl implements InventarioServicio {
 
             if (cantidadVendida <= 0) continue;
 
-            // 🔹 Buscar receta del producto
+            // ?? Buscar receta del producto
             List<ProductoMateriaPrima> receta =
-                    productoMateriaPrimaRepository.findByProductoCodigo(productoId);
+                    obtenerRecetaProductoEnSede(productoId, sedeId);
 
             for (ProductoMateriaPrima pmp : receta) {
                 if (pmp.getMateriaPrima().getCodigo().equals(materiaPrimaCodigo)) {
@@ -597,6 +595,14 @@ public class InventarioServicioImpl implements InventarioServicio {
         }
 
         return totalConsumido;
+    }
+
+    private List<ProductoMateriaPrima> obtenerRecetaProductoEnSede(Long productoId, Long sedeId) {
+        return productoMateriaPrimaRepository.findByProductoCodigoAndMateriaPrimaSedeSedeId(productoId, sedeId);
+    }
+
+    private boolean tieneRecetaEnSede(Long productoId, Long sedeId) {
+        return !obtenerRecetaProductoEnSede(productoId, sedeId).isEmpty();
     }
 
     @Override
@@ -615,7 +621,7 @@ public class InventarioServicioImpl implements InventarioServicio {
                         new RuntimeException("Materia prima no encontrada para la sede")
                 );
 
-        double stockActual = mpSede.getCantidadActualMl(); // ✅ AQUÍ
+        double stockActual = mpSede.getCantidadActualMl(); // ? AQUI
 
         if ("ENTRADA".equals(dto.tipo())) {
             mpSede.setCantidadActualMl(stockActual + dto.cantidad());
@@ -627,7 +633,7 @@ public class InventarioServicioImpl implements InventarioServicio {
 
             mpSede.setCantidadActualMl(stockActual - dto.cantidad());
         } else {
-            throw new IllegalArgumentException("Tipo de movimiento inválido");
+            throw new IllegalArgumentException("Tipo de movimiento invalido");
         }
 
         materiaPrimaSedeRepository.save(mpSede);
@@ -635,4 +641,6 @@ public class InventarioServicioImpl implements InventarioServicio {
 
 
 }
+
+
 

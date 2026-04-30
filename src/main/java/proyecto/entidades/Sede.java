@@ -6,23 +6,29 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter @Setter @NoArgsConstructor @ToString
+@Getter @Setter @NoArgsConstructor @ToString(exclude = {"administrador", "administradoresAsignados", "vendedores", "materiasPrimas", "empresa"})
 @Entity
 public class Sede {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nombre;
     private String ubicacion;
 
     @ManyToOne
     @JoinColumn(name = "admin_id")
     private Administrador administrador;
 
+    @ManyToMany(mappedBy = "sedesAsignadas")
+    private List<Administrador> administradoresAsignados = new ArrayList<>();
+
     @OneToMany(mappedBy = "sede")
     private List<Vendedor> vendedores;
 
     @OneToMany(mappedBy = "sede")
     private List<MateriaPrimaSede> materiasPrimas = new ArrayList<>();
+
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 }
