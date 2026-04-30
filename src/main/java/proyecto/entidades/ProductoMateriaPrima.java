@@ -8,7 +8,7 @@ import lombok.Setter;
 @Table(
         name = "producto_materia_prima",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"producto_id", "materia_prima_id"})
+                @UniqueConstraint(columnNames = {"producto_id", "materia_prima_sede_id"})
         }
 )
 @Getter
@@ -26,6 +26,10 @@ public class ProductoMateriaPrima {
     @ManyToOne(optional = false)
     @JoinColumn(name = "materia_prima_id")
     private MateriaPrima materiaPrima;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "materia_prima_sede_id")
+    private MateriaPrimaSede materiaPrimaSede;
 
     @Column(name = "ml_consumidos", nullable = false)
     private double mlConsumidos;

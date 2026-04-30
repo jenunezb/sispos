@@ -6,7 +6,7 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter @Setter @NoArgsConstructor @ToString
+@Getter @Setter @NoArgsConstructor @ToString(exclude = {"administrador", "administradoresAsignados", "vendedores", "materiasPrimas", "empresa"})
 @Entity
 public class Sede {
     @Id
@@ -18,6 +18,9 @@ public class Sede {
     @ManyToOne
     @JoinColumn(name = "admin_id")
     private Administrador administrador;
+
+    @ManyToMany(mappedBy = "sedesAsignadas")
+    private List<Administrador> administradoresAsignados = new ArrayList<>();
 
     @OneToMany(mappedBy = "sede")
     private List<Vendedor> vendedores;

@@ -36,7 +36,7 @@ public class AutenticacionController {
     @PostMapping(value = "/registro", consumes = "multipart/form-data")
     public ResponseEntity<MensajeDTO<String>> registro(
             @RequestPart("datos") String datosJson,
-            @RequestPart("logo") MultipartFile archivo
+            @RequestPart(value = "logo", required = false) MultipartFile archivo
     ) throws Exception {
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -47,6 +47,15 @@ public class AutenticacionController {
 
         return ResponseEntity.ok()
                 .body(new MensajeDTO<>(false, "Empresa y administrador creados correctamente"));
+    }
+
+    @PostMapping("/registro-admin-sistema")
+    public ResponseEntity<MensajeDTO<String>> registroAdministradorSistema(
+            @Valid @RequestBody RegistroAdministradorSistemaDTO dto
+    ) throws Exception {
+        administradorServicio.registrarAdministradorSistema(dto);
+        return ResponseEntity.ok()
+                .body(new MensajeDTO<>(false, "Administrador del sistema creado correctamente"));
     }
 
 }

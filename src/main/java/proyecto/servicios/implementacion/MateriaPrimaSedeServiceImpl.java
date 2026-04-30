@@ -88,7 +88,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         mpSede.setMateriaPrima(materiaPrima);
         mpSede.setSede(sede);
         mpSede.setCantidadActualMl(dto.cantidadInicialMl());
-        mpSede.setMlPorVaso(dto.mlPorVaso());
+        mpSede.setMlPorVaso(0);
         mpSede.setActiva(true);
 
         materiaPrimaSedeRepository.save(mpSede);
@@ -175,14 +175,14 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                         mp.getSede().getUbicacion(),
 
                         mp.getCantidadActualMl(),
-                        mp.getMlPorVaso(),
+                        0,
                         mp.isActiva()
                 ))
                 .toList();
     }
 
     /**
-     * Actualizar cantidad, ml por vaso y estado activo/inactivo
+     * Actualizar cantidad y estado. El consumo real se configura por producto.
      */
     public void actualizarMateriaPrimaSede(Long id, MateriaPrimaSedeUpdate dto) {
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(id)
@@ -191,7 +191,6 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 ));
 
         mpSede.setCantidadActualMl(dto.cantidad());
-        mpSede.setMlPorVaso(dto.mlPorVaso());
         mpSede.setActiva(dto.activa());
 
         materiaPrimaSedeRepository.save(mpSede);
@@ -202,19 +201,6 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
      */
     @Transactional
     public void vincularProducto(VincularProductoDTO dto) {
-
-        boolean existe = productoMateriaPrimaRepository
-                .existsByMateriaPrimaIdAndProductoId(
-                        dto.materiaPrimaSedeId(),
-                        dto.productoId()
-                );
-
-        if (existe) {
-            throw new IllegalStateException(
-                    "El producto ya está vinculado a esta materia prima"
-            );
-        }
-
         MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(dto.materiaPrimaSedeId())
                 .orElseThrow(() ->
                         new IllegalStateException("Materia prima de la sede no encontrada")
@@ -225,17 +211,37 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                         new IllegalStateException("Producto no encontrado")
                 );
 
+        boolean productoVisibleEnSede = inventarioRepository
+                .findVisibleByProductoCodigoAndSedeId(producto.getCodigo(), mpSede.getSede().getId())
+                .isPresent();
+        if (!productoVisibleEnSede) {
+            throw new IllegalStateException("El producto no pertenece a la sede seleccionada");
+        }
+
+        boolean existe = productoMateriaPrimaRepository
+                .existsByMateriaPrimaSedeIdAndProductoCodigo(
+                        mpSede.getId(),
+                        dto.productoId()
+                );
+
+        if (existe) {
+            throw new IllegalStateException(
+                    "El producto ya está vinculado a esta materia prima en esta sede"
+            );
+        }
+
         // 🔹 Crear relación ProductoMateriaPrima
         ProductoMateriaPrima nueva = new ProductoMateriaPrima();
         nueva.setProducto(producto);
         nueva.setMateriaPrima(mpSede.getMateriaPrima());
+        nueva.setMateriaPrimaSede(mpSede);
         nueva.setMlConsumidos(dto.mlConsumidos());
 
         productoMateriaPrimaRepository.save(nueva);
 
         // 🔥 NUEVA LÓGICA: INVENTARIO A CERO
         inventarioRepository
-                .findByProductoCodigoAndSedeId(
+                .findVisibleByProductoCodigoAndSedeId(
                         producto.getCodigo(),
                         mpSede.getSede().getId()
                 )
@@ -246,6 +252,53 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                     inventario.setPerdidas(0);
                     inventarioRepository.save(inventario);
                 });
+    }
+
+    @Override
+    public void actualizarConsumoProducto(Long materiaPrimaSedeId, Long productoId, ActualizarConsumoProductoDTO dto) {
+        MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(materiaPrimaSedeId)
+                .orElseThrow(() -> new IllegalStateException("Materia prima de la sede no encontrada"));
+
+        inventarioRepository.findVisibleByProductoCodigoAndSedeId(productoId, mpSede.getSede().getId())
+                .orElseThrow(() -> new IllegalStateException("El producto no pertenece a la sede seleccionada"));
+
+        ProductoMateriaPrima relacion = productoMateriaPrimaRepository
+                .findByMateriaPrimaSedeIdAndProductoCodigo(mpSede.getId(), productoId)
+                .orElseThrow(() -> new IllegalStateException("El producto no esta vinculado a esta materia prima"));
+
+        relacion.setMlConsumidos(dto.mlConsumidos());
+        productoMateriaPrimaRepository.save(relacion);
+    }
+
+    @Override
+    public List<MateriaPrimaProductoDTO> listarProductosVinculados(Long materiaPrimaSedeId) {
+        MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(materiaPrimaSedeId)
+                .orElseThrow(() -> new IllegalStateException("Materia prima de la sede no encontrada"));
+
+        return productoMateriaPrimaRepository
+                .findByMateriaPrimaSedeIdOrderByProductoNombreAsc(mpSede.getId())
+                .stream()
+                .map(relacion -> new MateriaPrimaProductoDTO(
+                        relacion.getProducto().getCodigo(),
+                        relacion.getProducto().getNombre(),
+                        relacion.getMlConsumidos()
+                ))
+                .toList();
+    }
+
+    @Override
+    public void desvincularProducto(Long materiaPrimaSedeId, Long productoId) {
+        MateriaPrimaSede mpSede = materiaPrimaSedeRepository.findById(materiaPrimaSedeId)
+                .orElseThrow(() -> new IllegalStateException("Materia prima de la sede no encontrada"));
+
+        inventarioRepository.findVisibleByProductoCodigoAndSedeId(productoId, mpSede.getSede().getId())
+                .orElseThrow(() -> new IllegalStateException("El producto no pertenece a la sede seleccionada"));
+
+        ProductoMateriaPrima relacion = productoMateriaPrimaRepository
+                .findByMateriaPrimaSedeIdAndProductoCodigo(mpSede.getId(), productoId)
+                .orElseThrow(() -> new IllegalStateException("El producto no está vinculado a esta materia prima"));
+
+        productoMateriaPrimaRepository.delete(relacion);
     }
 }
 

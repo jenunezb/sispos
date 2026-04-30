@@ -13,15 +13,18 @@ public class Venta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "numero_consecutivo", nullable = false)
+    private Long numeroConsecutivo;
+
     private LocalDateTime fecha;
     private Double total;
 
-    // 🔹 Puede vender un vendedor
+    // Puede vender un vendedor
     @ManyToOne
     @JoinColumn(name = "vendedor_id", nullable = true)
     private Vendedor vendedor;
 
-    // 🔹 O puede vender un administrador
+    // O puede vender un administrador
     @ManyToOne
     @JoinColumn(name = "administrador_id", nullable = true)
     private Administrador administrador;
@@ -29,6 +32,10 @@ public class Venta {
     @ManyToOne
     @JoinColumn(name = "sede_id")
     private Sede sede;
+
+    @ManyToOne
+    @JoinColumn(name = "cliente_id")
+    private Cliente cliente;
 
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL)
     private List<DetalleVenta> detalles;

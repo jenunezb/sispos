@@ -2,7 +2,6 @@ package proyecto.servicios.interfaces;
 
 import proyecto.dto.VentaRecuestDTO;
 import proyecto.dto.VentaResponseDTO;
-import proyecto.entidades.Vendedor;
 import proyecto.entidades.Venta;
 
 import java.time.LocalDateTime;
@@ -12,10 +11,20 @@ public interface VentaServicio {
 
     Venta crearVenta(VentaRecuestDTO dto);
 
+    Venta crearVentaProduccion(String correoProduccion, VentaRecuestDTO dto);
+
     List<VentaResponseDTO> listarVentasPorVendedor(Long vendedorId);
 
     List<VentaResponseDTO> listarVentasPorVendedorEntreFechas(
             Long vendedorId,
+            LocalDateTime desde,
+            LocalDateTime hasta
+    );
+
+    List<VentaResponseDTO> listarVentasPorCorreoVendedor(String correoVendedor);
+
+    List<VentaResponseDTO> listarVentasPorCorreoVendedorEntreFechas(
+            String correoVendedor,
             LocalDateTime desde,
             LocalDateTime hasta
     );
@@ -28,9 +37,21 @@ public interface VentaServicio {
             LocalDateTime hasta
     );
 
+    VentaResponseDTO obtenerVentaPorId(Long ventaId);
+
     VentaResponseDTO mapToResponse(Venta venta);
 
     void anularVenta(Long ventaId);
 
+    void cambiarEstadoVenta(Long ventaId, Boolean valido, Long empresaNit);
+
+    void cambiarEstadoVentaSistema(Long ventaId, Boolean valido);
+
     List<VentaResponseDTO> listarVentasAnuladas(Long sedeId);
+
+    List<VentaResponseDTO> listarVentasAnuladasEntreFechas(
+            Long sedeId,
+            LocalDateTime desde,
+            LocalDateTime hasta
+    );
 }

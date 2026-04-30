@@ -19,10 +19,16 @@ public class Empresa implements Serializable {
     @Id
     private Long nit;
 
+    @Column(length = 5)
+    private String dv;
+
     private String nombre;
 
     @OneToOne
     private Imagen logo;
+
+    @Column(nullable = false)
+    private Boolean impresionCocinaHabilitada = true;
 
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL)
     private List<Sede> sedes;
