@@ -16,4 +16,7 @@ public interface SuscripcionSedeRepository extends JpaRepository<SuscripcionSede
 
     @EntityGraph(attributePaths = {"sede", "sede.empresa", "pagos"})
     Optional<SuscripcionSede> findBySedeId(Long sedeId);
+
+    @EntityGraph(attributePaths = {"sede", "sede.empresa"})
+    List<SuscripcionSede> findBySedeIdIn(List<Long> sedeIds);
 }
