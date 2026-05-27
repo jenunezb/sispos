@@ -180,15 +180,54 @@ public class ProduccionServicioImpl implements ProduccionServicio {
 
     @Override
     @Transactional
+    public ProductoProduccionDTO crearProducto(String correoProduccion, ProductoProduccionRequestDTO dto) {
+        Vendedor vendedor = obtenerVendedorProduccion(correoProduccion);
+        Empresa empresa = obtenerEmpresaDesdeVendedor(vendedor);
+        Sede sede = obtenerSedeProduccion(vendedor);
+
+        Double precioBase = resolverPrecioBase(dto);
+
+        Producto producto = new Producto();
+        producto.setNombre(dto.nombre());
+        producto.setDescripcion(dto.descripcion());
+        producto.setPrecioProduccion(dto.precioProduccion() != null ? dto.precioProduccion() : precioBase);
+        producto.setPrecioVenta(precioBase);
+        producto.setCategoria(null);
+        producto.setEstado(true);
+        producto.setActivo(true);
+        producto.setEmpresa(empresa);
+
+        Producto guardado = productoRepository.save(producto);
+
+        InventarioProduccion inventario = new InventarioProduccion();
+        inventario.setProducto(guardado);
+        inventario.setSede(sede);
+        inventario.setStockActual(0);
+        inventario.setProducidoAcumulado(0);
+        inventario.setDespachadoAcumulado(0);
+        inventarioProduccionRepository.save(inventario);
+
+        return new ProductoProduccionDTO(
+                guardado.getCodigo(),
+                guardado.getNombre(),
+                guardado.getPrecioVenta()
+        );
+    }
+
+    @Override
+    @Transactional
     public ProductoProduccionDTO actualizarProducto(String correoProduccion, Long productoId, ProductoProduccionRequestDTO dto) {
         Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
+        Double precioBase = resolverPrecioBase(dto);
 
         Producto producto = productoRepository.findByCodigoAndEmpresaNit(productoId, empresa.getNit())
                 .filter(Producto::getActivo)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado para la empresa"));
 
         producto.setNombre(dto.nombre());
-        producto.setPrecioVenta(dto.precioBase());
+        producto.setDescripcion(dto.descripcion());
+        producto.setPrecioProduccion(dto.precioProduccion() != null ? dto.precioProduccion() : precioBase);
+        producto.setPrecioVenta(precioBase);
 
         Producto guardado = productoRepository.save(producto);
 
@@ -388,5 +427,15 @@ public class ProduccionServicioImpl implements ProduccionServicio {
             throw new RuntimeException("El perfil de produccion no tiene sede asociada");
         }
         return vendedor.getSede();
+    }
+
+    private Double resolverPrecioBase(ProductoProduccionRequestDTO dto) {
+        Double precioBase = dto.precioBase() != null ? dto.precioBase() : dto.precioVenta();
+
+        if (precioBase == null) {
+            throw new RuntimeException("El precio base es obligatorio");
+        }
+
+        return precioBase;
     }
 }

@@ -79,6 +79,16 @@ public class ProduccionController {
         );
     }
 
+    @PostMapping("/productos")
+    public ResponseEntity<ProductoProduccionDTO> crearProducto(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProductoProduccionRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.crearProducto(obtenerCorreo(authorization), dto)
+        );
+    }
+
     @PutMapping("/productos/{productoId}")
     public ResponseEntity<ProductoProduccionDTO> actualizarProducto(
             @RequestHeader("Authorization") String authorization,

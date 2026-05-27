@@ -13,9 +13,11 @@ import proyecto.entidades.Cliente;
 import proyecto.entidades.Empresa;
 import proyecto.entidades.PrecioClienteProducto;
 import proyecto.entidades.Producto;
+import proyecto.entidades.Sede;
 import proyecto.entidades.TipoPerfilVendedor;
 import proyecto.entidades.Vendedor;
 import proyecto.repositorios.ClienteRepository;
+import proyecto.repositorios.InventarioProduccionRepository;
 import proyecto.repositorios.PrecioClienteProductoRepository;
 import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.VendedorRepository;
@@ -40,6 +42,8 @@ class ProduccionServicioImplTest {
     private ProductoRepository productoRepository;
     @Mock
     private PrecioClienteProductoRepository precioClienteProductoRepository;
+    @Mock
+    private InventarioProduccionRepository inventarioProduccionRepository;
 
     @InjectMocks
     private ProduccionServicioImpl produccionServicio;
@@ -223,11 +227,45 @@ class ProduccionServicioImplTest {
         var respuesta = produccionServicio.actualizarProducto(
                 "prod@correo.com",
                 30L,
-                new ProductoProduccionRequestDTO("Producto Nuevo", 12000.0)
+                new ProductoProduccionRequestDTO("Producto Nuevo", null, 12000.0, null, null)
         );
 
         assertEquals("Producto Nuevo", respuesta.nombre());
         assertEquals(12000.0, respuesta.precioBase());
+    }
+
+    @Test
+    void crearProductoDebeCrearInventarioDeProduccion() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> {
+            Producto p = inv.getArgument(0);
+            p.setCodigo(40L);
+            return p;
+        });
+        when(inventarioProduccionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.crearProducto(
+                "prod@correo.com",
+                new ProductoProduccionRequestDTO("Producto Creado", "Desc", 4500.0, 4500.0, 4500.0)
+        );
+
+        assertEquals(40L, respuesta.id());
+        assertEquals("Producto Creado", respuesta.nombre());
+        assertEquals(4500.0, respuesta.precioBase());
+        verify(inventarioProduccionRepository).save(any());
     }
 
     @Test
