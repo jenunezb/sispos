@@ -8,9 +8,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.ClienteActualizarDTO;
 import proyecto.dto.ClienteCrearDTO;
 import proyecto.dto.PrecioClienteRequestDTO;
+import proyecto.dto.ProduccionRegistroItemDTO;
+import proyecto.dto.ProduccionRegistroMultipleDTO;
 import proyecto.dto.ProductoProduccionRequestDTO;
 import proyecto.entidades.Cliente;
 import proyecto.entidades.Empresa;
+import proyecto.entidades.InventarioProduccion;
+import proyecto.entidades.MovimientoProduccion;
 import proyecto.entidades.PrecioClienteProducto;
 import proyecto.entidades.Producto;
 import proyecto.entidades.Sede;
@@ -18,9 +22,11 @@ import proyecto.entidades.TipoPerfilVendedor;
 import proyecto.entidades.Vendedor;
 import proyecto.repositorios.ClienteRepository;
 import proyecto.repositorios.InventarioProduccionRepository;
+import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.PrecioClienteProductoRepository;
 import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.VendedorRepository;
+import proyecto.servicios.interfaces.VentaServicio;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +34,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,6 +51,10 @@ class ProduccionServicioImplTest {
     private PrecioClienteProductoRepository precioClienteProductoRepository;
     @Mock
     private InventarioProduccionRepository inventarioProduccionRepository;
+    @Mock
+    private MovimientoProduccionRepository movimientoProduccionRepository;
+    @Mock
+    private VentaServicio ventaServicio;
 
     @InjectMocks
     private ProduccionServicioImpl produccionServicio;
@@ -296,5 +307,54 @@ class ProduccionServicioImplTest {
 
         assertFalse(producto.getActivo());
         verify(productoRepository).save(producto);
+    }
+
+    @Test
+    void registrarProduccionMultipleDebeRegistrarTodosLosProductos() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        Producto productoA = new Producto();
+        productoA.setCodigo(40L);
+        productoA.setNombre("Producto A");
+        productoA.setEmpresa(empresa);
+
+        Producto productoB = new Producto();
+        productoB.setCodigo(41L);
+        productoB.setNombre("Producto B");
+        productoB.setEmpresa(empresa);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(productoRepository.findById(40L)).thenReturn(Optional.of(productoA));
+        when(productoRepository.findById(41L)).thenReturn(Optional.of(productoB));
+        when(inventarioProduccionRepository.findByProductoCodigoAndSedeId(40L, 5L)).thenReturn(Optional.empty());
+        when(inventarioProduccionRepository.findByProductoCodigoAndSedeId(41L, 5L)).thenReturn(Optional.empty());
+        when(inventarioProduccionRepository.save(any(InventarioProduccion.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(movimientoProduccionRepository.save(any(MovimientoProduccion.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.registrarProduccionMultiple(
+                "prod@correo.com",
+                new ProduccionRegistroMultipleDTO(
+                        List.of(
+                                new ProduccionRegistroItemDTO(40L, 10),
+                                new ProduccionRegistroItemDTO(41L, 7)
+                        ),
+                        "Lote de la manana"
+                )
+        );
+
+        assertEquals("Produccion registrada correctamente", respuesta);
+        verify(inventarioProduccionRepository, times(2)).save(any(InventarioProduccion.class));
+        verify(movimientoProduccionRepository, times(2)).save(any(MovimientoProduccion.class));
     }
 }

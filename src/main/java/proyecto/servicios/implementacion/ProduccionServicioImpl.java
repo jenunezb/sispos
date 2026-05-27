@@ -260,7 +260,35 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         Sede sede = obtenerSedeProduccion(vendedor);
         Empresa empresa = obtenerEmpresaDesdeVendedor(vendedor);
 
-        Producto producto = productoRepository.findById(dto.productoId())
+        registrarProduccionItem(vendedor, sede, empresa, dto.productoId(), dto.cantidad(), dto.observacion());
+
+        return "Produccion registrada correctamente";
+    }
+
+    @Override
+    @Transactional
+    public String registrarProduccionMultiple(String correoProduccion, ProduccionRegistroMultipleDTO dto) {
+        Vendedor vendedor = obtenerVendedorProduccion(correoProduccion);
+        Sede sede = obtenerSedeProduccion(vendedor);
+        Empresa empresa = obtenerEmpresaDesdeVendedor(vendedor);
+
+        for (ProduccionRegistroItemDTO item : dto.items()) {
+            registrarProduccionItem(vendedor, sede, empresa, item.productoId(), item.cantidad(), dto.observacion());
+        }
+
+        return "Produccion registrada correctamente";
+    }
+
+    private void registrarProduccionItem(
+            Vendedor vendedor,
+            Sede sede,
+            Empresa empresa,
+            Long productoId,
+            Integer cantidad,
+            String observacion
+    ) {
+
+        Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
         if (producto.getEmpresa() == null || !empresa.getNit().equals(producto.getEmpresa().getNit())) {
@@ -279,8 +307,8 @@ public class ProduccionServicioImpl implements ProduccionServicio {
                     return nuevo;
                 });
 
-        inventario.setStockActual(inventario.getStockActual() + dto.cantidad());
-        inventario.setProducidoAcumulado(inventario.getProducidoAcumulado() + dto.cantidad());
+        inventario.setStockActual(inventario.getStockActual() + cantidad);
+        inventario.setProducidoAcumulado(inventario.getProducidoAcumulado() + cantidad);
         inventarioProduccionRepository.save(inventario);
 
         MovimientoProduccion movimiento = new MovimientoProduccion();
@@ -289,11 +317,9 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         movimiento.setCliente(null);
         movimiento.setVendedor(vendedor);
         movimiento.setTipo(TipoMovimientoProduccion.PRODUCCION);
-        movimiento.setCantidad(dto.cantidad());
-        movimiento.setObservacion(dto.observacion());
+        movimiento.setCantidad(cantidad);
+        movimiento.setObservacion(observacion);
         movimientoProduccionRepository.save(movimiento);
-
-        return "Produccion registrada correctamente";
     }
 
     @Override

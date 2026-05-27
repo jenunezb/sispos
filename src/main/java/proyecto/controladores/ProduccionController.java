@@ -120,6 +120,17 @@ public class ProduccionController {
         ));
     }
 
+    @PostMapping("/inventario/produccion/lote")
+    public ResponseEntity<MensajeDTO<String>> registrarProduccionLote(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProduccionRegistroMultipleDTO dto
+    ) {
+        return ResponseEntity.ok(new MensajeDTO<>(
+                false,
+                produccionServicio.registrarProduccionMultiple(obtenerCorreo(authorization), dto)
+        ));
+    }
+
     @GetMapping("/inventario")
     public ResponseEntity<List<InventarioProduccionDTO>> listarInventario(
             @RequestHeader("Authorization") String authorization

@@ -30,6 +30,8 @@ public interface ProduccionServicio {
 
     String registrarProduccion(String correoProduccion, ProduccionRegistroDTO dto);
 
+    String registrarProduccionMultiple(String correoProduccion, ProduccionRegistroMultipleDTO dto);
+
     List<InventarioProduccionDTO> listarInventario(String correoProduccion);
 
     List<VentaResponseDTO> listarVentas(String correoProduccion);
