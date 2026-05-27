@@ -166,9 +166,11 @@ public class ProduccionServicioImpl implements ProduccionServicio {
 
     @Override
     public List<ProductoProduccionDTO> listarProductos(String correoProduccion) {
-        Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
+        Vendedor vendedor = obtenerVendedorProduccion(correoProduccion);
+        Empresa empresa = obtenerEmpresaDesdeVendedor(vendedor);
+        Sede sede = obtenerSedeProduccion(vendedor);
 
-        return productoRepository.findByActivoTrueAndEmpresaNitOrderByCodigoAsc(empresa.getNit())
+        return productoRepository.findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(empresa.getNit(), sede.getId())
                 .stream()
                 .map(p -> new ProductoProduccionDTO(
                         p.getCodigo(),

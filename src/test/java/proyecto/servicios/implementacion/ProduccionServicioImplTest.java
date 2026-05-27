@@ -179,14 +179,19 @@ class ProduccionServicioImplTest {
     }
 
     @Test
-    void listarProductosDebeFiltrarPorEmpresa() {
+    void listarProductosDebeFiltrarPorSedeDeProduccion() {
         Empresa empresa = new Empresa();
         empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
 
         Vendedor produccion = new Vendedor();
         produccion.setCorreo("prod@correo.com");
         produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
         produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
 
         Producto producto = new Producto();
         producto.setCodigo(30L);
@@ -194,7 +199,7 @@ class ProduccionServicioImplTest {
         producto.setPrecioVenta(20000.0);
 
         when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
-        when(productoRepository.findByActivoTrueAndEmpresaNitOrderByCodigoAsc(900123456L))
+        when(productoRepository.findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(900123456L, 5L))
                 .thenReturn(List.of(producto));
 
         var respuesta = produccionServicio.listarProductos("prod@correo.com");
