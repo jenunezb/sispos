@@ -7,11 +7,14 @@ import org.springframework.stereotype.Repository;
 import proyecto.entidades.Producto;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
     List<Producto> findByActivoTrueAndEmpresaNitOrderByCodigoAsc(Long empresaNit);
+
+    Optional<Producto> findByCodigoAndEmpresaNit(Long codigo, Long empresaNit);
 
     @Query("""
         SELECT DISTINCT p

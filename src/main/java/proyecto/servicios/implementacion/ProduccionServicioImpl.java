@@ -180,6 +180,40 @@ public class ProduccionServicioImpl implements ProduccionServicio {
 
     @Override
     @Transactional
+    public ProductoProduccionDTO actualizarProducto(String correoProduccion, Long productoId, ProductoProduccionRequestDTO dto) {
+        Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
+
+        Producto producto = productoRepository.findByCodigoAndEmpresaNit(productoId, empresa.getNit())
+                .filter(Producto::getActivo)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado para la empresa"));
+
+        producto.setNombre(dto.nombre());
+        producto.setPrecioVenta(dto.precioBase());
+
+        Producto guardado = productoRepository.save(producto);
+
+        return new ProductoProduccionDTO(
+                guardado.getCodigo(),
+                guardado.getNombre(),
+                guardado.getPrecioVenta()
+        );
+    }
+
+    @Override
+    @Transactional
+    public void eliminarProducto(String correoProduccion, Long productoId) {
+        Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
+
+        Producto producto = productoRepository.findByCodigoAndEmpresaNit(productoId, empresa.getNit())
+                .filter(Producto::getActivo)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado para la empresa"));
+
+        producto.setActivo(false);
+        productoRepository.save(producto);
+    }
+
+    @Override
+    @Transactional
     public String registrarProduccion(String correoProduccion, ProduccionRegistroDTO dto) {
         Vendedor vendedor = obtenerVendedorProduccion(correoProduccion);
         Sede sede = obtenerSedeProduccion(vendedor);

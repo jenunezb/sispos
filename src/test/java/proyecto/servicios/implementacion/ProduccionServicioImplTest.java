@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.ClienteActualizarDTO;
 import proyecto.dto.ClienteCrearDTO;
 import proyecto.dto.PrecioClienteRequestDTO;
+import proyecto.dto.ProductoProduccionRequestDTO;
 import proyecto.entidades.Cliente;
 import proyecto.entidades.Empresa;
 import proyecto.entidades.PrecioClienteProducto;
@@ -196,5 +197,61 @@ class ProduccionServicioImplTest {
 
         assertEquals(1, respuesta.size());
         assertEquals(30L, respuesta.get(0).id());
+    }
+
+    @Test
+    void actualizarProductoDebePersistirCambios() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+
+        Producto producto = new Producto();
+        producto.setCodigo(30L);
+        producto.setNombre("Producto Viejo");
+        producto.setPrecioVenta(10000.0);
+        producto.setEmpresa(empresa);
+        producto.setActivo(true);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(productoRepository.findByCodigoAndEmpresaNit(30L, 900123456L)).thenReturn(Optional.of(producto));
+        when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.actualizarProducto(
+                "prod@correo.com",
+                30L,
+                new ProductoProduccionRequestDTO("Producto Nuevo", 12000.0)
+        );
+
+        assertEquals("Producto Nuevo", respuesta.nombre());
+        assertEquals(12000.0, respuesta.precioBase());
+    }
+
+    @Test
+    void eliminarProductoDebeDesactivarlo() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+
+        Producto producto = new Producto();
+        producto.setCodigo(30L);
+        producto.setEmpresa(empresa);
+        producto.setActivo(true);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(productoRepository.findByCodigoAndEmpresaNit(30L, 900123456L)).thenReturn(Optional.of(producto));
+        when(productoRepository.save(any(Producto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        produccionServicio.eliminarProducto("prod@correo.com", 30L);
+
+        assertFalse(producto.getActivo());
+        verify(productoRepository).save(producto);
     }
 }

@@ -22,6 +22,10 @@ public interface ProduccionServicio {
 
     List<ProductoProduccionDTO> listarProductos(String correoProduccion);
 
+    ProductoProduccionDTO actualizarProducto(String correoProduccion, Long productoId, ProductoProduccionRequestDTO dto);
+
+    void eliminarProducto(String correoProduccion, Long productoId);
+
     String registrarProduccion(String correoProduccion, ProduccionRegistroDTO dto);
 
     List<InventarioProduccionDTO> listarInventario(String correoProduccion);

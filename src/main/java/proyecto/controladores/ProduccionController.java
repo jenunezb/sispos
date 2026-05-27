@@ -79,6 +79,26 @@ public class ProduccionController {
         );
     }
 
+    @PutMapping("/productos/{productoId}")
+    public ResponseEntity<ProductoProduccionDTO> actualizarProducto(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long productoId,
+            @Valid @RequestBody ProductoProduccionRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.actualizarProducto(obtenerCorreo(authorization), productoId, dto)
+        );
+    }
+
+    @DeleteMapping("/productos/{productoId}")
+    public ResponseEntity<MensajeDTO<String>> eliminarProducto(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long productoId
+    ) {
+        produccionServicio.eliminarProducto(obtenerCorreo(authorization), productoId);
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Producto eliminado correctamente"));
+    }
+
     @PostMapping("/inventario/produccion")
     public ResponseEntity<MensajeDTO<String>> registrarProduccion(
             @RequestHeader("Authorization") String authorization,
