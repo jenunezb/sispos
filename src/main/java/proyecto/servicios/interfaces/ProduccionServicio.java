@@ -12,6 +12,10 @@ public interface ProduccionServicio {
 
     List<ClienteDTO> listarClientes(String correoProduccion);
 
+    ClienteDTO actualizarCliente(String correoProduccion, Long clienteId, ClienteActualizarDTO dto);
+
+    void eliminarCliente(String correoProduccion, Long clienteId);
+
     PrecioClienteDTO guardarPrecioCliente(String correoProduccion, Long clienteId, PrecioClienteRequestDTO dto);
 
     List<PrecioClienteDTO> listarPreciosCliente(String correoProduccion, Long clienteId);

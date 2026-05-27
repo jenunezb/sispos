@@ -50,6 +50,26 @@ public class ProduccionController {
         );
     }
 
+    @PutMapping("/clientes/{clienteId}")
+    public ResponseEntity<ClienteDTO> actualizarCliente(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long clienteId,
+            @Valid @RequestBody ClienteActualizarDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.actualizarCliente(obtenerCorreo(authorization), clienteId, dto)
+        );
+    }
+
+    @DeleteMapping("/clientes/{clienteId}")
+    public ResponseEntity<MensajeDTO<String>> eliminarCliente(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long clienteId
+    ) {
+        produccionServicio.eliminarCliente(obtenerCorreo(authorization), clienteId);
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Cliente eliminado correctamente"));
+    }
+
     @GetMapping("/productos")
     public ResponseEntity<List<ProductoProduccionDTO>> listarProductos(
             @RequestHeader("Authorization") String authorization

@@ -13,4 +13,6 @@ public interface PrecioClienteProductoRepository extends JpaRepository<PrecioCli
     Optional<PrecioClienteProducto> findByClienteIdAndProductoCodigo(Long clienteId, Long productoCodigo);
 
     List<PrecioClienteProducto> findByClienteIdAndClienteEmpresaNitAndActivoTrueOrderByProductoNombreAsc(Long clienteId, Long empresaNit);
+
+    List<PrecioClienteProducto> findByClienteId(Long clienteId);
 }

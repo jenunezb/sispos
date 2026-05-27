@@ -69,6 +69,49 @@ public class ProduccionServicioImpl implements ProduccionServicio {
 
     @Override
     @Transactional
+    public ClienteDTO actualizarCliente(String correoProduccion, Long clienteId, ClienteActualizarDTO dto) {
+        Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
+
+        Cliente cliente = clienteRepository.findByIdAndEmpresaNit(clienteId, empresa.getNit())
+                .filter(Cliente::getActivo)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado para la empresa"));
+
+        cliente.setNombre(dto.nombre());
+        cliente.setTelefono(dto.telefono());
+        cliente.setDocumento(dto.documento());
+
+        Cliente guardado = clienteRepository.save(cliente);
+
+        return new ClienteDTO(
+                guardado.getId(),
+                guardado.getNombre(),
+                guardado.getTelefono(),
+                guardado.getDocumento(),
+                guardado.getActivo()
+        );
+    }
+
+    @Override
+    @Transactional
+    public void eliminarCliente(String correoProduccion, Long clienteId) {
+        Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
+
+        Cliente cliente = clienteRepository.findByIdAndEmpresaNit(clienteId, empresa.getNit())
+                .filter(Cliente::getActivo)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado para la empresa"));
+
+        cliente.setActivo(false);
+        clienteRepository.save(cliente);
+
+        precioClienteProductoRepository.findByClienteId(clienteId)
+                .forEach(precio -> {
+                    precio.setActivo(false);
+                    precioClienteProductoRepository.save(precio);
+                });
+    }
+
+    @Override
+    @Transactional
     public PrecioClienteDTO guardarPrecioCliente(String correoProduccion, Long clienteId, PrecioClienteRequestDTO dto) {
         Empresa empresa = obtenerEmpresaProduccion(correoProduccion);
 

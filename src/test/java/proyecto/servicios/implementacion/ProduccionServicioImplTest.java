@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import proyecto.dto.ClienteActualizarDTO;
 import proyecto.dto.ClienteCrearDTO;
 import proyecto.dto.PrecioClienteRequestDTO;
 import proyecto.entidades.Cliente;
@@ -22,7 +23,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -101,6 +104,73 @@ class ProduccionServicioImplTest {
 
         assertEquals(100L, respuesta.id());
         assertEquals(15500.0, respuesta.precioVenta());
+    }
+
+    @Test
+    void actualizarClienteDebePersistirCambios() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+
+        Cliente cliente = new Cliente();
+        cliente.setId(10L);
+        cliente.setNombre("Cliente Viejo");
+        cliente.setTelefono("111");
+        cliente.setDocumento("DOC1");
+        cliente.setEmpresa(empresa);
+        cliente.setActivo(true);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(clienteRepository.findByIdAndEmpresaNit(10L, 900123456L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.save(any(Cliente.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.actualizarCliente(
+                "prod@correo.com",
+                10L,
+                new ClienteActualizarDTO("Cliente Nuevo", "222", "DOC2")
+        );
+
+        assertEquals("Cliente Nuevo", respuesta.nombre());
+        assertEquals("222", respuesta.telefono());
+        assertEquals("DOC2", respuesta.documento());
+    }
+
+    @Test
+    void eliminarClienteDebeDesactivarClienteYPrecios() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+
+        Cliente cliente = new Cliente();
+        cliente.setId(10L);
+        cliente.setEmpresa(empresa);
+        cliente.setActivo(true);
+
+        PrecioClienteProducto precio = new PrecioClienteProducto();
+        precio.setId(100L);
+        precio.setActivo(true);
+        precio.setCliente(cliente);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(clienteRepository.findByIdAndEmpresaNit(10L, 900123456L)).thenReturn(Optional.of(cliente));
+        when(precioClienteProductoRepository.findByClienteId(10L)).thenReturn(List.of(precio));
+        when(clienteRepository.save(any(Cliente.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(precioClienteProductoRepository.save(any(PrecioClienteProducto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        produccionServicio.eliminarCliente("prod@correo.com", 10L);
+
+        assertFalse(cliente.getActivo());
+        assertFalse(precio.getActivo());
+        verify(clienteRepository).save(cliente);
+        verify(precioClienteProductoRepository).save(precio);
     }
 
     @Test
