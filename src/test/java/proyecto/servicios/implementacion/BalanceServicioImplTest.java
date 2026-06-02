@@ -6,7 +6,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.BalanceGeneralDTO;
+import proyecto.entidades.ModoPago;
 import proyecto.repositorios.DetalleVentaRepository;
+import proyecto.repositorios.GastoDiarioRepository;
 import proyecto.repositorios.InventarioRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VentaRepository;
@@ -28,6 +30,8 @@ class BalanceServicioImplTest {
     private InventarioRepository inventarioRepository;
     @Mock
     private SedeRepository sedeRepository;
+    @Mock
+    private GastoDiarioRepository gastoDiarioRepository;
 
     @InjectMocks
     private BalanceServicioImpl balanceServicio;
@@ -45,12 +49,20 @@ class BalanceServicioImplTest {
         when(inventarioRepository.stockTotalPorEmpresa(empresaNit)).thenReturn(100);
         when(ventaRepository.totalVentasEntreFechasEfectivoPorEmpresa(empresaNit, desde, hasta)).thenReturn(30000.0);
         when(ventaRepository.totalVentasEntreFechasTransferenciaPorEmpresa(empresaNit, desde, hasta)).thenReturn(20000.0);
+        when(gastoDiarioRepository.totalGastosPorEmpresa(empresaNit, desde, hasta)).thenReturn(5000.0);
+        when(gastoDiarioRepository.totalGastosPorEmpresaYModoPago(empresaNit, ModoPago.EFECTIVO, desde, hasta)).thenReturn(3500.0);
+        when(gastoDiarioRepository.totalGastosPorEmpresaYModoPago(empresaNit, ModoPago.TRANSFERENCIA, desde, hasta)).thenReturn(1500.0);
 
         BalanceGeneralDTO respuesta = balanceServicio.balanceGeneral(empresaNit, desde, hasta);
 
         assertEquals(50000.0, respuesta.totalVentas());
         assertEquals(20000.0, respuesta.costoProduccion());
         assertEquals(30000.0, respuesta.utilidadBruta());
+        assertEquals(5000.0, respuesta.totalGastos());
+        assertEquals(3500.0, respuesta.gastosEfectivo());
+        assertEquals(1500.0, respuesta.gastosTransferencia());
+        assertEquals(26500.0, respuesta.cajaEsperada());
+        assertEquals(25000.0, respuesta.utilidadNeta());
         assertEquals(10L, respuesta.cantidadVentas());
 
         verify(ventaRepository).totalVentasEntreFechasPorEmpresa(empresaNit, desde, hasta);

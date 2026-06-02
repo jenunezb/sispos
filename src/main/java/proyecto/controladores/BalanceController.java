@@ -97,11 +97,20 @@ public class BalanceController {
         long cantidadVentas = balancesFiltrados.stream().mapToLong(balance -> defaultLong(balance.cantidadVentas())).sum();
         double ventasEfectivo = balancesFiltrados.stream().mapToDouble(balance -> defaultDouble(balance.efectivo())).sum();
         double ventasTransferencia = balancesFiltrados.stream().mapToDouble(balance -> defaultDouble(balance.trasferencia())).sum();
+        double totalGastos = balancesFiltrados.stream().mapToDouble(balance -> defaultDouble(balance.totalGastos())).sum();
+        double gastosEfectivo = balancesFiltrados.stream().mapToDouble(balance -> defaultDouble(balance.gastosEfectivo())).sum();
+        double gastosTransferencia = balancesFiltrados.stream().mapToDouble(balance -> defaultDouble(balance.gastosTransferencia())).sum();
+        double cajaEsperada = balancesFiltrados.stream().mapToDouble(balance -> defaultDouble(balance.cajaEsperada())).sum();
 
         return new BalanceGeneralDTO(
                 totalVentas,
                 costoProduccion,
                 totalVentas - costoProduccion,
+                totalGastos,
+                gastosEfectivo,
+                gastosTransferencia,
+                cajaEsperada,
+                (totalVentas - costoProduccion) - totalGastos,
                 valorInventario,
                 stockTotal,
                 cantidadVentas,

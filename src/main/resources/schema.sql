@@ -128,3 +128,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_venta_sede_numero_consecutivo
 
 ALTER TABLE empresa
     ADD COLUMN IF NOT EXISTS dv VARCHAR(5);
+
+CREATE TABLE IF NOT EXISTS gasto_diario (
+    id BIGSERIAL PRIMARY KEY,
+    sede_id BIGINT NOT NULL,
+    administrador_id INTEGER NOT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    valor DOUBLE PRECISION NOT NULL,
+    fecha TIMESTAMP NOT NULL,
+    modo_pago VARCHAR(30) NOT NULL,
+    CONSTRAINT fk_gasto_diario_sede FOREIGN KEY (sede_id) REFERENCES sede(id),
+    CONSTRAINT fk_gasto_diario_administrador FOREIGN KEY (administrador_id) REFERENCES administrador(codigo)
+);
