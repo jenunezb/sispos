@@ -10,6 +10,7 @@ import proyecto.dto.GastoDiarioResponseDTO;
 import proyecto.dto.MensajeDTO;
 import proyecto.entidades.Administrador;
 import proyecto.servicios.implementacion.AdministradorAccesoService;
+import proyecto.servicios.implementacion.SuscripcionFeatureService;
 import proyecto.servicios.interfaces.GastoDiarioServicio;
 
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ public class GastoDiarioController {
 
     private final GastoDiarioServicio gastoDiarioServicio;
     private final AdministradorAccesoService administradorAccesoService;
+    private final SuscripcionFeatureService suscripcionFeatureService;
 
     @PostMapping
     public ResponseEntity<MensajeDTO<GastoDiarioResponseDTO>> crear(
@@ -33,6 +35,7 @@ public class GastoDiarioController {
     ) {
         Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         administradorAccesoService.validarAccesoASede(admin, dto.sedeId());
+        suscripcionFeatureService.validarGastosHabilitados(dto.sedeId());
 
         return ResponseEntity.ok(new MensajeDTO<>(
                 false,
@@ -53,6 +56,7 @@ public class GastoDiarioController {
 
         if (sedeId != null) {
             administradorAccesoService.validarAccesoASede(admin, sedeId);
+            suscripcionFeatureService.validarGastosHabilitados(sedeId);
         }
 
         LocalDateTime fechaDesde = desde != null
@@ -63,6 +67,10 @@ public class GastoDiarioController {
                 : LocalDate.now().atTime(23, 59, 59);
 
         List<GastoDiarioResponseDTO> gastos = gastoDiarioServicio.listar(empresaNitConsulta, sedeId, fechaDesde, fechaHasta);
+        var sedeIdsConGastos = suscripcionFeatureService.obtenerSedeIdsConGastosHabilitados(empresaNitConsulta);
+        gastos = gastos.stream()
+                .filter(gasto -> sedeIdsConGastos.contains(gasto.sedeId()))
+                .toList();
 
         if (!admin.isEsSuperAdmin() && !admin.isEsAdministradorEmpresa()) {
             List<Long> sedeIdsVisibles = administradorAccesoService.obtenerSedesVisibles(admin).stream()

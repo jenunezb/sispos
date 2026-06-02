@@ -6,7 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.BalanceGeneralDTO;
-import proyecto.entidades.ModoPago;
+import proyecto.entidades.Sede;
 import proyecto.repositorios.DetalleVentaRepository;
 import proyecto.repositorios.GastoDiarioRepository;
 import proyecto.repositorios.InventarioRepository;
@@ -14,6 +14,7 @@ import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VentaRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -32,6 +33,8 @@ class BalanceServicioImplTest {
     private SedeRepository sedeRepository;
     @Mock
     private GastoDiarioRepository gastoDiarioRepository;
+    @Mock
+    private SuscripcionFeatureService suscripcionFeatureService;
 
     @InjectMocks
     private BalanceServicioImpl balanceServicio;
@@ -42,16 +45,22 @@ class BalanceServicioImplTest {
         LocalDateTime desde = LocalDateTime.of(2026, 1, 1, 0, 0);
         LocalDateTime hasta = LocalDateTime.of(2026, 1, 31, 23, 59, 59);
 
-        when(ventaRepository.totalVentasEntreFechasPorEmpresa(empresaNit, desde, hasta)).thenReturn(50000.0);
-        when(detalleVentaRepository.costoProduccionEntreFechasPorEmpresa(empresaNit, desde, hasta)).thenReturn(20000.0);
-        when(ventaRepository.cantidadVentasEntreFechasPorEmpresa(empresaNit, desde, hasta)).thenReturn(10L);
-        when(inventarioRepository.valorInventarioPorEmpresa(empresaNit)).thenReturn(3000.0);
-        when(inventarioRepository.stockTotalPorEmpresa(empresaNit)).thenReturn(100);
-        when(ventaRepository.totalVentasEntreFechasEfectivoPorEmpresa(empresaNit, desde, hasta)).thenReturn(30000.0);
-        when(ventaRepository.totalVentasEntreFechasTransferenciaPorEmpresa(empresaNit, desde, hasta)).thenReturn(20000.0);
-        when(gastoDiarioRepository.totalGastosPorEmpresa(empresaNit, desde, hasta)).thenReturn(5000.0);
-        when(gastoDiarioRepository.totalGastosPorEmpresaYModoPago(empresaNit, ModoPago.EFECTIVO, desde, hasta)).thenReturn(3500.0);
-        when(gastoDiarioRepository.totalGastosPorEmpresaYModoPago(empresaNit, ModoPago.TRANSFERENCIA, desde, hasta)).thenReturn(1500.0);
+        Sede sede = new Sede();
+        sede.setId(1L);
+        sede.setUbicacion("Principal");
+
+        when(sedeRepository.findByEmpresaNit(empresaNit)).thenReturn(List.of(sede));
+        when(ventaRepository.totalVentasPorSedeEntreFechas(1L, desde, hasta)).thenReturn(50000.0);
+        when(detalleVentaRepository.costoProduccionPorSedeEntreFechas(1L, desde, hasta)).thenReturn(20000.0);
+        when(ventaRepository.cantidadVentasPorSedeEntreFechas(1L, desde, hasta)).thenReturn(10L);
+        when(inventarioRepository.valorInventarioPorSede(1L)).thenReturn(3000.0);
+        when(inventarioRepository.stockPorSede(1L)).thenReturn(100);
+        when(ventaRepository.totalVentasEfectivoPorSedeEntreFechas(1L, desde, hasta)).thenReturn(30000.0);
+        when(ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(1L, desde, hasta)).thenReturn(20000.0);
+        when(suscripcionFeatureService.tieneGastosHabilitados(1L)).thenReturn(true);
+        when(gastoDiarioRepository.totalGastosPorSede(1L, desde, hasta)).thenReturn(5000.0);
+        when(gastoDiarioRepository.totalGastosPorSedeYModoPago(1L, proyecto.entidades.ModoPago.EFECTIVO, desde, hasta)).thenReturn(3500.0);
+        when(gastoDiarioRepository.totalGastosPorSedeYModoPago(1L, proyecto.entidades.ModoPago.TRANSFERENCIA, desde, hasta)).thenReturn(1500.0);
 
         BalanceGeneralDTO respuesta = balanceServicio.balanceGeneral(empresaNit, desde, hasta);
 
@@ -65,7 +74,7 @@ class BalanceServicioImplTest {
         assertEquals(25000.0, respuesta.utilidadNeta());
         assertEquals(10L, respuesta.cantidadVentas());
 
-        verify(ventaRepository).totalVentasEntreFechasPorEmpresa(empresaNit, desde, hasta);
-        verify(detalleVentaRepository).costoProduccionEntreFechasPorEmpresa(empresaNit, desde, hasta);
+        verify(sedeRepository).findByEmpresaNit(empresaNit);
+        verify(detalleVentaRepository).costoProduccionPorSedeEntreFechas(1L, desde, hasta);
     }
 }

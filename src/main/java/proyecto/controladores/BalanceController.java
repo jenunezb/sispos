@@ -32,20 +32,10 @@ public class BalanceController {
         Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         Long empresaNitConsulta = administradorAccesoService.resolverEmpresaNit(admin, empresaNit);
 
-        if (!admin.isEsSuperAdmin() && !admin.isEsAdministradorEmpresa()) {
-            return consolidarBalanceGeneral(
-                    obtenerBalancesPorSede(empresaNitConsulta, desde, hasta),
-                    obtenerSedeIdsVisibles(admin)
-            );
-        }
-
-        if (desde != null && hasta != null) {
-            LocalDateTime fDesde = LocalDate.parse(desde).atStartOfDay();
-            LocalDateTime fHasta = LocalDate.parse(hasta).atTime(23, 59, 59);
-            return balanceServicio.balanceGeneral(empresaNitConsulta, fDesde, fHasta);
-        }
-
-        return balanceServicio.balanceDelDia(empresaNitConsulta);
+        return consolidarBalanceGeneral(
+                obtenerBalancesPorSede(empresaNitConsulta, desde, hasta),
+                obtenerSedeIdsVisibles(admin)
+        );
     }
 
     @GetMapping("/sedes")

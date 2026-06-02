@@ -9,6 +9,7 @@ import proyecto.dto.SuperAdminRegistrarPagoSuscripcionDTO;
 import proyecto.dto.SuperAdminSuscripcionSedeDTO;
 import proyecto.entidades.EstadoSuscripcionSede;
 import proyecto.entidades.PagoSuscripcionSede;
+import proyecto.entidades.PlanSuscripcionSede;
 import proyecto.entidades.Sede;
 import proyecto.entidades.SuscripcionSede;
 import proyecto.entidades.TipoCobroSuscripcion;
@@ -32,6 +33,7 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
     private final SuscripcionSedeRepository suscripcionSedeRepository;
     private final PagoSuscripcionSedeRepository pagoSuscripcionSedeRepository;
     private final SedeRepository sedeRepository;
+    private final SuscripcionFeatureService suscripcionFeatureService;
 
     @Override
     @Transactional
@@ -51,6 +53,8 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
         }
 
         TipoCobroSuscripcion tipoCobro = parseTipoCobro(dto.tipoCobro(), "tipo de cobro");
+        PlanSuscripcionSede plan = parsePlan(dto.plan());
+        suscripcion.setPlan(plan);
         suscripcion.setTipoCobro(tipoCobro);
         suscripcion.setPrecioMensual(normalizarValor(dto.precioMensual(), "precio mensual"));
         suscripcion.setPrecioAnual(normalizarValor(dto.precioAnual(), "precio anual"));
@@ -186,6 +190,18 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
         }
     }
 
+    private PlanSuscripcionSede parsePlan(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return PlanSuscripcionSede.BASICO;
+        }
+
+        try {
+            return PlanSuscripcionSede.valueOf(valor.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("El plan no es valido");
+        }
+    }
+
     private Double normalizarValor(Double valor, String campo) {
         if (valor == null) {
             return 0D;
@@ -229,6 +245,8 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
                 suscripcion.getSede() != null && suscripcion.getSede().getEmpresa() != null ? suscripcion.getSede().getEmpresa().getNombre() : null,
                 suscripcion.getSede() != null ? suscripcion.getSede().getId() : null,
                 suscripcion.getSede() != null ? suscripcion.getSede().getUbicacion() : null,
+                suscripcion.getPlan() != null ? suscripcion.getPlan().name() : PlanSuscripcionSede.BASICO.name(),
+                suscripcionFeatureService.tieneGastosHabilitados(suscripcion),
                 suscripcion.getTipoCobro() != null ? suscripcion.getTipoCobro().name() : null,
                 suscripcion.getPrecioMensual(),
                 suscripcion.getPrecioAnual(),
@@ -258,6 +276,8 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
                 sede.getEmpresa() != null ? sede.getEmpresa().getNombre() : null,
                 sede.getId(),
                 sede.getUbicacion(),
+                PlanSuscripcionSede.BASICO.name(),
+                false,
                 null,
                 null,
                 null,

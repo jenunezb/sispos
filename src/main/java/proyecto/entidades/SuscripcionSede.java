@@ -30,6 +30,10 @@ public class SuscripcionSede {
     @Column(name = "tipo_cobro", nullable = false)
     private TipoCobroSuscripcion tipoCobro = TipoCobroSuscripcion.MENSUAL;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "plan", nullable = false)
+    private PlanSuscripcionSede plan = PlanSuscripcionSede.BASICO;
+
     @Column(name = "precio_mensual", nullable = false)
     private Double precioMensual = 0D;
 

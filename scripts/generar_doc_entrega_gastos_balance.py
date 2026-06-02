@@ -96,11 +96,12 @@ styles["Normal"].font.size = Pt(10.5)
 styles["Heading 1"].font.name = "Arial"
 styles["Heading 2"].font.name = "Arial"
 
-add_title(doc, "Entrega Backend: Gastos Diarios Integrados al Balance")
+add_title(doc, "Entrega Backend: Gastos Diarios Integrados al Balance Premium por Sede")
 add_paragraph(doc, "Fecha: 2026-06-02")
 
 add_heading(doc, "Objetivo", 1)
 add_paragraph(doc, "Se implementó en backend el manejo de gastos diarios para que el balance de ventas refleje también los egresos de caja del día y permita que el cuadre de caja coincida con el dinero real disponible.")
+add_paragraph(doc, "Adicionalmente, esta funcionalidad quedó restringida a un plan premium por sede dentro de la plataforma.")
 add_bullets(doc, [
     "Compra de verduras o insumos pagados el mismo día.",
     "Pago de recibos o servicios.",
@@ -110,12 +111,24 @@ add_bullets(doc, [
 add_heading(doc, "Resultado Funcional", 1)
 add_paragraph(doc, "Antes, el balance sólo contemplaba ventas, costo de producción, inventario y cantidad de ventas. No existía un registro de egresos de caja manuales, por lo que el cuadre podía diferir del efectivo real.")
 add_paragraph(doc, "Ahora, se puede registrar un gasto diario por sede y cada gasto queda asociado a sede, descripción, valor, modo de pago, fecha y administrador que lo registró. El balance general y por sede incluyen esos gastos y calculan la caja esperada.")
+add_paragraph(doc, "El módulo de gastos sólo está habilitado para sedes con plan PREMIUM activo y al día.")
+
+add_heading(doc, "Regla Comercial Nueva", 1)
+add_bullets(doc, [
+    "La suscripción se maneja por sede.",
+    "Cada sede ahora puede tener plan BASICO o PREMIUM.",
+    "El módulo de gastos sólo puede usarse si la sede tiene suscripción configurada.",
+    "La sede debe estar activa y no vencida.",
+    "La sede debe tener plan PREMIUM para usar gastos.",
+])
 
 add_heading(doc, "Modelo Implementado", 1)
 add_bullets(doc, [
     "Nueva entidad: GastoDiario",
     "Nueva tabla: gasto_diario",
     "Campos: id, sedeId, administradorId, descripcion, valor, fecha, modoPago",
+    "Nuevo campo de suscripción por sede: plan",
+    "Valores posibles del plan: BASICO y PREMIUM",
 ])
 
 add_heading(doc, "Endpoints Nuevos", 1)
@@ -138,6 +151,7 @@ add_bullets(doc, [
     "valor obligatorio y mayor a 0.",
     "modoPago obligatorio.",
     "El administrador autenticado debe tener acceso a la sede.",
+    "La sede debe tener plan PREMIUM activo y vigente.",
 ])
 add_paragraph(doc, "Respuesta esperada:")
 add_code_block(doc, [
@@ -154,6 +168,13 @@ add_code_block(doc, [
     '    "administradorId": 7,',
     '    "administradorNombre": "Juan Perez"',
     '  }',
+    "}",
+])
+add_paragraph(doc, "Error esperado si la sede no tiene premium:")
+add_code_block(doc, [
+    "{",
+    '  "error": true,',
+    '  "respuesta": "La sede debe tener un plan PREMIUM activo para usar el modulo de gastos"',
     "}",
 ])
 
@@ -174,6 +195,7 @@ add_bullets(doc, [
     "GET /api/administrador/balance/sedes",
 ])
 add_paragraph(doc, "Ambos endpoints ahora incluyen campos adicionales de gastos y caja.")
+add_paragraph(doc, "Los gastos sólo se reflejan para sedes con plan PREMIUM habilitado.")
 
 add_heading(doc, "Nuevos Campos del Balance", 1)
 add_bullets(doc, [
@@ -209,6 +231,26 @@ add_bullets(doc, [
     "cajaEsperada = ventasEfectivo - gastosEfectivo",
     "Sólo los gastos pagados en EFECTIVO afectan cajaEsperada.",
     "Los gastos pagados en TRANSFERENCIA afectan utilidad, pero no el efectivo físico en caja.",
+    "Si la sede no tiene PREMIUM, el módulo de gastos queda deshabilitado.",
+])
+
+add_heading(doc, "Cambio en Suscripciones", 1)
+add_paragraph(doc, "La configuración de suscripción por sede ahora debe incluir el plan.")
+add_code_block(doc, [
+    "{",
+    '  "sedeId": 1,',
+    '  "plan": "PREMIUM",',
+    '  "tipoCobro": "MENSUAL",',
+    '  "precioMensual": 50000,',
+    '  "precioAnual": 500000,',
+    '  "fechaInicioServicio": "2026-06-02",',
+    '  "observacion": "Plan premium con modulo de gastos",',
+    '  "activa": true',
+    "}",
+])
+add_bullets(doc, [
+    "La respuesta de suscripción ahora incluye plan.",
+    "La respuesta de suscripción ahora incluye gastosHabilitados.",
 ])
 
 add_heading(doc, "Qué Debe Hacer Front", 1)
@@ -220,6 +262,8 @@ add_bullets(doc, [
     "Actualizar la vista de balance para mostrar gastos y cajaEsperada.",
     "Actualizar el cuadre de caja para usar cajaEsperada en lugar de ventasEfectivo.",
     "Refrescar balance e historial de gastos después de guardar.",
+    "Validar antes de habilitar gastos si la sede tiene plan PREMIUM.",
+    "Si no tiene PREMIUM, mostrar mensaje o CTA de mejora de plan.",
 ])
 
 add_heading(doc, "Payload Sugerido para Front", 1)
@@ -235,12 +279,16 @@ add_code_block(doc, [
 add_heading(doc, "Resumen Técnico de Cambios", 1)
 add_bullets(doc, [
     "Nueva entidad GastoDiario.",
+    "Nuevo enum PlanSuscripcionSede.",
     "Nuevo repositorio GastoDiarioRepository.",
     "Nuevo servicio GastoDiarioServicio.",
+    "Nuevo servicio SuscripcionFeatureService.",
     "Nuevo controlador GastoDiarioController.",
     "Nueva tabla gasto_diario.",
+    "Nuevo campo plan en suscripcion_sede.",
     "Ajuste de BalanceGeneralDTO y BalanceSedeDTO.",
     "Ajuste de BalanceServicioImpl y BalanceController.",
+    "Ajuste de DTOs de suscripción de sede.",
     "Ajuste de pruebas unitarias del balance.",
 ])
 

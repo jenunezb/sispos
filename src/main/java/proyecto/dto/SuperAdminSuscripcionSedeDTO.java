@@ -10,6 +10,8 @@ public record SuperAdminSuscripcionSedeDTO(
         String empresaNombre,
         Long sedeId,
         String sedeUbicacion,
+        String plan,
+        Boolean gastosHabilitados,
         String tipoCobro,
         Double precioMensual,
         Double precioAnual,

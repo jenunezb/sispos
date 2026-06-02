@@ -1,10 +1,12 @@
-# Entrega Backend: Gastos Diarios Integrados al Balance
+# Entrega Backend: Gastos Diarios Integrados al Balance Premium por Sede
 
 Fecha: 2026-06-02
 
 ## Objetivo
 
 Se implementó en backend el manejo de gastos diarios para que el balance de ventas refleje también los egresos de caja del día y permita que el cuadre de caja coincida con el dinero real disponible.
+
+Adicionalmente, esta funcionalidad quedó restringida a un mejor plan de suscripción por sede dentro de la plataforma.
 
 Casos cubiertos:
 
@@ -32,6 +34,27 @@ Ahora:
   - administrador que lo registró
 - El balance general y el balance por sede incluyen esos gastos.
 - El balance calcula la caja esperada teniendo en cuenta gastos pagados en efectivo.
+- El módulo de gastos sólo está habilitado para sedes con plan `PREMIUM` activo y al día.
+
+## Regla Comercial Nueva
+
+La funcionalidad de gastos quedó asociada al plan de la sede.
+
+Esto significa:
+
+- La suscripción se maneja por `sede`.
+- Cada sede ahora puede tener plan `BASICO` o `PREMIUM`.
+- El módulo de gastos sólo puede usarse si la sede:
+  - tiene suscripción configurada
+  - está activa
+  - no está vencida
+  - y su plan es `PREMIUM`
+
+Si la sede no cumple esas condiciones:
+
+- no puede crear gastos
+- no puede consultar gastos
+- sus gastos no se consideran habilitados funcionalmente
 
 ## Modelo Implementado
 
@@ -48,6 +71,15 @@ Se creó la entidad `GastoDiario` con los siguientes campos:
 Tabla creada:
 
 - `gasto_diario`
+
+También se amplió la suscripción de sede con:
+
+- `plan`
+
+Valores posibles:
+
+- `BASICO`
+- `PREMIUM`
 
 ## Endpoints Nuevos
 
@@ -77,6 +109,7 @@ Reglas:
 - `valor` obligatorio y mayor a `0`
 - `modoPago` obligatorio
 - El administrador autenticado debe tener acceso a la sede
+- La sede debe tener plan `PREMIUM` activo y vigente
 
 Respuesta esperada:
 
@@ -94,6 +127,15 @@ Respuesta esperada:
     "administradorId": 7,
     "administradorNombre": "Juan Perez"
   }
+}
+```
+
+Si la sede no tiene el plan requerido, la respuesta esperada es un error:
+
+```json
+{
+  "error": true,
+  "respuesta": "La sede debe tener un plan PREMIUM activo para usar el modulo de gastos"
 }
 ```
 
@@ -128,6 +170,11 @@ Comportamiento:
 `GET /api/administrador/balance/sedes`
 
 Ambos endpoints ahora incluyen campos adicionales de gastos y caja.
+
+Importante:
+
+- Los gastos sólo se reflejan para sedes con plan `PREMIUM` habilitado.
+- El balance general ahora se consolida a partir del balance por sede para respetar esa regla.
 
 ## Nuevos Campos del Balance
 
@@ -191,6 +238,31 @@ Nota importante:
 
 - Sólo los gastos pagados en `EFECTIVO` afectan `cajaEsperada`.
 - Los gastos pagados en `TRANSFERENCIA` afectan la utilidad, pero no el efectivo físico en caja.
+- Si la sede no tiene `PREMIUM`, los gastos quedan deshabilitados para esa sede.
+
+## Cambio en Suscripciones
+
+La configuración de suscripción por sede ahora debe incluir el plan.
+
+Payload esperado para superadmin al configurar una suscripción:
+
+```json
+{
+  "sedeId": 1,
+  "plan": "PREMIUM",
+  "tipoCobro": "MENSUAL",
+  "precioMensual": 50000,
+  "precioAnual": 500000,
+  "fechaInicioServicio": "2026-06-02",
+  "observacion": "Plan premium con modulo de gastos",
+  "activa": true
+}
+```
+
+La respuesta de suscripción por sede ahora incluye además:
+
+- `plan`
+- `gastosHabilitados`
 
 ## Qué Debe Hacer Front
 
@@ -202,6 +274,8 @@ Se necesita una pantalla o modal para registrar gastos con estos campos:
 - descripción
 - valor
 - modo de pago
+
+Antes de mostrar o habilitar esa pantalla, el front debería validar que la sede tenga la funcionalidad habilitada según su suscripción.
 
 Valores permitidos en `modoPago`:
 
@@ -225,6 +299,12 @@ Con payload:
 }
 ```
 
+Si backend responde que la sede no tiene plan premium, el front debe:
+
+- bloquear el flujo de registro
+- mostrar mensaje comercial o informativo
+- invitar al usuario a mejorar el plan de esa sede
+
 ## 3. Consumir listado de gastos
 
 Si el front requiere historial o tabla de gastos:
@@ -245,6 +325,10 @@ En la UI de balance deben mostrarse mínimo:
 - caja esperada
 - utilidad bruta
 - utilidad neta
+
+Además:
+
+- si una sede no tiene `PREMIUM`, el front debe entender que el módulo de gastos no aplica para esa sede
 
 ## 5. Actualizar cuadre de caja
 
@@ -267,20 +351,25 @@ Para evitar errores operativos:
 - Refrescar balance al guardar gasto.
 - Refrescar listado de gastos al guardar gasto.
 - Mostrar el detalle de quién registró el gasto y la fecha.
+- Si la sede no tiene `PREMIUM`, mostrar CTA o mensaje de mejora de plan.
 
 ## Resumen Técnico de Cambios Realizados
 
 Backend implementado:
 
 - Nueva entidad `GastoDiario`
+- Nuevo enum `PlanSuscripcionSede`
 - Nuevo repositorio `GastoDiarioRepository`
 - Nuevo servicio `GastoDiarioServicio`
+- Nuevo servicio `SuscripcionFeatureService`
 - Nuevo controlador `GastoDiarioController`
 - Nueva tabla `gasto_diario`
+- Nuevo campo `plan` en `suscripcion_sede`
 - Ajuste de `BalanceGeneralDTO`
 - Ajuste de `BalanceSedeDTO`
 - Ajuste de `BalanceServicioImpl`
 - Ajuste de `BalanceController`
+- Ajuste de DTOs de suscripción de sede
 - Ajuste de pruebas unitarias del balance
 
 ## Validación Realizada

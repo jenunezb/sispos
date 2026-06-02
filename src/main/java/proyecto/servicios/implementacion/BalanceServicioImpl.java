@@ -26,6 +26,7 @@ public class BalanceServicioImpl implements BalanceServicio {
     private final InventarioRepository inventarioRepository;
     private final SedeRepository sedeRepository;
     private final GastoDiarioRepository gastoDiarioRepository;
+    private final SuscripcionFeatureService suscripcionFeatureService;
 
     @Override
     public BalanceGeneralDTO balanceDelDia(Long empresaNit) {
@@ -36,46 +37,7 @@ public class BalanceServicioImpl implements BalanceServicio {
 
     @Override
     public BalanceGeneralDTO balanceGeneral(Long empresaNit, LocalDateTime desde, LocalDateTime hasta) {
-
-        Double ventas = ventaRepository.totalVentasEntreFechasPorEmpresa(empresaNit, desde, hasta);
-        Double costo = detalleVentaRepository.costoProduccionEntreFechasPorEmpresa(empresaNit, desde, hasta);
-        Long cantVentas = ventaRepository.cantidadVentasEntreFechasPorEmpresa(empresaNit, desde, hasta);
-        Double inventario = inventarioRepository.valorInventarioPorEmpresa(empresaNit);
-        Integer stock = inventarioRepository.stockTotalPorEmpresa(empresaNit);
-        Double ventasEfectivo = ventaRepository.totalVentasEntreFechasEfectivoPorEmpresa(empresaNit, desde, hasta);
-        Double ventasTransferencia = ventaRepository.totalVentasEntreFechasTransferenciaPorEmpresa(empresaNit, desde, hasta);
-        Double totalGastos = gastoDiarioRepository.totalGastosPorEmpresa(empresaNit, desde, hasta);
-        Double gastosEfectivo = gastoDiarioRepository.totalGastosPorEmpresaYModoPago(empresaNit, ModoPago.EFECTIVO, desde, hasta);
-        Double gastosTransferencia = gastoDiarioRepository.totalGastosPorEmpresaYModoPago(empresaNit, ModoPago.TRANSFERENCIA, desde, hasta);
-
-        ventas = ventas != null ? ventas : 0.0;
-        costo = costo != null ? costo : 0.0;
-        cantVentas = cantVentas != null ? cantVentas : 0L;
-        ventasEfectivo = ventasEfectivo != null ? ventasEfectivo : 0.0;
-        ventasTransferencia = ventasTransferencia != null ? ventasTransferencia : 0.0;
-        totalGastos = totalGastos != null ? totalGastos : 0.0;
-        gastosEfectivo = gastosEfectivo != null ? gastosEfectivo : 0.0;
-        gastosTransferencia = gastosTransferencia != null ? gastosTransferencia : 0.0;
-        inventario = inventario != null ? inventario : 0.0;
-        stock = stock != null ? stock : 0;
-        double utilidadBruta = ventas - costo;
-        double cajaEsperada = ventasEfectivo - gastosEfectivo;
-
-        return new BalanceGeneralDTO(
-                ventas,
-                costo,
-                utilidadBruta,
-                totalGastos,
-                gastosEfectivo,
-                gastosTransferencia,
-                cajaEsperada,
-                utilidadBruta - totalGastos,
-                inventario,
-                stock,
-                cantVentas,
-                ventasEfectivo,
-                ventasTransferencia
-        );
+        return consolidarBalanceGeneral(balancePorSede(empresaNit, desde, hasta));
     }
 
     @Override
@@ -92,9 +54,10 @@ public class BalanceServicioImpl implements BalanceServicio {
             Long cantVentas = ventaRepository.cantidadVentasPorSedeEntreFechas(sede.getId(), desde, hasta);
             Double ventasEfectivo = ventaRepository.totalVentasEfectivoPorSedeEntreFechas(sede.getId(), desde, hasta);
             Double ventasTransferencia = ventaRepository.totalVentasTransferenciaPorSedeEntreFechas(sede.getId(), desde, hasta);
-            Double totalGastos = gastoDiarioRepository.totalGastosPorSede(sede.getId(), desde, hasta);
-            Double gastosEfectivo = gastoDiarioRepository.totalGastosPorSedeYModoPago(sede.getId(), ModoPago.EFECTIVO, desde, hasta);
-            Double gastosTransferencia = gastoDiarioRepository.totalGastosPorSedeYModoPago(sede.getId(), ModoPago.TRANSFERENCIA, desde, hasta);
+            boolean gastosHabilitados = suscripcionFeatureService.tieneGastosHabilitados(sede.getId());
+            Double totalGastos = gastosHabilitados ? gastoDiarioRepository.totalGastosPorSede(sede.getId(), desde, hasta) : 0.0;
+            Double gastosEfectivo = gastosHabilitados ? gastoDiarioRepository.totalGastosPorSedeYModoPago(sede.getId(), ModoPago.EFECTIVO, desde, hasta) : 0.0;
+            Double gastosTransferencia = gastosHabilitados ? gastoDiarioRepository.totalGastosPorSedeYModoPago(sede.getId(), ModoPago.TRANSFERENCIA, desde, hasta) : 0.0;
 
             ventas = ventas != null ? ventas : 0.0;
             costo = costo != null ? costo : 0.0;
@@ -136,5 +99,48 @@ public class BalanceServicioImpl implements BalanceServicio {
         LocalDateTime hasta = LocalDate.now().atTime(23, 59, 59);
 
         return balancePorSede(empresaNit, desde, hasta);
+    }
+
+    private BalanceGeneralDTO consolidarBalanceGeneral(List<BalanceSedeDTO> balances) {
+        double totalVentas = balances.stream().mapToDouble(balance -> defaultDouble(balance.totalVentas())).sum();
+        double costoProduccion = balances.stream().mapToDouble(balance -> defaultDouble(balance.costoProduccion())).sum();
+        double totalGastos = balances.stream().mapToDouble(balance -> defaultDouble(balance.totalGastos())).sum();
+        double gastosEfectivo = balances.stream().mapToDouble(balance -> defaultDouble(balance.gastosEfectivo())).sum();
+        double gastosTransferencia = balances.stream().mapToDouble(balance -> defaultDouble(balance.gastosTransferencia())).sum();
+        double valorInventario = balances.stream().mapToDouble(balance -> defaultDouble(balance.valorInventario())).sum();
+        int stockTotal = balances.stream().mapToInt(balance -> defaultInt(balance.stockActual())).sum();
+        long cantidadVentas = balances.stream().mapToLong(balance -> defaultLong(balance.cantidadVentas())).sum();
+        double ventasEfectivo = balances.stream().mapToDouble(balance -> defaultDouble(balance.efectivo())).sum();
+        double ventasTransferencia = balances.stream().mapToDouble(balance -> defaultDouble(balance.trasferencia())).sum();
+
+        double utilidadBruta = totalVentas - costoProduccion;
+
+        return new BalanceGeneralDTO(
+                totalVentas,
+                costoProduccion,
+                utilidadBruta,
+                totalGastos,
+                gastosEfectivo,
+                gastosTransferencia,
+                ventasEfectivo - gastosEfectivo,
+                utilidadBruta - totalGastos,
+                valorInventario,
+                stockTotal,
+                cantidadVentas,
+                ventasEfectivo,
+                ventasTransferencia
+        );
+    }
+
+    private double defaultDouble(Double valor) {
+        return valor != null ? valor : 0.0;
+    }
+
+    private int defaultInt(Integer valor) {
+        return valor != null ? valor : 0;
+    }
+
+    private long defaultLong(Long valor) {
+        return valor != null ? valor : 0L;
     }
 }
