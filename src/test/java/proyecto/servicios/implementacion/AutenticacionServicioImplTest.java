@@ -10,8 +10,10 @@ import proyecto.dto.LoginCuentaDTO;
 import proyecto.dto.LoginDTO;
 import proyecto.dto.TokenDTO;
 import proyecto.repositorios.CuentaRepo;
+import proyecto.repositorios.SuscripcionSedeRepository;
 import proyecto.utils.JWTUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +37,9 @@ class AutenticacionServicioImplTest {
     @Mock
     private JWTUtils jwtUtils;
 
+    @Mock
+    private SuscripcionSedeRepository suscripcionSedeRepository;
+
     @InjectMocks
     private AutenticacionServicioImpl autenticacionServicio;
 
@@ -55,7 +60,6 @@ class AutenticacionServicioImplTest {
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
-
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta")));
 
@@ -78,6 +82,7 @@ class AutenticacionServicioImplTest {
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
+        when(suscripcionSedeRepository.findBySedeEmpresaNit(900123456L)).thenReturn(List.of());
         when(jwtUtils.generarToken(eq("vendedor@correo.com"), anyMap())).thenReturn("token-falso");
 
         TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta"));
