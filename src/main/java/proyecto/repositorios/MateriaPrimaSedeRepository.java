@@ -1,6 +1,8 @@
 package proyecto.repositorios;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.MateriaPrimaSede;
 import proyecto.entidades.Sede;
@@ -31,6 +33,17 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
     boolean existsByMateriaPrimaAndSedeId(MateriaPrima materiaPrima, Long sedeId);
 
     List<MateriaPrimaSede> findBySedeIdOrderByIdAsc(Long sedeId);
+
+    @Query("""
+        SELECT mps
+        FROM MateriaPrimaSede mps
+        JOIN mps.materiaPrima mp
+        WHERE mps.sede.id = :sedeId
+          AND mps.activa = true
+          AND mp.activa = true
+        ORDER BY mp.nombre ASC
+    """)
+    List<MateriaPrimaSede> findActivasBySedeIdOrderByMateriaPrimaNombreAsc(@Param("sedeId") Long sedeId);
 
 }
 

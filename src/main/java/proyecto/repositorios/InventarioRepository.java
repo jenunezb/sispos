@@ -27,6 +27,19 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     """)
     List<Inventario> findVisiblesBySedeIdOrderByProductoCodigoAsc(@Param("sedeId") Long sedeId);
 
+    @Query("""
+        SELECT i
+        FROM Inventario i
+        JOIN i.producto p
+        JOIN i.sede s
+        WHERE s.id = :sedeId
+          AND p.activo = true
+          AND p.empresa.nit = s.empresa.nit
+          AND p.materiasPrimas IS EMPTY
+        ORDER BY p.codigo ASC
+    """)
+    List<Inventario> findProductosSueltosBySedeIdOrderByProductoCodigoAsc(@Param("sedeId") Long sedeId);
+
     // Obtener inventario de un producto especÃ­fico en una sede
     @Query("""
         SELECT i

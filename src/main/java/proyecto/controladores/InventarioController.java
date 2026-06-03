@@ -1,10 +1,13 @@
 package proyecto.controladores;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import proyecto.dto.*;
+import proyecto.entidades.Administrador;
+import proyecto.servicios.implementacion.AdministradorAccesoService;
 import proyecto.servicios.interfaces.InventarioServicio;
 
 import java.time.LocalDate;
@@ -18,6 +21,7 @@ import java.util.List;
 public class InventarioController {
 
     private final InventarioServicio inventarioServicio;
+    private final AdministradorAccesoService administradorAccesoService;
 
     // ===============================
     // LISTAR INVENTARIO POR SEDE
@@ -34,6 +38,16 @@ public class InventarioController {
     @GetMapping("/sed/{sedeId}")
     public ResponseEntity<List<InventarioDTO>> listarPorSede1(@PathVariable Long sedeId) {
         return ResponseEntity.ok(inventarioServicio.listarPorSede(sedeId));
+    }
+
+    @GetMapping("/ajuste-manual/sede/{sedeId}")
+    public ResponseEntity<InventarioAjustableResponseDTO> listarInventarioAjustablePorSede(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long sedeId
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAccesoASede(admin, sedeId);
+        return ResponseEntity.ok(inventarioServicio.listarInventarioAjustablePorSede(sedeId));
     }
 
     // ===============================
@@ -94,6 +108,16 @@ public class InventarioController {
 
         inventarioServicio.registrarMovimiento(dto);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/ajuste-manual")
+    public ResponseEntity<AjusteManualMasivoResponseDTO> ajustarInventarioManual(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody AjusteManualMasivoRequestDTO dto
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAccesoASede(admin, dto.sedeId());
+        return ResponseEntity.ok(inventarioServicio.ajustarInventarioManual(dto.sedeId(), dto.items()));
     }
 
     @PutMapping("/stock-minimo")
