@@ -151,19 +151,6 @@ ALTER TABLE gasto_diario
 ALTER TABLE gasto_diario
     ADD COLUMN IF NOT EXISTS vendedor_id INTEGER NULL;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.table_constraints
-        WHERE constraint_name = 'fk_gasto_diario_vendedor'
-          AND table_name = 'gasto_diario'
-    ) THEN
-        ALTER TABLE gasto_diario
-            ADD CONSTRAINT fk_gasto_diario_vendedor FOREIGN KEY (vendedor_id) REFERENCES vendedor(codigo);
-    END IF;
-END $$;
-
 CREATE TABLE IF NOT EXISTS caja_turno (
     id BIGSERIAL PRIMARY KEY,
     sede_id BIGINT NOT NULL,
@@ -193,32 +180,6 @@ ALTER TABLE caja_turno
 
 ALTER TABLE caja_turno
     ADD COLUMN IF NOT EXISTS vendedor_cierre_id INTEGER NULL;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.table_constraints
-        WHERE constraint_name = 'fk_caja_turno_vendedor_apertura'
-          AND table_name = 'caja_turno'
-    ) THEN
-        ALTER TABLE caja_turno
-            ADD CONSTRAINT fk_caja_turno_vendedor_apertura FOREIGN KEY (vendedor_apertura_id) REFERENCES vendedor(codigo);
-    END IF;
-END $$;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.table_constraints
-        WHERE constraint_name = 'fk_caja_turno_vendedor_cierre'
-          AND table_name = 'caja_turno'
-    ) THEN
-        ALTER TABLE caja_turno
-            ADD CONSTRAINT fk_caja_turno_vendedor_cierre FOREIGN KEY (vendedor_cierre_id) REFERENCES vendedor(codigo);
-    END IF;
-END $$;
 
 CREATE INDEX IF NOT EXISTS idx_caja_turno_sede_estado
     ON caja_turno (sede_id, estado);
