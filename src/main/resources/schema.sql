@@ -144,3 +144,30 @@ CREATE TABLE IF NOT EXISTS gasto_diario (
     CONSTRAINT fk_gasto_diario_sede FOREIGN KEY (sede_id) REFERENCES sede(id),
     CONSTRAINT fk_gasto_diario_administrador FOREIGN KEY (administrador_id) REFERENCES administrador(codigo)
 );
+
+CREATE TABLE IF NOT EXISTS caja_turno (
+    id BIGSERIAL PRIMARY KEY,
+    sede_id BIGINT NOT NULL,
+    administrador_apertura_id INTEGER NOT NULL,
+    administrador_cierre_id INTEGER NULL,
+    fecha_apertura TIMESTAMP NOT NULL,
+    fecha_cierre TIMESTAMP NULL,
+    estado VARCHAR(20) NOT NULL,
+    base_inicial DOUBLE PRECISION NOT NULL,
+    ventas_efectivo DOUBLE PRECISION NULL,
+    gastos_efectivo DOUBLE PRECISION NULL,
+    efectivo_esperado DOUBLE PRECISION NULL,
+    efectivo_contado DOUBLE PRECISION NULL,
+    diferencia DOUBLE PRECISION NULL,
+    observacion VARCHAR(500) NULL,
+    observacion_cierre VARCHAR(500) NULL,
+    CONSTRAINT fk_caja_turno_sede FOREIGN KEY (sede_id) REFERENCES sede(id),
+    CONSTRAINT fk_caja_turno_admin_apertura FOREIGN KEY (administrador_apertura_id) REFERENCES administrador(codigo),
+    CONSTRAINT fk_caja_turno_admin_cierre FOREIGN KEY (administrador_cierre_id) REFERENCES administrador(codigo)
+);
+
+CREATE INDEX IF NOT EXISTS idx_caja_turno_sede_estado
+    ON caja_turno (sede_id, estado);
+
+CREATE INDEX IF NOT EXISTS idx_caja_turno_fecha_apertura
+    ON caja_turno (fecha_apertura);
