@@ -18,6 +18,10 @@ public record CajaTurnoResponseDTO(
         Integer administradorAperturaId,
         String administradorAperturaNombre,
         Integer administradorCierreId,
-        String administradorCierreNombre
+        String administradorCierreNombre,
+        Integer vendedorAperturaId,
+        String vendedorAperturaNombre,
+        Integer vendedorCierreId,
+        String vendedorCierreNombre
 ) {
 }

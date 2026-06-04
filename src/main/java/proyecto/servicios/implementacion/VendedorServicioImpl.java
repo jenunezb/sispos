@@ -10,6 +10,7 @@ import proyecto.entidades.ModoPago;
 import proyecto.entidades.Sede;
 import proyecto.entidades.Vendedor;
 import proyecto.entidades.Venta;
+import proyecto.repositorios.GastoDiarioRepository;
 import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
@@ -28,6 +29,8 @@ public class VendedorServicioImpl implements VendedorServicio {
     private final SedeRepository sedeRepository;
     private final VentaRepository ventaRepository;
     private final MovimientoProduccionRepository movimientoProduccionRepository;
+    private final GastoDiarioRepository gastoDiarioRepository;
+    private final SuscripcionFeatureService suscripcionFeatureService;
 
     @Override
     public void cambiarEstado(Long codigo, Boolean estado) {
@@ -125,13 +128,33 @@ public class VendedorServicioImpl implements VendedorServicio {
         Sede sede1 = sedeRepository.findById(sedeId)
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
+        boolean gastosHabilitados = suscripcionFeatureService.tieneGastosHabilitados(sedeId);
+        boolean cajaHabilitada = suscripcionFeatureService.tieneCajaHabilitada(sedeId);
+        double totalGastos = gastosHabilitados
+                ? defaultDouble(gastoDiarioRepository.totalGastosPorSede(sedeId, desde, hasta))
+                : 0.0;
+        double gastosEfectivo = gastosHabilitados
+                ? defaultDouble(gastoDiarioRepository.totalGastosPorSedeYModoPago(sedeId, ModoPago.EFECTIVO, desde, hasta))
+                : 0.0;
+
         return BalanceSedeVendedor.builder()
                 .sedeId(sede1.getId())
+                .sedeNombre(sede1.getUbicacion())
                 .totalVentas(totalVentas)
                 .ventasEfectivo(ventasEfectivo)
                 .ventasTransferencia(ventasTransferencia)
                 .cantidadVentas(cantidadVentas)
+                .plan(suscripcionFeatureService.obtenerPlan(sedeId))
+                .gastosHabilitados(gastosHabilitados)
+                .cajaHabilitada(cajaHabilitada)
+                .totalGastos(totalGastos)
+                .gastosEfectivo(gastosEfectivo)
+                .cajaEsperada(ventasEfectivo - gastosEfectivo)
                 .build();
+    }
+
+    private double defaultDouble(Double valor) {
+        return valor != null ? valor : 0.0;
     }
 
 }

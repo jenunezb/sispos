@@ -31,6 +31,22 @@ public class SuscripcionFeatureService {
                 .orElse(false);
     }
 
+    public void validarCajaHabilitada(Long sedeId) {
+        if (!tieneCajaHabilitada(sedeId)) {
+            throw new RuntimeException("La sede debe tener un plan PREMIUM activo para usar el modulo de caja");
+        }
+    }
+
+    public boolean tieneCajaHabilitada(Long sedeId) {
+        return tieneGastosHabilitados(sedeId);
+    }
+
+    public String obtenerPlan(Long sedeId) {
+        return suscripcionSedeRepository.findBySedeId(sedeId)
+                .map(suscripcion -> suscripcion.getPlan() != null ? suscripcion.getPlan().name() : PlanSuscripcionSede.BASICO.name())
+                .orElse(PlanSuscripcionSede.BASICO.name());
+    }
+
     public Set<Long> obtenerSedeIdsConGastosHabilitados(Long empresaNit) {
         return suscripcionSedeRepository.findBySedeEmpresaNit(empresaNit).stream()
                 .filter(this::tieneGastosHabilitados)

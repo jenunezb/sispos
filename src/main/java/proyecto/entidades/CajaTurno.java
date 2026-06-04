@@ -24,13 +24,21 @@ public class CajaTurno {
     @JoinColumn(name = "sede_id", nullable = false)
     private Sede sede;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "administrador_apertura_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "administrador_apertura_id")
     private Administrador administradorApertura;
 
     @ManyToOne
     @JoinColumn(name = "administrador_cierre_id")
     private Administrador administradorCierre;
+
+    @ManyToOne
+    @JoinColumn(name = "vendedor_apertura_id")
+    private Vendedor vendedorApertura;
+
+    @ManyToOne
+    @JoinColumn(name = "vendedor_cierre_id")
+    private Vendedor vendedorCierre;
 
     @Column(name = "fecha_apertura", nullable = false)
     private LocalDateTime fechaApertura;

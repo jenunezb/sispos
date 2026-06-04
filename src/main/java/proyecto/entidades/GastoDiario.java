@@ -37,7 +37,11 @@ public class GastoDiario {
     @JoinColumn(name = "sede_id", nullable = false)
     private Sede sede;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "administrador_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "administrador_id")
     private Administrador administrador;
+
+    @ManyToOne
+    @JoinColumn(name = "vendedor_id")
+    private Vendedor vendedor;
 }

@@ -11,6 +11,7 @@ import proyecto.entidades.EstadoSuscripcionSede;
 import proyecto.entidades.SuscripcionSede;
 import proyecto.repositorios.CuentaRepo;
 import proyecto.repositorios.SuscripcionSedeRepository;
+import proyecto.repositorios.VendedorRepository;
 import proyecto.servicios.interfaces.AutenticacionServicio;
 import proyecto.utils.JWTUtils;
 
@@ -30,6 +31,8 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
     private final CuentaRepo cuentaRepo;
     private final JWTUtils jwtUtils;
     private final SuscripcionSedeRepository suscripcionSedeRepository;
+    private final VendedorRepository vendedorRepository;
+    private final SuscripcionFeatureService suscripcionFeatureService;
 
     @Override
     public TokenDTO login(LoginDTO loginDTO) throws Exception {
@@ -51,13 +54,18 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         }
 
         SuscripcionLoginInfo suscripcionInfo = evaluarSuscripcionLogin(cuenta);
+        PremiumAccesoInfo premiumAccesoInfo = resolverPremiumAcceso(cuenta);
 
         // Generar y retornar token
         TokenDTO tokenDTO = new TokenDTO();
-        tokenDTO.setToken(crearToken(cuenta));
+        tokenDTO.setToken(crearToken(cuenta, premiumAccesoInfo));
         tokenDTO.setEstadoSuscripcion(suscripcionInfo.estado());
         tokenDTO.setFechaVencimientoSuscripcion(suscripcionInfo.fechaVencimiento());
         tokenDTO.setMensajeSuscripcion(suscripcionInfo.advertir() ? suscripcionInfo.mensaje() : null);
+        tokenDTO.setSedeId(premiumAccesoInfo.sedeId());
+        tokenDTO.setPlan(premiumAccesoInfo.plan());
+        tokenDTO.setGastosHabilitados(premiumAccesoInfo.gastosHabilitados());
+        tokenDTO.setCajaHabilitada(premiumAccesoInfo.cajaHabilitada());
         return tokenDTO;
     }
 
@@ -67,7 +75,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         return List.of();
     }
 
-    private String crearToken(LoginCuentaDTO cuenta) {
+    private String crearToken(LoginCuentaDTO cuenta, PremiumAccesoInfo premiumAccesoInfo) {
         Map<String, Object> map = new HashMap<>();
         map.put("rol", cuenta.getRol());
         map.put("nombre", cuenta.getNombre());
@@ -79,8 +87,34 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         map.put("companyPhone", cuenta.getEmpresaTelefono());
         map.put("esSuperAdmin", Boolean.TRUE.equals(cuenta.getEsSuperAdmin()));
         map.put("esAdministradorEmpresa", Boolean.TRUE.equals(cuenta.getEsAdministradorEmpresa()));
+        map.put("sedeId", premiumAccesoInfo.sedeId());
+        map.put("plan", premiumAccesoInfo.plan());
+        map.put("gastosHabilitados", premiumAccesoInfo.gastosHabilitados());
+        map.put("cajaHabilitada", premiumAccesoInfo.cajaHabilitada());
 
         return jwtUtils.generarToken(cuenta.getCorreo(), map);
+    }
+
+    private PremiumAccesoInfo resolverPremiumAcceso(LoginCuentaDTO cuenta) {
+        if (!"vendedor".equals(cuenta.getRol())) {
+            return new PremiumAccesoInfo(null, null, false, false);
+        }
+
+        return vendedorRepository.findByCorreo(cuenta.getCorreo())
+                .map(vendedor -> {
+                    Long sedeId = vendedor.getSede() != null ? vendedor.getSede().getId() : null;
+                    if (sedeId == null) {
+                        return new PremiumAccesoInfo(null, null, false, false);
+                    }
+
+                    return new PremiumAccesoInfo(
+                            sedeId,
+                            suscripcionFeatureService.obtenerPlan(sedeId),
+                            suscripcionFeatureService.tieneGastosHabilitados(sedeId),
+                            suscripcionFeatureService.tieneCajaHabilitada(sedeId)
+                    );
+                })
+                .orElseGet(() -> new PremiumAccesoInfo(null, null, false, false));
     }
 
     private SuscripcionLoginInfo evaluarSuscripcionLogin(LoginCuentaDTO cuenta) {
@@ -205,5 +239,13 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         private static SuscripcionLoginInfo sinNovedad() {
             return new SuscripcionLoginInfo(false, null, null, null);
         }
+    }
+
+    private record PremiumAccesoInfo(
+            Long sedeId,
+            String plan,
+            boolean gastosHabilitados,
+            boolean cajaHabilitada
+    ) {
     }
 }

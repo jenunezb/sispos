@@ -11,6 +11,7 @@ import proyecto.entidades.CajaTurno;
 import proyecto.entidades.EstadoCaja;
 import proyecto.entidades.ModoPago;
 import proyecto.entidades.Sede;
+import proyecto.entidades.Vendedor;
 import proyecto.repositorios.CajaTurnoRepository;
 import proyecto.repositorios.GastoDiarioRepository;
 import proyecto.repositorios.SedeRepository;
@@ -54,6 +55,30 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
     }
 
     @Override
+    public CajaTurnoResponseDTO abrirCaja(Vendedor vendedor, CajaAperturaDTO dto) {
+        if (cajaTurnoRepository.existsBySedeIdAndEstado(dto.sedeId(), EstadoCaja.ABIERTA)) {
+            throw new RuntimeException("Ya existe una caja abierta para la sede seleccionada");
+        }
+
+        Sede sede = sedeRepository.findById(dto.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
+        CajaTurno caja = new CajaTurno();
+        caja.setSede(sede);
+        caja.setVendedorApertura(vendedor);
+        caja.setFechaApertura(LocalDateTime.now());
+        caja.setEstado(EstadoCaja.ABIERTA);
+        caja.setBaseInicial(dto.baseInicial());
+        caja.setObservacion(normalizarTexto(dto.observacion()));
+        caja.setVentasEfectivo(0.0);
+        caja.setGastosEfectivo(0.0);
+        caja.setEfectivoEsperado(dto.baseInicial());
+        caja.setDiferencia(0.0);
+
+        return mapToResponse(cajaTurnoRepository.save(caja));
+    }
+
+    @Override
     public CajaTurnoResponseDTO cerrarCaja(Administrador administrador, Long cajaId, CajaCierreDTO dto) {
         CajaTurno caja = cajaTurnoRepository.findById(cajaId)
                 .orElseThrow(() -> new RuntimeException("Caja no encontrada"));
@@ -67,6 +92,32 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
         double efectivoContado = dto.efectivoContado() != null ? dto.efectivoContado() : 0.0;
 
         caja.setAdministradorCierre(administrador);
+        caja.setFechaCierre(fechaCierre);
+        caja.setEstado(EstadoCaja.CERRADA);
+        caja.setVentasEfectivo(resumen.ventasEfectivo());
+        caja.setGastosEfectivo(resumen.gastosEfectivo());
+        caja.setEfectivoEsperado(resumen.efectivoEsperado());
+        caja.setEfectivoContado(efectivoContado);
+        caja.setDiferencia(efectivoContado - resumen.efectivoEsperado());
+        caja.setObservacionCierre(normalizarTexto(dto.observacionCierre()));
+
+        return mapToResponse(cajaTurnoRepository.save(caja));
+    }
+
+    @Override
+    public CajaTurnoResponseDTO cerrarCaja(Vendedor vendedor, Long cajaId, CajaCierreDTO dto) {
+        CajaTurno caja = cajaTurnoRepository.findById(cajaId)
+                .orElseThrow(() -> new RuntimeException("Caja no encontrada"));
+
+        if (caja.getEstado() != EstadoCaja.ABIERTA) {
+            throw new RuntimeException("La caja seleccionada ya fue cerrada");
+        }
+
+        LocalDateTime fechaCierre = LocalDateTime.now();
+        CajaResumenDTO resumen = construirResumen(caja, fechaCierre);
+        double efectivoContado = dto.efectivoContado() != null ? dto.efectivoContado() : 0.0;
+
+        caja.setVendedorCierre(vendedor);
         caja.setFechaCierre(fechaCierre);
         caja.setEstado(EstadoCaja.CERRADA);
         caja.setVentasEfectivo(resumen.ventasEfectivo());
@@ -119,7 +170,11 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
                 caja.getAdministradorApertura() != null ? caja.getAdministradorApertura().getCodigo() : null,
                 nombreCompleto(caja.getAdministradorApertura()),
                 caja.getAdministradorCierre() != null ? caja.getAdministradorCierre().getCodigo() : null,
-                nombreCompleto(caja.getAdministradorCierre())
+                nombreCompleto(caja.getAdministradorCierre()),
+                caja.getVendedorApertura() != null ? caja.getVendedorApertura().getCodigo() : null,
+                nombreCompleto(caja.getVendedorApertura()),
+                caja.getVendedorCierre() != null ? caja.getVendedorCierre().getCodigo() : null,
+                nombreCompleto(caja.getVendedorCierre())
         );
     }
 
@@ -167,5 +222,13 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
         String apellido = administrador.getApellido() != null ? administrador.getApellido().trim() : "";
         String nombreCompleto = (nombre + " " + apellido).trim();
         return nombreCompleto.isBlank() ? null : nombreCompleto;
+    }
+
+    private String nombreCompleto(Vendedor vendedor) {
+        if (vendedor == null) {
+            return null;
+        }
+        String nombre = vendedor.getNombre() != null ? vendedor.getNombre().trim() : "";
+        return nombre.isBlank() ? null : nombre;
     }
 }

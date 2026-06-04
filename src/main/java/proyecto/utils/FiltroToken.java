@@ -57,9 +57,14 @@ public class FiltroToken extends OncePerRequestFilter {
                     String rol = (String) jws.getBody().get("rol");
                     Boolean esSuperAdmin = jws.getBody().get("esSuperAdmin", Boolean.class);
 
+                    boolean vendedorPuedeUsarRecursosPremium =
+                            rol.equals("vendedor") &&
+                            (requestURI.startsWith("/api/administrador/gastos")
+                                    || requestURI.startsWith("/api/administrador/cajas"));
+
                     boolean noAutorizado =
                             (requestURI.startsWith("/api/vendedor") && !rol.equals("vendedor")) ||
-                                    (requestURI.startsWith("/api/administrador") && !rol.equals("administrador")) ||
+                                    (requestURI.startsWith("/api/administrador") && !rol.equals("administrador") && !vendedorPuedeUsarRecursosPremium) ||
                                     (requestURI.startsWith("/api/superadmin") && (!rol.equals("administrador") || !Boolean.TRUE.equals(esSuperAdmin))) ||
                                     (requestURI.startsWith("/api/produccion") && !rol.equals("produccion"));
 

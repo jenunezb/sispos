@@ -4,6 +4,7 @@ import proyecto.dto.CajaAperturaDTO;
 import proyecto.dto.CajaCierreDTO;
 import proyecto.dto.CajaTurnoResponseDTO;
 import proyecto.entidades.Administrador;
+import proyecto.entidades.Vendedor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,7 +13,11 @@ public interface CajaTurnoServicio {
 
     CajaTurnoResponseDTO abrirCaja(Administrador administrador, CajaAperturaDTO dto);
 
+    CajaTurnoResponseDTO abrirCaja(Vendedor vendedor, CajaAperturaDTO dto);
+
     CajaTurnoResponseDTO cerrarCaja(Administrador administrador, Long cajaId, CajaCierreDTO dto);
+
+    CajaTurnoResponseDTO cerrarCaja(Vendedor vendedor, Long cajaId, CajaCierreDTO dto);
 
     CajaTurnoResponseDTO obtenerCajaActual(Long sedeId);
 

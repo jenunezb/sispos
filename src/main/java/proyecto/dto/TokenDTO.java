@@ -16,4 +16,8 @@ public class TokenDTO {
     private String estadoSuscripcion;
     private String fechaVencimientoSuscripcion;
     private String mensajeSuscripcion;
+    private Long sedeId;
+    private String plan;
+    private Boolean gastosHabilitados;
+    private Boolean cajaHabilitada;
 }

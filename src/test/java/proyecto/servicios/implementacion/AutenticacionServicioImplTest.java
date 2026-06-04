@@ -12,6 +12,7 @@ import proyecto.dto.TokenDTO;
 import proyecto.entidades.SuscripcionSede;
 import proyecto.repositorios.CuentaRepo;
 import proyecto.repositorios.SuscripcionSedeRepository;
+import proyecto.repositorios.VendedorRepository;
 import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
@@ -43,6 +44,12 @@ class AutenticacionServicioImplTest {
 
     @Mock
     private SuscripcionSedeRepository suscripcionSedeRepository;
+
+    @Mock
+    private VendedorRepository vendedorRepository;
+
+    @Mock
+    private SuscripcionFeatureService suscripcionFeatureService;
 
     @InjectMocks
     private AutenticacionServicioImpl autenticacionServicio;
@@ -87,6 +94,7 @@ class AutenticacionServicioImplTest {
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
         when(suscripcionSedeRepository.findBySedeEmpresaNit(900123456L)).thenReturn(List.of());
+        when(vendedorRepository.findByCorreo("vendedor@correo.com")).thenReturn(Optional.empty());
         when(jwtUtils.generarToken(eq("vendedor@correo.com"), anyMap())).thenReturn("token-falso");
 
         TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta"));
@@ -121,6 +129,7 @@ class AutenticacionServicioImplTest {
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
         when(suscripcionSedeRepository.findBySedeEmpresaNit(900123456L)).thenReturn(List.of(suscripcion));
+        when(vendedorRepository.findByCorreo("vendedor@correo.com")).thenReturn(Optional.empty());
         when(jwtUtils.generarToken(eq("vendedor@correo.com"), anyMap())).thenReturn("token-falso");
 
         TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta"));

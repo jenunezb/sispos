@@ -13,6 +13,9 @@ public record GastoDiarioResponseDTO(
         ModoPago modoPago,
         LocalDateTime fecha,
         Integer administradorId,
-        String administradorNombre
+        String administradorNombre,
+        Integer vendedorId,
+        String vendedorNombre,
+        String registradoPorRol
 ) {
 }
