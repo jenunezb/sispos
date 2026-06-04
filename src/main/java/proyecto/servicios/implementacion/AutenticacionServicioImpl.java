@@ -52,10 +52,6 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
 
         SuscripcionLoginInfo suscripcionInfo = evaluarSuscripcionLogin(cuenta);
 
-        if (suscripcionInfo.bloquearLogin()) {
-            throw new RuntimeException(suscripcionInfo.mensaje());
-        }
-
         // Generar y retornar token
         TokenDTO tokenDTO = new TokenDTO();
         tokenDTO.setToken(crearToken(cuenta));
@@ -115,7 +111,6 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
             String fecha = formatearFechaMensaje(vencida.fechaVencimiento());
             return new SuscripcionLoginInfo(
                     true,
-                    false,
                     vencida.estado().name(),
                     vencida.fechaVencimiento() != null ? DATE_FORMATTER.format(vencida.fechaVencimiento()) : null,
                     "Tu suscripcion esta vencida desde el " + fecha + ". Realiza el pago por llave al numero 3026367474 y, si ya pagaste, envia el comprobante para activar nuevamente el servicio."
@@ -129,7 +124,6 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
 
         if (porVencer != null) {
             return new SuscripcionLoginInfo(
-                    false,
                     true,
                     porVencer.estado().name(),
                     porVencer.fechaVencimiento() != null ? DATE_FORMATTER.format(porVencer.fechaVencimiento()) : null,
@@ -203,14 +197,13 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
     }
 
     private record SuscripcionLoginInfo(
-            boolean bloquearLogin,
             boolean advertir,
             String estado,
             String fechaVencimiento,
             String mensaje
     ) {
         private static SuscripcionLoginInfo sinNovedad() {
-            return new SuscripcionLoginInfo(false, false, null, null, null);
+            return new SuscripcionLoginInfo(false, null, null, null);
         }
     }
 }

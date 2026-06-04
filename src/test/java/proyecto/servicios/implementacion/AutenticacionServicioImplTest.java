@@ -9,14 +9,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import proyecto.dto.LoginCuentaDTO;
 import proyecto.dto.LoginDTO;
 import proyecto.dto.TokenDTO;
+import proyecto.entidades.SuscripcionSede;
 import proyecto.repositorios.CuentaRepo;
 import proyecto.repositorios.SuscripcionSedeRepository;
 import proyecto.utils.JWTUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.mockito.ArgumentCaptor;
 
@@ -94,6 +98,39 @@ class AutenticacionServicioImplTest {
         assertEquals("Empresa Uno", captor.getValue().get("nombreEmpresa"));
         assertEquals(900123456L, captor.getValue().get("companyNit"));
         assertEquals(3001234567L, captor.getValue().get("companyPhone"));
+    }
+
+    @Test
+    void debePermitirLoginSiLaSuscripcionEstaVencidaYRetornarAdvertencia() throws Exception {
+        LoginCuentaDTO vendedor = crearCuentaLogin(
+                10,
+                "vendedor@correo.com",
+                encoder.encode("secreta"),
+                "vendedor",
+                "Laura",
+                1,
+                "Empresa Uno",
+                900123456L,
+                3001234567L
+        );
+        SuscripcionSede suscripcion = new SuscripcionSede();
+        suscripcion.setActiva(true);
+        suscripcion.setFechaInicioServicio(LocalDate.of(2026, 1, 1));
+        suscripcion.setFechaUltimoPago(LocalDate.of(2026, 6, 1));
+        suscripcion.setFechaProximoVencimiento(LocalDate.now().minusDays(1));
+
+        when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
+        when(suscripcionSedeRepository.findBySedeEmpresaNit(900123456L)).thenReturn(List.of(suscripcion));
+        when(jwtUtils.generarToken(eq("vendedor@correo.com"), anyMap())).thenReturn("token-falso");
+
+        TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta"));
+
+        assertEquals("token-falso", respuesta.getToken());
+        assertEquals("VENCIDO", respuesta.getEstadoSuscripcion());
+        assertEquals(LocalDate.now().minusDays(1).toString(), respuesta.getFechaVencimientoSuscripcion());
+        assertNotNull(respuesta.getMensajeSuscripcion());
+        assertTrue(respuesta.getMensajeSuscripcion().contains("Tu suscripcion esta vencida desde el "));
+        assertTrue(respuesta.getMensajeSuscripcion().contains("3026367474"));
     }
 
     private LoginCuentaDTO crearCuentaLogin(
