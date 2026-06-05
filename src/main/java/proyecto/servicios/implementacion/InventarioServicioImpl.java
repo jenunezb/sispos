@@ -650,9 +650,15 @@ public class InventarioServicioImpl implements InventarioServicio {
                 throw new IllegalArgumentException("Hay items repetidos en la solicitud: " + llave);
             }
 
+            AjusteManualResultadoItemDTO ajuste;
             switch (item.tipo()) {
-                case PRODUCTO -> resultado.add(ajustarProductoSuelto(sedeId, item));
-                case MATERIA_PRIMA -> resultado.add(ajustarMateriaPrima(sedeId, item));
+                case PRODUCTO -> ajuste = ajustarProductoSuelto(sedeId, item);
+                case MATERIA_PRIMA -> ajuste = ajustarMateriaPrima(sedeId, item);
+                default -> throw new IllegalArgumentException("Tipo de inventario no soportado");
+            }
+
+            if (ajuste != null) {
+                resultado.add(ajuste);
             }
         }
 
@@ -735,11 +741,15 @@ public class InventarioServicioImpl implements InventarioServicio {
                 .findVisibleByProductoCodigoAndSedeId(item.id(), sedeId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado en la sede"));
 
-        if (!inventario.getProducto().getMateriasPrimas().isEmpty()) {
+        if (productoMateriaPrimaRepository.existsByProductoCodigo(item.id())) {
             throw new RuntimeException("No se puede ajustar manualmente un producto con receta");
         }
 
         double stockAnterior = inventario.getStockActual();
+        if (stockAnterior == item.stockNuevo()) {
+            return null;
+        }
+
         inventario.setStockActual(item.stockNuevo().intValue());
         inventarioRepository.save(inventario);
         notificacionStockMinimoService.evaluarYNotificar(inventario, calcularStockReal(inventario));
@@ -762,6 +772,10 @@ public class InventarioServicioImpl implements InventarioServicio {
         }
 
         double stockAnterior = materiaPrimaSede.getCantidadActualMl();
+        if (Double.compare(stockAnterior, item.stockNuevo()) == 0) {
+            return null;
+        }
+
         materiaPrimaSede.setCantidadActualMl(item.stockNuevo());
         materiaPrimaSedeRepository.save(materiaPrimaSede);
 

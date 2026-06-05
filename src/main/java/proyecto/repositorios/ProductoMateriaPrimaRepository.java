@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface ProductoMateriaPrimaRepository
         extends JpaRepository<ProductoMateriaPrima, Long> {
 
+    boolean existsByProductoCodigo(Long productoCodigo);
+
     boolean existsByProductoAndMateriaPrima(Producto producto, MateriaPrima materiaPrima);
 
     @Query("SELECT CASE WHEN COUNT(pmp) > 0 THEN true ELSE false END " +

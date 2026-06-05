@@ -27,6 +27,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -147,6 +148,7 @@ class InventarioServicioImplTest {
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
         when(materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(8L, 3L)).thenReturn(Optional.of(materiaPrimaSede));
         when(materiaPrimaSedeRepository.save(any(MateriaPrimaSede.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(productoMateriaPrimaRepository.existsByProductoCodigo(1L)).thenReturn(false);
 
         var respuesta = inventarioServicio.ajustarInventarioManual(
                 3L,
@@ -175,7 +177,6 @@ class InventarioServicioImplTest {
         producto.setCodigo(1L);
         producto.setNombre("Malteada");
         producto.setEmpresa(empresa);
-        producto.setMateriasPrimas(List.of(new ProductoMateriaPrima()));
 
         Sede sede = new Sede();
         sede.setId(3L);
@@ -187,6 +188,7 @@ class InventarioServicioImplTest {
         inventario.setStockActual(12);
 
         when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(1L, 3L)).thenReturn(Optional.of(inventario));
+        when(productoMateriaPrimaRepository.existsByProductoCodigo(1L)).thenReturn(true);
 
         RuntimeException error = assertThrows(RuntimeException.class, () ->
                 inventarioServicio.ajustarInventarioManual(
@@ -195,5 +197,54 @@ class InventarioServicioImplTest {
                 ));
 
         assertEquals("No se puede ajustar manualmente un producto con receta", error.getMessage());
+    }
+
+    @Test
+    void ajustarInventarioManualDebeOmitirItemsSinCambios() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(1007960474L);
+
+        Producto producto = new Producto();
+        producto.setCodigo(1L);
+        producto.setNombre("Gaseosa 400ml");
+        producto.setEmpresa(empresa);
+
+        Sede sede = new Sede();
+        sede.setId(3L);
+        sede.setEmpresa(empresa);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(12);
+
+        MateriaPrima materiaPrima = new MateriaPrima();
+        materiaPrima.setCodigo(8L);
+        materiaPrima.setNombre("Harina");
+        materiaPrima.setActiva(true);
+
+        MateriaPrimaSede materiaPrimaSede = new MateriaPrimaSede();
+        materiaPrimaSede.setMateriaPrima(materiaPrima);
+        materiaPrimaSede.setSede(sede);
+        materiaPrimaSede.setCantidadActualMl(50);
+        materiaPrimaSede.setActiva(true);
+
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(1L, 3L)).thenReturn(Optional.of(inventario));
+        when(materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(8L, 3L)).thenReturn(Optional.of(materiaPrimaSede));
+        when(productoMateriaPrimaRepository.existsByProductoCodigo(1L)).thenReturn(false);
+
+        var respuesta = inventarioServicio.ajustarInventarioManual(
+                3L,
+                List.of(
+                        new AjusteManualItemDTO(1L, TipoInventarioAjustable.PRODUCTO, 12.0),
+                        new AjusteManualItemDTO(8L, TipoInventarioAjustable.MATERIA_PRIMA, 50.0)
+                )
+        );
+
+        assertEquals(0, respuesta.actualizados());
+        assertEquals(0, respuesta.resultado().size());
+        verify(inventarioRepository, never()).save(any(Inventario.class));
+        verify(materiaPrimaSedeRepository, never()).save(any(MateriaPrimaSede.class));
+        verify(notificacionStockMinimoService, never()).evaluarYNotificar(any(Inventario.class), any(Integer.class));
     }
 }
