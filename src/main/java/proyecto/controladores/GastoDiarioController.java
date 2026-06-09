@@ -16,9 +16,9 @@ import proyecto.servicios.implementacion.AdministradorAccesoService;
 import proyecto.servicios.implementacion.SuscripcionFeatureService;
 import proyecto.servicios.interfaces.VendedorServicio;
 import proyecto.servicios.interfaces.GastoDiarioServicio;
+import proyecto.utils.FechaColombiaUtils;
 import proyecto.utils.JWTUtils;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -73,11 +73,11 @@ public class GastoDiarioController {
         String rol = obtenerRol(authorization);
 
         LocalDateTime fechaDesde = desde != null
-                ? LocalDate.parse(desde).atStartOfDay()
-                : LocalDate.now().atStartOfDay();
+                ? java.time.LocalDate.parse(desde).atStartOfDay()
+                : FechaColombiaUtils.hoy().atStartOfDay();
         LocalDateTime fechaHasta = hasta != null
-                ? LocalDate.parse(hasta).atTime(23, 59, 59)
-                : LocalDate.now().atTime(23, 59, 59);
+                ? java.time.LocalDate.parse(hasta).atTime(23, 59, 59)
+                : FechaColombiaUtils.hoy().atTime(23, 59, 59);
 
         if ("vendedor".equals(rol)) {
             Vendedor vendedor = obtenerVendedorAutenticado(authorization);

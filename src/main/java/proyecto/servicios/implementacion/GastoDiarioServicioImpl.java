@@ -11,6 +11,7 @@ import proyecto.entidades.Vendedor;
 import proyecto.repositorios.GastoDiarioRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.interfaces.GastoDiarioServicio;
+import proyecto.utils.FechaColombiaUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,7 +34,7 @@ public class GastoDiarioServicioImpl implements GastoDiarioServicio {
         gasto.setDescripcion(dto.descripcion().trim());
         gasto.setValor(dto.valor());
         gasto.setModoPago(dto.modoPago());
-        gasto.setFecha(LocalDateTime.now());
+        gasto.setFecha(FechaColombiaUtils.ahora());
 
         return mapToResponse(gastoDiarioRepository.save(gasto));
     }
@@ -49,7 +50,7 @@ public class GastoDiarioServicioImpl implements GastoDiarioServicio {
         gasto.setDescripcion(dto.descripcion().trim());
         gasto.setValor(dto.valor());
         gasto.setModoPago(dto.modoPago());
-        gasto.setFecha(LocalDateTime.now());
+        gasto.setFecha(FechaColombiaUtils.ahora());
 
         return mapToResponse(gastoDiarioRepository.save(gasto));
     }
