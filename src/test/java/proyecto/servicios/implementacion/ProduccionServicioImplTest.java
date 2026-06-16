@@ -209,9 +209,16 @@ class ProduccionServicioImplTest {
         producto.setNombre("Producto Listado");
         producto.setPrecioVenta(20000.0);
 
+        InventarioProduccion inventario = new InventarioProduccion();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(0);
+        inventario.setProducidoAcumulado(0);
+        inventario.setDespachadoAcumulado(0);
+
         when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
-        when(productoRepository.findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(900123456L, 5L))
-                .thenReturn(List.of(producto));
+        when(inventarioProduccionRepository.findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(5L))
+                .thenReturn(List.of(inventario));
 
         var respuesta = produccionServicio.listarProductos("prod@correo.com");
 
