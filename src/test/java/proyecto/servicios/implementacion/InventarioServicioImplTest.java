@@ -6,14 +6,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.AjusteManualItemDTO;
+import proyecto.dto.MovimientoInventarioDTO;
 import proyecto.dto.TipoInventarioAjustable;
 import proyecto.entidades.Empresa;
 import proyecto.entidades.Inventario;
 import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.MateriaPrimaSede;
+import proyecto.entidades.MovimientoInventario;
 import proyecto.entidades.Producto;
 import proyecto.entidades.ProductoMateriaPrima;
 import proyecto.entidades.Sede;
+import proyecto.entidades.TipoMovimiento;
 import proyecto.repositorios.InventarioRepository;
 import proyecto.repositorios.MateriaPrimaSedeRepository;
 import proyecto.repositorios.MovimientoInventarioRepository;
@@ -28,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -246,5 +250,130 @@ class InventarioServicioImplTest {
         verify(inventarioRepository, never()).save(any(Inventario.class));
         verify(materiaPrimaSedeRepository, never()).save(any(MateriaPrimaSede.class));
         verify(notificacionStockMinimoService, never()).evaluarYNotificar(any(Inventario.class), any(Integer.class));
+    }
+
+    @Test
+    void registrarMovimientoSalidaDebeConsumirMateriaPrimaParaProductoConReceta() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(1007960474L);
+
+        Producto producto = new Producto();
+        producto.setCodigo(123L);
+        producto.setNombre("Malteada");
+        producto.setEmpresa(empresa);
+
+        MateriaPrima materiaPrima = new MateriaPrima();
+        materiaPrima.setCodigo(8L);
+        materiaPrima.setNombre("Leche");
+        materiaPrima.setActiva(true);
+
+        ProductoMateriaPrima receta = new ProductoMateriaPrima();
+        receta.setProducto(producto);
+        receta.setMateriaPrima(materiaPrima);
+        receta.setMlConsumidos(10.0);
+        producto.setMateriasPrimas(List.of(receta));
+
+        Sede sede = new Sede();
+        sede.setId(7L);
+        sede.setEmpresa(empresa);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(0);
+        inventario.setSalidas(0);
+        inventario.setEntradas(0);
+        inventario.setPerdidas(0);
+
+        MateriaPrimaSede materiaPrimaSede = new MateriaPrimaSede();
+        materiaPrimaSede.setMateriaPrima(materiaPrima);
+        materiaPrimaSede.setSede(sede);
+        materiaPrimaSede.setCantidadActualMl(500.0);
+        materiaPrimaSede.setActiva(true);
+
+        when(productoRepository.findById(123L)).thenReturn(Optional.of(producto));
+        when(sedeRepository.findById(7L)).thenReturn(Optional.of(sede));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(123L, 7L)).thenReturn(Optional.of(inventario));
+        when(materiaPrimaSedeRepository.findByMateriaPrimaAndSede(materiaPrima, sede)).thenReturn(Optional.of(materiaPrimaSede));
+        when(materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(8L, 7L)).thenReturn(Optional.of(materiaPrimaSede));
+        when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(movimientoRepository.save(any(MovimientoInventario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        inventarioServicio.registrarMovimiento(new MovimientoInventarioDTO(
+                7L,
+                123L,
+                TipoMovimiento.SALIDA,
+                26,
+                ""
+        ));
+
+        assertEquals(240.0, materiaPrimaSede.getCantidadActualMl());
+        assertEquals(26, inventario.getSalidas());
+        assertEquals(0, inventario.getStockActual());
+        verify(inventarioRepository).save(inventario);
+        verify(movimientoRepository).save(any(MovimientoInventario.class));
+        verify(notificacionStockMinimoService).evaluarYNotificar(inventario, 24);
+    }
+
+    @Test
+    void registrarMovimientoSalidaDebeFallarSiFaltaMateriaPrimaParaProductoConReceta() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(1007960474L);
+
+        Producto producto = new Producto();
+        producto.setCodigo(123L);
+        producto.setNombre("Malteada");
+        producto.setEmpresa(empresa);
+
+        MateriaPrima materiaPrima = new MateriaPrima();
+        materiaPrima.setCodigo(8L);
+        materiaPrima.setNombre("Leche");
+        materiaPrima.setActiva(true);
+
+        ProductoMateriaPrima receta = new ProductoMateriaPrima();
+        receta.setProducto(producto);
+        receta.setMateriaPrima(materiaPrima);
+        receta.setMlConsumidos(10.0);
+        producto.setMateriasPrimas(List.of(receta));
+
+        Sede sede = new Sede();
+        sede.setId(7L);
+        sede.setEmpresa(empresa);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(0);
+        inventario.setSalidas(0);
+        inventario.setEntradas(0);
+        inventario.setPerdidas(0);
+
+        MateriaPrimaSede materiaPrimaSede = new MateriaPrimaSede();
+        materiaPrimaSede.setMateriaPrima(materiaPrima);
+        materiaPrimaSede.setSede(sede);
+        materiaPrimaSede.setCantidadActualMl(100.0);
+        materiaPrimaSede.setActiva(true);
+
+        when(productoRepository.findById(123L)).thenReturn(Optional.of(producto));
+        when(sedeRepository.findById(7L)).thenReturn(Optional.of(sede));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(123L, 7L)).thenReturn(Optional.of(inventario));
+        when(materiaPrimaSedeRepository.findByMateriaPrimaAndSede(materiaPrima, sede)).thenReturn(Optional.of(materiaPrimaSede));
+
+        RuntimeException error = assertThrows(RuntimeException.class, () ->
+                inventarioServicio.registrarMovimiento(new MovimientoInventarioDTO(
+                        7L,
+                        123L,
+                        TipoMovimiento.SALIDA,
+                        26,
+                        ""
+                )));
+
+        assertEquals("Materia prima insuficiente: Leche", error.getMessage());
+        assertEquals(100.0, materiaPrimaSede.getCantidadActualMl());
+        assertEquals(0, inventario.getSalidas());
+        verify(inventarioRepository, never()).save(any(Inventario.class));
+        verify(movimientoRepository, never()).save(any(MovimientoInventario.class));
+        verify(notificacionStockMinimoService, never()).evaluarYNotificar(any(Inventario.class), any(Integer.class));
+        verify(materiaPrimaSedeRepository, times(1)).findByMateriaPrimaAndSede(materiaPrima, sede);
     }
 }

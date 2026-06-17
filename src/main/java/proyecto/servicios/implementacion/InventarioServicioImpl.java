@@ -82,39 +82,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         Sede sede = inventario.getSede();
 
         if (!producto.getMateriasPrimas().isEmpty()) {
-            // validar y descontar materias primas por sede
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
-                double mlNecesarios = pmp.getMlConsumidos() * cantidad;
-                if (mpSede.getCantidadActualMl() < mlNecesarios) {
-                    throw new RuntimeException("Materia prima insuficiente: " + mpSede.getMateriaPrima().getNombre());
-                }
-            }
-            for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
-
-                MateriaPrimaSede mpSede = materiaPrimaSedeRepository
-                        .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
-                        .orElseThrow(() -> new RuntimeException(
-                                "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
-                        ));
-
-                double mlNecesarios = pmp.getMlConsumidos() * cantidad;
-
-                if (mpSede.getCantidadActualMl() < mlNecesarios) {
-                    throw new RuntimeException(
-                            "Materia prima insuficiente: " + pmp.getMateriaPrima().getNombre()
-                    );
-                }
-
-                mpSede.setCantidadActualMl(
-                        mpSede.getCantidadActualMl() - mlNecesarios
-                );
-            }
-
+            consumirMateriaPrimaPorReceta(producto, sede, cantidad);
             inventario.setSalidas(inventario.getSalidas() + cantidad);
         } else {
             int stockDisponible = calcularStockReal(inventario);
@@ -209,9 +177,15 @@ public class InventarioServicioImpl implements InventarioServicio {
                 inventario.setStockActual(inventario.getStockActual() + dto.cantidad());
             }
             case SALIDA -> {
-                if (inventario.getStockActual() < dto.cantidad()) throw new RuntimeException("Stock insuficiente");
+                if (!producto.getMateriasPrimas().isEmpty()) {
+                    consumirMateriaPrimaPorReceta(producto, sede, dto.cantidad());
+                } else if (inventario.getStockActual() < dto.cantidad()) {
+                    throw new RuntimeException("Stock insuficiente");
+                }
                 inventario.setSalidas(inventario.getSalidas() + dto.cantidad());
-                inventario.setStockActual(inventario.getStockActual() - dto.cantidad());
+                if (producto.getMateriasPrimas().isEmpty()) {
+                    inventario.setStockActual(inventario.getStockActual() - dto.cantidad());
+                }
             }
             case PERDIDA -> {
 
@@ -475,6 +449,31 @@ public class InventarioServicioImpl implements InventarioServicio {
                 inv.getStockMinimo(),
                 inv.getProducto().getPrecioVenta()
         );
+    }
+
+    private void consumirMateriaPrimaPorReceta(Producto producto, Sede sede, Integer cantidad) {
+        for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                    .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
+                    .orElseThrow(() -> new RuntimeException(
+                            "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
+                    ));
+            double mlNecesarios = pmp.getMlConsumidos() * cantidad;
+            if (mpSede.getCantidadActualMl() < mlNecesarios) {
+                throw new RuntimeException("Materia prima insuficiente: " + mpSede.getMateriaPrima().getNombre());
+            }
+        }
+
+        for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
+            MateriaPrimaSede mpSede = materiaPrimaSedeRepository
+                    .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede)
+                    .orElseThrow(() -> new RuntimeException(
+                            "No hay " + pmp.getMateriaPrima().getNombre() + " en esta sede"
+                    ));
+
+            double mlNecesarios = pmp.getMlConsumidos() * cantidad;
+            mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
+        }
     }
 
     private int calcularStockReal(Inventario inv) {
