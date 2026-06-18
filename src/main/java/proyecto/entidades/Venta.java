@@ -44,6 +44,12 @@ public class Venta {
     @Column(name = "modo_pago", nullable = false)
     private ModoPago modoPago;
 
+    @Column(name = "monto_efectivo")
+    private Double montoEfectivo;
+
+    @Column(name = "monto_transferencia")
+    private Double montoTransferencia;
+
     @Column(nullable = false)
     private Boolean anulado = false;
 }

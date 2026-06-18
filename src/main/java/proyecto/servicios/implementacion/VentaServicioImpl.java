@@ -50,7 +50,10 @@ public class VentaServicioImpl implements VentaServicio {
                 dto.sedeId(),
                 dto.clienteId(),
                 dto.detalles(),
-                dto.modoPago()
+                dto.modoPago(),
+                dto.montoRecibido(),
+                dto.montoEfectivo(),
+                dto.montoTransferencia()
         );
         return crearVentaInterna(dtoConCorreo, true);
     }
@@ -125,7 +128,8 @@ public class VentaServicioImpl implements VentaServicio {
         venta.setSede(sede);
         venta.setNumeroConsecutivo(siguienteConsecutivoPorSede(sede.getId()));
         venta.setCliente(cliente);
-        venta.setModoPago(dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO);
+        ModoPago modoPago = dto.modoPago() != null ? dto.modoPago() : ModoPago.EFECTIVO;
+        venta.setModoPago(modoPago);
 
         double total = 0;
         List<DetalleVenta> detalles = new ArrayList<>();
@@ -187,6 +191,7 @@ public class VentaServicioImpl implements VentaServicio {
 
         venta.setDetalles(detalles);
         venta.setTotal(total);
+        aplicarMontosPago(venta, dto, total);
 
         return ventaRepository.save(venta);
     }
@@ -383,6 +388,8 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getFecha(),
                 venta.getTotal(),
                 venta.getModoPago() != null ? venta.getModoPago().name() : null,
+                obtenerMontoEfectivoVenta(venta),
+                obtenerMontoTransferenciaVenta(venta),
                 nombreUsuario,
                 venta.getSede().getUbicacion(),
                 venta.getCliente() != null ? venta.getCliente().getId() : null,
@@ -508,6 +515,49 @@ public class VentaServicioImpl implements VentaServicio {
         }
 
         throw new RuntimeException("El vendedor no tiene empresa asociada");
+    }
+
+    private void aplicarMontosPago(Venta venta, VentaRecuestDTO dto, double total) {
+        double montoEfectivo = 0.0;
+        double montoTransferencia = 0.0;
+
+        if (venta.getModoPago() == ModoPago.EFECTIVO) {
+            montoEfectivo = total;
+        } else if (venta.getModoPago() == ModoPago.TRANSFERENCIA) {
+            montoTransferencia = total;
+        } else if (venta.getModoPago() == ModoPago.MIXTO) {
+            if (dto.montoEfectivo() == null || dto.montoTransferencia() == null) {
+                throw new RuntimeException("Para pago mixto debes enviar montoEfectivo y montoTransferencia");
+            }
+
+            montoEfectivo = dto.montoEfectivo();
+            montoTransferencia = dto.montoTransferencia();
+
+            if (montoEfectivo <= 0 || montoTransferencia <= 0) {
+                throw new RuntimeException("En pago mixto ambos montos deben ser mayores a 0");
+            }
+
+            if (Math.abs((montoEfectivo + montoTransferencia) - total) > 0.01d) {
+                throw new RuntimeException("La suma de efectivo y transferencia debe ser igual al total");
+            }
+        }
+
+        venta.setMontoEfectivo(montoEfectivo);
+        venta.setMontoTransferencia(montoTransferencia);
+    }
+
+    private Double obtenerMontoEfectivoVenta(Venta venta) {
+        if (venta.getMontoEfectivo() != null) {
+            return venta.getMontoEfectivo();
+        }
+        return venta.getModoPago() == ModoPago.EFECTIVO ? venta.getTotal() : 0.0;
+    }
+
+    private Double obtenerMontoTransferenciaVenta(Venta venta) {
+        if (venta.getMontoTransferencia() != null) {
+            return venta.getMontoTransferencia();
+        }
+        return venta.getModoPago() == ModoPago.TRANSFERENCIA ? venta.getTotal() : 0.0;
     }
 
     private Sede obtenerSedeDesdeVendedor(Vendedor vendedor) {

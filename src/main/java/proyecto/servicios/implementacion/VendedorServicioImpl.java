@@ -114,13 +114,11 @@ public class VendedorServicioImpl implements VendedorServicio {
                 .sum();
 
         double ventasEfectivo = ventas.stream()
-                .filter(v -> v.getModoPago() == ModoPago.EFECTIVO)
-                .mapToDouble(Venta::getTotal)
+                .mapToDouble(this::obtenerMontoEfectivo)
                 .sum();
 
         double ventasTransferencia = ventas.stream()
-                .filter(v -> v.getModoPago() == ModoPago.TRANSFERENCIA)
-                .mapToDouble(Venta::getTotal)
+                .mapToDouble(this::obtenerMontoTransferencia)
                 .sum();
 
         long cantidadVentas = ventas.size();
@@ -155,6 +153,20 @@ public class VendedorServicioImpl implements VendedorServicio {
 
     private double defaultDouble(Double valor) {
         return valor != null ? valor : 0.0;
+    }
+
+    private double obtenerMontoEfectivo(Venta venta) {
+        if (venta.getMontoEfectivo() != null) {
+            return venta.getMontoEfectivo();
+        }
+        return venta.getModoPago() == ModoPago.EFECTIVO ? defaultDouble(venta.getTotal()) : 0.0;
+    }
+
+    private double obtenerMontoTransferencia(Venta venta) {
+        if (venta.getMontoTransferencia() != null) {
+            return venta.getMontoTransferencia();
+        }
+        return venta.getModoPago() == ModoPago.TRANSFERENCIA ? defaultDouble(venta.getTotal()) : 0.0;
     }
 
 }

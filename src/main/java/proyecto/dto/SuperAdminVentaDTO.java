@@ -11,6 +11,8 @@ public record SuperAdminVentaDTO(
         Boolean anulado,
         Boolean valido,
         String modoPago,
+        Double montoEfectivo,
+        Double montoTransferencia,
         Long empresaNit,
         String empresaNombre,
         Long sedeId,

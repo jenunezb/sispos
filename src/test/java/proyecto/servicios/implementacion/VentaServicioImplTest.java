@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -112,7 +113,10 @@ class VentaServicioImplTest {
                 999L,
                 7L,
                 List.of(new DetalleVentaDTO(99L, null, null, 2)),
-                ModoPago.EFECTIVO
+                ModoPago.EFECTIVO,
+                null,
+                null,
+                null
         );
 
         when(vendedorRepository.findByCorreoIgnoreCase("prod@correo.com")).thenReturn(Optional.of(vendedor));
@@ -155,7 +159,10 @@ class VentaServicioImplTest {
                 22L,
                 null,
                 List.of(new DetalleVentaDTO(40L, null, null, 1)),
-                ModoPago.EFECTIVO
+                ModoPago.EFECTIVO,
+                null,
+                null,
+                null
         );
 
         when(vendedorRepository.findByCorreoIgnoreCase("vend@correo.com")).thenReturn(Optional.of(vendedor));
@@ -184,6 +191,8 @@ class VentaServicioImplTest {
         venta.setFecha(java.time.LocalDateTime.of(2026, 3, 29, 18, 30));
         venta.setTotal(25000.0);
         venta.setModoPago(ModoPago.TRANSFERENCIA);
+        venta.setMontoEfectivo(null);
+        venta.setMontoTransferencia(null);
         venta.setSede(sede);
         venta.setDetalles(List.of());
         venta.setAnulado(false);
@@ -195,6 +204,8 @@ class VentaServicioImplTest {
         assertEquals(15L, respuesta.id());
         assertEquals(8L, respuesta.consecutivo());
         assertEquals("TRANSFERENCIA", respuesta.modoPago());
+        assertEquals(0.0, respuesta.montoEfectivo());
+        assertEquals(25000.0, respuesta.montoTransferencia());
         assertEquals("Centro", respuesta.sedeUbicacion());
     }
 
@@ -221,7 +232,10 @@ class VentaServicioImplTest {
                 55L,
                 null,
                 List.of(new DetalleVentaDTO(11L, null, null, 1)),
-                ModoPago.EFECTIVO
+                ModoPago.EFECTIVO,
+                null,
+                null,
+                null
         );
 
         when(vendedorRepository.findByCorreoIgnoreCase("sede55@correo.com")).thenReturn(Optional.of(vendedor));
@@ -236,5 +250,89 @@ class VentaServicioImplTest {
         ArgumentCaptor<Venta> ventaCaptor = ArgumentCaptor.forClass(Venta.class);
         verify(ventaRepository).save(ventaCaptor.capture());
         assertEquals(8L, ventaCaptor.getValue().getNumeroConsecutivo());
+    }
+
+    @Test
+    void crearVentaMixtaDebeGuardarDesgloseDeMontos() {
+        Sede sede = new Sede();
+        sede.setId(66L);
+
+        Vendedor vendedor = new Vendedor();
+        vendedor.setCorreo("mixto@correo.com");
+        vendedor.setTipoPerfil(TipoPerfilVendedor.VENDEDOR);
+
+        Producto producto = new Producto();
+        producto.setCodigo(12L);
+        producto.setPrecioVenta(10000.0);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(10);
+
+        VentaRecuestDTO dto = new VentaRecuestDTO(
+                "mixto@correo.com",
+                66L,
+                null,
+                List.of(new DetalleVentaDTO(12L, null, null, 1)),
+                ModoPago.MIXTO,
+                null,
+                4000.0,
+                6000.0
+        );
+
+        when(vendedorRepository.findByCorreoIgnoreCase("mixto@correo.com")).thenReturn(Optional.of(vendedor));
+        when(sedeRepository.findByIdForUpdate(66L)).thenReturn(Optional.of(sede));
+        when(productoRepository.findById(12L)).thenReturn(Optional.of(producto));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(12L, 66L)).thenReturn(Optional.of(inventario));
+        when(ventaRepository.findMaxNumeroConsecutivoBySedeId(66L)).thenReturn(0L);
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ventaServicio.crearVenta(dto);
+
+        ArgumentCaptor<Venta> ventaCaptor = ArgumentCaptor.forClass(Venta.class);
+        verify(ventaRepository).save(ventaCaptor.capture());
+        assertEquals(ModoPago.MIXTO, ventaCaptor.getValue().getModoPago());
+        assertEquals(4000.0, ventaCaptor.getValue().getMontoEfectivo());
+        assertEquals(6000.0, ventaCaptor.getValue().getMontoTransferencia());
+    }
+
+    @Test
+    void crearVentaMixtaDebeFallarSiLaSumaNoCoincideConElTotal() {
+        Sede sede = new Sede();
+        sede.setId(77L);
+
+        Vendedor vendedor = new Vendedor();
+        vendedor.setCorreo("error@correo.com");
+        vendedor.setTipoPerfil(TipoPerfilVendedor.VENDEDOR);
+
+        Producto producto = new Producto();
+        producto.setCodigo(13L);
+        producto.setPrecioVenta(10000.0);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(10);
+
+        VentaRecuestDTO dto = new VentaRecuestDTO(
+                "error@correo.com",
+                77L,
+                null,
+                List.of(new DetalleVentaDTO(13L, null, null, 1)),
+                ModoPago.MIXTO,
+                null,
+                3000.0,
+                6000.0
+        );
+
+        when(vendedorRepository.findByCorreoIgnoreCase("error@correo.com")).thenReturn(Optional.of(vendedor));
+        when(sedeRepository.findByIdForUpdate(77L)).thenReturn(Optional.of(sede));
+        when(productoRepository.findById(13L)).thenReturn(Optional.of(producto));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(13L, 77L)).thenReturn(Optional.of(inventario));
+        when(ventaRepository.findMaxNumeroConsecutivoBySedeId(77L)).thenReturn(0L);
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> ventaServicio.crearVenta(dto));
+        assertEquals("La suma de efectivo y transferencia debe ser igual al total", exception.getMessage());
     }
 }

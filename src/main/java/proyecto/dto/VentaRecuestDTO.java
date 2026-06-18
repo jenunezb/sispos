@@ -9,5 +9,8 @@ public record VentaRecuestDTO(
         Long sedeId,
         Long clienteId,
         List<DetalleVentaDTO> detalles,
-        ModoPago modoPago
+        ModoPago modoPago,
+        Double montoRecibido,
+        Double montoEfectivo,
+        Double montoTransferencia
 ) {}

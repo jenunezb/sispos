@@ -6,6 +6,7 @@ import proyecto.dto.GastoDiarioCrearDTO;
 import proyecto.dto.GastoDiarioResponseDTO;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.GastoDiario;
+import proyecto.entidades.ModoPago;
 import proyecto.entidades.Sede;
 import proyecto.entidades.Vendedor;
 import proyecto.repositorios.GastoDiarioRepository;
@@ -27,6 +28,7 @@ public class GastoDiarioServicioImpl implements GastoDiarioServicio {
     public GastoDiarioResponseDTO crear(Administrador administrador, GastoDiarioCrearDTO dto) {
         Sede sede = sedeRepository.findById(dto.sedeId())
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+        validarModoPago(dto.modoPago());
 
         GastoDiario gasto = new GastoDiario();
         gasto.setSede(sede);
@@ -43,6 +45,7 @@ public class GastoDiarioServicioImpl implements GastoDiarioServicio {
     public GastoDiarioResponseDTO crear(Vendedor vendedor, GastoDiarioCrearDTO dto) {
         Sede sede = sedeRepository.findById(dto.sedeId())
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+        validarModoPago(dto.modoPago());
 
         GastoDiario gasto = new GastoDiario();
         gasto.setSede(sede);
@@ -100,5 +103,11 @@ public class GastoDiarioServicioImpl implements GastoDiarioServicio {
         }
         String nombre = vendedor.getNombre() != null ? vendedor.getNombre().trim() : "";
         return nombre.isBlank() ? null : nombre;
+    }
+
+    private void validarModoPago(ModoPago modoPago) {
+        if (modoPago == ModoPago.MIXTO) {
+            throw new RuntimeException("El gasto diario no admite modo de pago mixto");
+        }
     }
 }

@@ -107,6 +107,24 @@ CREATE TABLE IF NOT EXISTS mesa_estado_item (
 ALTER TABLE venta
     ADD COLUMN IF NOT EXISTS numero_consecutivo BIGINT;
 
+ALTER TABLE venta
+    ADD COLUMN IF NOT EXISTS monto_efectivo DOUBLE PRECISION;
+
+ALTER TABLE venta
+    ADD COLUMN IF NOT EXISTS monto_transferencia DOUBLE PRECISION;
+
+UPDATE venta
+SET monto_efectivo = total,
+    monto_transferencia = COALESCE(monto_transferencia, 0)
+WHERE modo_pago = 'EFECTIVO'
+  AND monto_efectivo IS NULL;
+
+UPDATE venta
+SET monto_efectivo = COALESCE(monto_efectivo, 0),
+    monto_transferencia = total
+WHERE modo_pago = 'TRANSFERENCIA'
+  AND monto_transferencia IS NULL;
+
 WITH ventas_ordenadas AS (
     SELECT id,
            ROW_NUMBER() OVER (

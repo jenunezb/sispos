@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -80,6 +82,22 @@ class GastoDiarioServicioImplTest {
         verify(gastoDiarioRepository).save(captor.capture());
 
         assertFechaEntre(captor.getValue().getFecha(), antes, despues);
+    }
+
+    @Test
+    void noDebePermitirGastoConPagoMixto() {
+        Sede sede = new Sede();
+        sede.setId(3L);
+
+        Administrador administrador = new Administrador();
+        administrador.setCodigo(7);
+
+        when(sedeRepository.findById(3L)).thenReturn(Optional.of(sede));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                gastoDiarioServicio.crear(administrador, new GastoDiarioCrearDTO(3L, "Prueba", 1000.0, ModoPago.MIXTO)));
+
+        assertEquals("El gasto diario no admite modo de pago mixto", exception.getMessage());
     }
 
     private void assertFechaEntre(LocalDateTime actual, LocalDateTime inicio, LocalDateTime fin) {

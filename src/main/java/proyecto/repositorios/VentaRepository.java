@@ -113,10 +113,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     );
 
     @Query("""
-    SELECT COALESCE(SUM(v.total), 0)
+    SELECT COALESCE(SUM(COALESCE(v.montoEfectivo,
+        CASE WHEN v.modoPago = proyecto.entidades.ModoPago.EFECTIVO THEN v.total ELSE 0.0 END)), 0)
     FROM Venta v
     WHERE v.sede.empresa.nit = :empresaNit
-      AND v.modoPago = 'EFECTIVO'
       AND v.fecha BETWEEN :desde AND :hasta
       AND v.anulado = false
 """)
@@ -127,10 +127,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     );
 
     @Query("""
-    SELECT COALESCE(SUM(v.total), 0)
+    SELECT COALESCE(SUM(COALESCE(v.montoTransferencia,
+        CASE WHEN v.modoPago = proyecto.entidades.ModoPago.TRANSFERENCIA THEN v.total ELSE 0.0 END)), 0)
     FROM Venta v
     WHERE v.sede.empresa.nit = :empresaNit
-      AND v.modoPago = 'TRANSFERENCIA'
       AND v.fecha BETWEEN :desde AND :hasta
       AND v.anulado = false
 """)
@@ -201,11 +201,11 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     );
 
     @Query("""
-    SELECT COALESCE(SUM(v.total), 0)
+    SELECT COALESCE(SUM(COALESCE(v.montoEfectivo,
+        CASE WHEN v.modoPago = proyecto.entidades.ModoPago.EFECTIVO THEN v.total ELSE 0.0 END)), 0)
     FROM Venta v
         LEFT JOIN v.vendedor vend
-    WHERE v.modoPago = 'EFECTIVO'
-      AND v.fecha BETWEEN :desde AND :hasta
+    WHERE v.fecha BETWEEN :desde AND :hasta
       AND v.anulado = false
 """)
     Double totalVentasEntreFechasEfectivo(
@@ -214,11 +214,11 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     );
 
     @Query("""
-    SELECT COALESCE(SUM(v.total), 0)
+    SELECT COALESCE(SUM(COALESCE(v.montoTransferencia,
+        CASE WHEN v.modoPago = proyecto.entidades.ModoPago.TRANSFERENCIA THEN v.total ELSE 0.0 END)), 0)
     FROM Venta v
         LEFT JOIN v.vendedor vend
-    WHERE v.modoPago = 'TRANSFERENCIA'
-      AND v.fecha BETWEEN :desde AND :hasta
+    WHERE v.fecha BETWEEN :desde AND :hasta
       AND v.anulado = false
 """)
     Double totalVentasEntreFechasTransferencia(
@@ -227,12 +227,12 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     );
 
     @Query("""
-    SELECT COALESCE(SUM(v.total), 0)
+    SELECT COALESCE(SUM(COALESCE(v.montoEfectivo,
+        CASE WHEN v.modoPago = proyecto.entidades.ModoPago.EFECTIVO THEN v.total ELSE 0.0 END)), 0)
     FROM Venta v
         LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
-      AND v.modoPago = proyecto.entidades.ModoPago.EFECTIVO
       AND v.anulado = false
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
@@ -243,12 +243,12 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     );
 
     @Query("""
-    SELECT COALESCE(SUM(v.total), 0)
+    SELECT COALESCE(SUM(COALESCE(v.montoTransferencia,
+        CASE WHEN v.modoPago = proyecto.entidades.ModoPago.TRANSFERENCIA THEN v.total ELSE 0.0 END)), 0)
     FROM Venta v
         LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
       AND v.fecha BETWEEN :desde AND :hasta
-      AND v.modoPago = proyecto.entidades.ModoPago.TRANSFERENCIA
       AND v.anulado = false
       AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)

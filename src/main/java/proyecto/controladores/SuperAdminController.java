@@ -100,6 +100,8 @@ public class SuperAdminController {
                 venta.getAnulado(),
                 !Boolean.TRUE.equals(venta.getAnulado()),
                 venta.getModoPago() != null ? venta.getModoPago().name() : null,
+                venta.getMontoEfectivo() != null ? venta.getMontoEfectivo() : (venta.getModoPago() == proyecto.entidades.ModoPago.EFECTIVO ? venta.getTotal() : 0.0),
+                venta.getMontoTransferencia() != null ? venta.getMontoTransferencia() : (venta.getModoPago() == proyecto.entidades.ModoPago.TRANSFERENCIA ? venta.getTotal() : 0.0),
                 venta.getSede() != null && venta.getSede().getEmpresa() != null ? venta.getSede().getEmpresa().getNit() : null,
                 venta.getSede() != null && venta.getSede().getEmpresa() != null ? venta.getSede().getEmpresa().getNombre() : null,
                 venta.getSede() != null ? venta.getSede().getId() : null,

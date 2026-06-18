@@ -9,6 +9,8 @@ public record VentaResponseDTO(
         LocalDateTime fecha,
         Double total,
         String modoPago,
+        Double montoEfectivo,
+        Double montoTransferencia,
         String vendedorNombre,
         String sedeUbicacion,
         Long clienteId,
