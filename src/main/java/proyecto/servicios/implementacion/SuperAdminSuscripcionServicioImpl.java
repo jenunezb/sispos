@@ -97,9 +97,7 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
         }
 
         LocalDate periodoDesde = base;
-        LocalDate periodoHasta = tipoPago == TipoCobroSuscripcion.ANUAL
-                ? base.plusYears(1).minusDays(1)
-                : base.plusMonths(1).minusDays(1);
+        LocalDate periodoHasta = calcularProximoVencimiento(base, tipoPago);
 
         Double valor = dto.valor();
         if (valor == null || valor <= 0) {
@@ -127,7 +125,7 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
         pago = pagoSuscripcionSedeRepository.save(pago);
 
         suscripcion.setFechaUltimoPago(fechaPago);
-        suscripcion.setFechaProximoVencimiento(periodoHasta.plusDays(1));
+        suscripcion.setFechaProximoVencimiento(periodoHasta);
         suscripcion.setTipoCobro(tipoPago);
         actualizarEstado(suscripcion);
         suscripcionSedeRepository.save(suscripcion);
@@ -232,6 +230,12 @@ public class SuperAdminSuscripcionServicioImpl implements SuperAdminSuscripcionS
         } else {
             suscripcion.setEstadoServicio(EstadoSuscripcionSede.VENCIDO);
         }
+    }
+
+    private LocalDate calcularProximoVencimiento(LocalDate base, TipoCobroSuscripcion tipoPago) {
+        return tipoPago == TipoCobroSuscripcion.ANUAL
+                ? base.plusYears(1)
+                : base.plusMonths(1);
     }
 
     private SuperAdminSuscripcionSedeDTO mapSuscripcion(SuscripcionSede suscripcion, boolean incluirPagos) {
