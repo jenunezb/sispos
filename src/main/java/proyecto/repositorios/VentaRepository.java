@@ -4,6 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import proyecto.dto.VentaDiaResumenProjection;
+import proyecto.dto.VentaHoraResumenProjection;
+import proyecto.dto.VentaMesResumenProjection;
 import proyecto.entidades.Venta;
 
 import java.time.LocalDateTime;
@@ -156,6 +159,21 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     );
 
     @Query("""
+    SELECT COALESCE(SUM(v.total), 0)
+    FROM Venta v
+        LEFT JOIN v.vendedor vend
+    WHERE v.sede.id IN :sedeIds
+      AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
+      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+""")
+    Double totalVentasPorSedesEntreFechas(
+            @Param("sedeIds") List<Long> sedeIds,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
     SELECT COUNT(v)
     FROM Venta v
         LEFT JOIN v.vendedor vend
@@ -254,6 +272,66 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 """)
     Double totalVentasTransferenciaPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+        SELECT YEAR(v.fecha) AS anio,
+               MONTH(v.fecha) AS mes,
+               COALESCE(SUM(v.total), 0) AS totalVentas,
+               COUNT(v) AS cantidadVentas
+        FROM Venta v
+        LEFT JOIN v.vendedor vend
+        WHERE v.sede.id IN :sedeIds
+          AND v.fecha BETWEEN :desde AND :hasta
+          AND v.anulado = false
+          AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+        GROUP BY YEAR(v.fecha), MONTH(v.fecha)
+        ORDER BY YEAR(v.fecha), MONTH(v.fecha)
+    """)
+    List<VentaMesResumenProjection> resumenVentasPorMes(
+            @Param("sedeIds") List<Long> sedeIds,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+        SELECT YEAR(v.fecha) AS anio,
+               MONTH(v.fecha) AS mes,
+               DAY(v.fecha) AS dia,
+               COALESCE(SUM(v.total), 0) AS totalVentas,
+               COUNT(v) AS cantidadVentas
+        FROM Venta v
+        LEFT JOIN v.vendedor vend
+        WHERE v.sede.id IN :sedeIds
+          AND v.fecha BETWEEN :desde AND :hasta
+          AND v.anulado = false
+          AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+        GROUP BY YEAR(v.fecha), MONTH(v.fecha), DAY(v.fecha)
+        ORDER BY YEAR(v.fecha), MONTH(v.fecha), DAY(v.fecha)
+    """)
+    List<VentaDiaResumenProjection> resumenVentasPorDia(
+            @Param("sedeIds") List<Long> sedeIds,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+    @Query("""
+        SELECT HOUR(v.fecha) AS hora,
+               COALESCE(SUM(v.total), 0) AS totalVentas,
+               COUNT(v) AS cantidadVentas
+        FROM Venta v
+        LEFT JOIN v.vendedor vend
+        WHERE v.sede.id IN :sedeIds
+          AND v.fecha BETWEEN :desde AND :hasta
+          AND v.anulado = false
+          AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
+        GROUP BY HOUR(v.fecha)
+        ORDER BY HOUR(v.fecha)
+    """)
+    List<VentaHoraResumenProjection> resumenVentasPorHora(
+            @Param("sedeIds") List<Long> sedeIds,
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta
     );
