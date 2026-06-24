@@ -60,7 +60,8 @@ public class FiltroToken extends OncePerRequestFilter {
                     boolean vendedorPuedeUsarRecursosPremium =
                             rol.equals("vendedor") &&
                             (requestURI.startsWith("/api/administrador/gastos")
-                                    || requestURI.startsWith("/api/administrador/cajas"));
+                                    || requestURI.startsWith("/api/administrador/cajas")
+                                    || requestURI.startsWith("/api/administrador/reportes/ventas"));
 
                     boolean noAutorizado =
                             (requestURI.startsWith("/api/vendedor") && !rol.equals("vendedor")) ||
