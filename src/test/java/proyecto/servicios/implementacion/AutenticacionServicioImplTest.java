@@ -109,6 +109,36 @@ class AutenticacionServicioImplTest {
     }
 
     @Test
+    void debeGenerarTokenDeAdministradorCuandoLaCuentaEsAdministrativa() throws Exception {
+        LoginCuentaDTO administrador = crearCuentaLogin(
+                20,
+                "admin@correo.com",
+                encoder.encode("secreta"),
+                "administrador",
+                "Admin",
+                1,
+                "Empresa Admin",
+                900999111L,
+                3015550000L,
+                false,
+                true
+        );
+
+        when(cuentaRepo.findLoginByCorreo("admin@correo.com")).thenReturn(Optional.of(administrador));
+        when(suscripcionSedeRepository.findBySedeEmpresaNit(900999111L)).thenReturn(List.of());
+        when(jwtUtils.generarToken(eq("admin@correo.com"), anyMap())).thenReturn("token-admin");
+
+        TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("admin@correo.com", "secreta"));
+
+        assertEquals("token-admin", respuesta.getToken());
+
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(jwtUtils).generarToken(eq("admin@correo.com"), captor.capture());
+        assertEquals("administrador", captor.getValue().get("rol"));
+        assertEquals(Boolean.TRUE, captor.getValue().get("esAdministradorEmpresa"));
+    }
+
+    @Test
     void debePermitirLoginSiLaSuscripcionEstaVencidaYRetornarAdvertencia() throws Exception {
         LoginCuentaDTO vendedor = crearCuentaLogin(
                 10,
@@ -152,6 +182,34 @@ class AutenticacionServicioImplTest {
             String nombreEmpresa,
             Long empresaNit,
             Long empresaTelefono
+    ) {
+        return crearCuentaLogin(
+                codigo,
+                correo,
+                password,
+                rol,
+                nombre,
+                estado,
+                nombreEmpresa,
+                empresaNit,
+                empresaTelefono,
+                false,
+                false
+        );
+    }
+
+    private LoginCuentaDTO crearCuentaLogin(
+            Integer codigo,
+            String correo,
+            String password,
+            String rol,
+            String nombre,
+            Integer estado,
+            String nombreEmpresa,
+            Long empresaNit,
+            Long empresaTelefono,
+            Boolean esSuperAdmin,
+            Boolean esAdministradorEmpresa
     ) {
         return new LoginCuentaDTO() {
             @Override
@@ -201,12 +259,12 @@ class AutenticacionServicioImplTest {
 
             @Override
             public Boolean getEsSuperAdmin() {
-                return false;
+                return esSuperAdmin;
             }
 
             @Override
             public Boolean getEsAdministradorEmpresa() {
-                return false;
+                return esAdministradorEmpresa;
             }
         };
     }

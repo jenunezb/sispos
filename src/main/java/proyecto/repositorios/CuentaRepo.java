@@ -20,7 +20,12 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
             SELECT c.codigo AS codigo,
                    c.correo AS correo,
                    c.password AS password,
-                   CASE WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'PRODUCCION' THEN 'produccion' WHEN v.codigo IS NOT NULL THEN 'vendedor' ELSE 'administrador' END AS rol,
+                   CASE
+                       WHEN a.codigo IS NOT NULL THEN 'administrador'
+                       WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'PRODUCCION' THEN 'produccion'
+                       WHEN v.codigo IS NOT NULL THEN 'vendedor'
+                       ELSE 'administrador'
+                   END AS rol,
                    COALESCE(v.nombre, a.nombre, 'Administrador') AS nombre,
                    CASE WHEN COALESCE(v.estado, true) THEN 1 ELSE 0 END AS estado,
                    COALESCE(ea.nombre, ev.nombre, evs.nombre) AS nombreEmpresa,
@@ -45,6 +50,13 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
             LEFT JOIN sede sv ON sv.id = v.sede_id
             LEFT JOIN empresa evs ON evs.nit = sv.empresa_id
             WHERE c.correo = :correo
+            ORDER BY CASE
+                         WHEN a.codigo IS NOT NULL THEN 0
+                         WHEN v.codigo IS NOT NULL AND v.tipo_perfil <> 'PRODUCCION' THEN 1
+                         WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'PRODUCCION' THEN 2
+                         ELSE 3
+                     END,
+                     c.codigo
             LIMIT 1
             """, nativeQuery = true)
     Optional<LoginCuentaDTO> findLoginByCorreo(@Param("correo") String correo);
