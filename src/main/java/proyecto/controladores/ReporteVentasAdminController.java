@@ -1,7 +1,5 @@
 package proyecto.controladores;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -17,12 +15,9 @@ import proyecto.dto.VentasPorDiaDTO;
 import proyecto.dto.VentasPorHoraDTO;
 import proyecto.dto.VentasPorMesDTO;
 import proyecto.entidades.Administrador;
-import proyecto.entidades.Vendedor;
 import proyecto.repositorios.SedeRepository;
 import proyecto.servicios.implementacion.AdministradorAccesoService;
 import proyecto.servicios.interfaces.ReporteVentasAdminServicio;
-import proyecto.servicios.interfaces.VendedorServicio;
-import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -36,8 +31,6 @@ public class ReporteVentasAdminController {
     private final ReporteVentasAdminServicio reporteVentasAdminServicio;
     private final AdministradorAccesoService administradorAccesoService;
     private final SedeRepository sedeRepository;
-    private final VendedorServicio vendedorServicio;
-    private final JWTUtils jwtUtils;
 
     @GetMapping("/por-mes")
     public MensajeDTO<List<VentasPorMesDTO>> ventasPorMes(
@@ -47,8 +40,9 @@ public class ReporteVentasAdminController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         return new MensajeDTO<>(false, reporteVentasAdminServicio.obtenerVentasPorMes(
-                resolverSedeIds(authorization, empresaNit, sedeId),
+                resolverSedeIds(admin, empresaNit, sedeId),
                 desde,
                 hasta
         ));
@@ -62,8 +56,9 @@ public class ReporteVentasAdminController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         return new MensajeDTO<>(false, reporteVentasAdminServicio.obtenerVentasPorDia(
-                resolverSedeIds(authorization, empresaNit, sedeId),
+                resolverSedeIds(admin, empresaNit, sedeId),
                 desde,
                 hasta
         ));
@@ -77,8 +72,9 @@ public class ReporteVentasAdminController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         return new MensajeDTO<>(false, reporteVentasAdminServicio.obtenerVentasPorHora(
-                resolverSedeIds(authorization, empresaNit, sedeId),
+                resolverSedeIds(admin, empresaNit, sedeId),
                 desde,
                 hasta
         ));
@@ -92,8 +88,9 @@ public class ReporteVentasAdminController {
             @RequestParam(required = false) Integer anio,
             @RequestParam(required = false) Integer mes
     ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         return new MensajeDTO<>(false, reporteVentasAdminServicio.obtenerComparativoMensual(
-                resolverSedeIds(authorization, empresaNit, sedeId),
+                resolverSedeIds(admin, empresaNit, sedeId),
                 anio,
                 mes
         ));
@@ -107,29 +104,15 @@ public class ReporteVentasAdminController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
         return new MensajeDTO<>(false, reporteVentasAdminServicio.obtenerCrecimientoMensual(
-                resolverSedeIds(authorization, empresaNit, sedeId),
+                resolverSedeIds(admin, empresaNit, sedeId),
                 desde,
                 hasta
         ));
     }
 
-    private List<Long> resolverSedeIds(String authorization, Long empresaNit, Long sedeId) {
-        String rol = obtenerRol(authorization);
-
-        if ("vendedor".equals(rol)) {
-            Vendedor vendedor = obtenerVendedorAutenticado(authorization);
-            Long sedeIdVendedor = vendedor.getSede() != null ? vendedor.getSede().getId() : null;
-            if (sedeIdVendedor == null) {
-                throw new RuntimeException("El vendedor no tiene una sede asociada");
-            }
-            if (sedeId != null && !sedeIdVendedor.equals(sedeId)) {
-                throw new RuntimeException("No tiene permisos para consultar reportes de otra sede");
-            }
-            return List.of(sedeIdVendedor);
-        }
-
-        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+    private List<Long> resolverSedeIds(Administrador admin, Long empresaNit, Long sedeId) {
         if (sedeId != null) {
             administradorAccesoService.validarAccesoASede(admin, sedeId);
             return List.of(sedeId);
@@ -143,17 +126,5 @@ public class ReporteVentasAdminController {
         return sedeRepository.findByEmpresaNitAndIdIn(empresaNitConsulta, sedeIdsVisibles).stream()
                 .map(sede -> sede.getId())
                 .toList();
-    }
-
-    private String obtenerRol(String authorization) {
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        return String.valueOf(claims.getBody().get("rol"));
-    }
-
-    private Vendedor obtenerVendedorAutenticado(String authorization) {
-        String token = authorization.replace("Bearer ", "");
-        Jws<Claims> claims = jwtUtils.parseJwt(token);
-        return vendedorServicio.obtenerVendedorPorCorreo(claims.getBody().getSubject());
     }
 }
