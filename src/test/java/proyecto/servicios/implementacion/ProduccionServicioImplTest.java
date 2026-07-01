@@ -8,6 +8,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.ClienteActualizarDTO;
 import proyecto.dto.ClienteCrearDTO;
 import proyecto.dto.PrecioClienteRequestDTO;
+import proyecto.dto.ProduccionAjusteManualRequestDTO;
+import proyecto.dto.ProduccionAjusteManualRequestItemDTO;
 import proyecto.dto.ProduccionRegistroItemDTO;
 import proyecto.dto.ProduccionRegistroMultipleDTO;
 import proyecto.dto.ProductoProduccionRequestDTO;
@@ -33,7 +35,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -363,5 +367,162 @@ class ProduccionServicioImplTest {
         assertEquals("Produccion registrada correctamente", respuesta);
         verify(inventarioProduccionRepository, times(2)).save(any(InventarioProduccion.class));
         verify(movimientoProduccionRepository, times(2)).save(any(MovimientoProduccion.class));
+    }
+
+    @Test
+    void listarInventarioAjustableDebeDevolverProductosDeLaSedeDeProduccion() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        Producto producto = new Producto();
+        producto.setCodigo(77L);
+        producto.setNombre("Pastel de pollo");
+        producto.setActivo(true);
+        producto.setEmpresa(empresa);
+
+        InventarioProduccion inventario = new InventarioProduccion();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(450);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(inventarioProduccionRepository.findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(5L))
+                .thenReturn(List.of(inventario));
+
+        var respuesta = produccionServicio.listarInventarioAjustable("prod@correo.com");
+
+        assertEquals(1, respuesta.items().size());
+        assertEquals(77L, respuesta.items().get(0).productoId());
+        assertEquals("Pastel de pollo", respuesta.items().get(0).productoNombre());
+        assertEquals(450, respuesta.items().get(0).stockActual());
+    }
+
+    @Test
+    void ajustarInventarioManualDebeActualizarLosStocksSolicitados() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        Producto producto = new Producto();
+        producto.setCodigo(77L);
+        producto.setNombre("Pastel de pollo");
+        producto.setActivo(true);
+        producto.setEmpresa(empresa);
+
+        InventarioProduccion inventario = new InventarioProduccion();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(450);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(inventarioProduccionRepository.findByProductoCodigoAndSedeIdAndProductoActivoTrue(77L, 5L))
+                .thenReturn(Optional.of(inventario));
+        when(inventarioProduccionRepository.save(any(InventarioProduccion.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.ajustarInventarioManual(
+                "prod@correo.com",
+                new ProduccionAjusteManualRequestDTO(List.of(
+                        new ProduccionAjusteManualRequestItemDTO(77L, 430)
+                ))
+        );
+
+        assertEquals(1, respuesta.actualizados());
+        assertEquals(1, respuesta.resultado().size());
+        assertEquals(77L, respuesta.resultado().get(0).productoId());
+        assertEquals(450, respuesta.resultado().get(0).stockAnterior());
+        assertEquals(430, respuesta.resultado().get(0).stockNuevo());
+        assertEquals(430, inventario.getStockActual());
+        verify(inventarioProduccionRepository).save(inventario);
+    }
+
+    @Test
+    void ajustarInventarioManualDebeOmitirItemsSinCambios() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        Producto producto = new Producto();
+        producto.setCodigo(77L);
+        producto.setNombre("Pastel de pollo");
+        producto.setActivo(true);
+        producto.setEmpresa(empresa);
+
+        InventarioProduccion inventario = new InventarioProduccion();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(450);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(inventarioProduccionRepository.findByProductoCodigoAndSedeIdAndProductoActivoTrue(77L, 5L))
+                .thenReturn(Optional.of(inventario));
+
+        var respuesta = produccionServicio.ajustarInventarioManual(
+                "prod@correo.com",
+                new ProduccionAjusteManualRequestDTO(List.of(
+                        new ProduccionAjusteManualRequestItemDTO(77L, 450)
+                ))
+        );
+
+        assertEquals(0, respuesta.actualizados());
+        assertEquals(0, respuesta.resultado().size());
+        verify(inventarioProduccionRepository, never()).save(any(InventarioProduccion.class));
+    }
+
+    @Test
+    void ajustarInventarioManualDebeRechazarProductosRepetidos() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () ->
+                produccionServicio.ajustarInventarioManual(
+                        "prod@correo.com",
+                        new ProduccionAjusteManualRequestDTO(List.of(
+                                new ProduccionAjusteManualRequestItemDTO(77L, 430),
+                                new ProduccionAjusteManualRequestItemDTO(77L, 420)
+                        ))
+                )
+        );
+
+        assertEquals("Hay productos repetidos en la solicitud: 77", error.getMessage());
     }
 }

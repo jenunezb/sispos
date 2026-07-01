@@ -34,6 +34,13 @@ public interface ProduccionServicio {
 
     List<InventarioProduccionDTO> listarInventario(String correoProduccion);
 
+    ProduccionAjusteManualResponseDTO listarInventarioAjustable(String correoProduccion);
+
+    ProduccionAjusteManualResultadoResponseDTO ajustarInventarioManual(
+            String correoProduccion,
+            ProduccionAjusteManualRequestDTO dto
+    );
+
     List<VentaResponseDTO> listarVentas(String correoProduccion);
 
     List<VentaResponseDTO> listarVentasRango(String correoProduccion, LocalDateTime desde, LocalDateTime hasta);

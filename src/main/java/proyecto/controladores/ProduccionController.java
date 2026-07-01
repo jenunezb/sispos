@@ -140,6 +140,25 @@ public class ProduccionController {
         );
     }
 
+    @GetMapping("/inventario/ajuste-manual")
+    public ResponseEntity<ProduccionAjusteManualResponseDTO> listarInventarioAjustable(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarInventarioAjustable(obtenerCorreo(authorization))
+        );
+    }
+
+    @PutMapping("/inventario/ajuste-manual")
+    public ResponseEntity<ProduccionAjusteManualResultadoResponseDTO> ajustarInventarioManual(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProduccionAjusteManualRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.ajustarInventarioManual(obtenerCorreo(authorization), dto)
+        );
+    }
+
     @PostMapping("/clientes/{clienteId}/precios")
     public ResponseEntity<PrecioClienteDTO> guardarPrecio(
             @RequestHeader("Authorization") String authorization,

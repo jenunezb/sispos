@@ -17,6 +17,7 @@ import proyecto.servicios.interfaces.VentaServicio;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -338,6 +339,49 @@ public class ProduccionServicioImpl implements ProduccionServicio {
     }
 
     @Override
+    public ProduccionAjusteManualResponseDTO listarInventarioAjustable(String correoProduccion) {
+        Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
+
+        List<ProduccionAjusteManualItemDTO> items = inventarioProduccionRepository
+                .findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(sede.getId())
+                .stream()
+                .map(inventario -> new ProduccionAjusteManualItemDTO(
+                        inventario.getProducto().getCodigo(),
+                        inventario.getProducto().getNombre(),
+                        inventario.getStockActual()
+                ))
+                .toList();
+
+        return new ProduccionAjusteManualResponseDTO(items);
+    }
+
+    @Override
+    @Transactional
+    public ProduccionAjusteManualResultadoResponseDTO ajustarInventarioManual(
+            String correoProduccion,
+            ProduccionAjusteManualRequestDTO dto
+    ) {
+        if (dto.items() == null || dto.items().isEmpty()) {
+            throw new IllegalArgumentException("Debe enviar al menos un item para ajustar");
+        }
+
+        Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
+        Map<Long, Boolean> itemsProcesados = new HashMap<>();
+        dto.items().forEach(item -> {
+            if (itemsProcesados.putIfAbsent(item.productoId(), true) != null) {
+                throw new IllegalArgumentException("Hay productos repetidos en la solicitud: " + item.productoId());
+            }
+        });
+
+        List<ProduccionAjusteManualResultadoItemDTO> resultado = dto.items().stream()
+                .map(item -> ajustarInventarioItem(sede, item))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        return new ProduccionAjusteManualResultadoResponseDTO(resultado.size(), resultado);
+    }
+
+    @Override
     public List<VentaResponseDTO> listarVentas(String correoProduccion) {
         obtenerVendedorProduccion(correoProduccion);
         return ventaServicio.listarVentasPorCorreoVendedor(correoProduccion);
@@ -454,6 +498,29 @@ public class ProduccionServicioImpl implements ProduccionServicio {
             throw new RuntimeException("El perfil de produccion no tiene sede asociada");
         }
         return vendedor.getSede();
+    }
+
+    private ProduccionAjusteManualResultadoItemDTO ajustarInventarioItem(
+            Sede sede,
+            ProduccionAjusteManualRequestItemDTO item
+    ) {
+        InventarioProduccion inventario = inventarioProduccionRepository
+                .findByProductoCodigoAndSedeIdAndProductoActivoTrue(item.productoId(), sede.getId())
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado en inventario de produccion"));
+
+        Integer stockAnterior = inventario.getStockActual();
+        if (stockAnterior.equals(item.stockNuevo())) {
+            return null;
+        }
+
+        inventario.setStockActual(item.stockNuevo());
+        inventarioProduccionRepository.save(inventario);
+
+        return new ProduccionAjusteManualResultadoItemDTO(
+                item.productoId(),
+                stockAnterior,
+                inventario.getStockActual()
+        );
     }
 
     private Double resolverPrecioBase(ProductoProduccionRequestDTO dto) {

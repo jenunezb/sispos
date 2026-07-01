@@ -12,5 +12,7 @@ public interface InventarioProduccionRepository extends JpaRepository<Inventario
 
     Optional<InventarioProduccion> findByProductoCodigoAndSedeId(Long productoId, Long sedeId);
 
+    Optional<InventarioProduccion> findByProductoCodigoAndSedeIdAndProductoActivoTrue(Long productoId, Long sedeId);
+
     List<InventarioProduccion> findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(Long sedeId);
 }
