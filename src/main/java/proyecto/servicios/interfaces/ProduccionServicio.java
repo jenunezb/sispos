@@ -41,6 +41,12 @@ public interface ProduccionServicio {
             ProduccionAjusteManualRequestDTO dto
     );
 
+    AdminPinEstadoResponseDTO obtenerEstadoAdminPin(String correoProduccion);
+
+    AdminPinValidacionResponseDTO validarAdminPin(String correoProduccion, AdminPinValidacionRequestDTO dto);
+
+    AdminPinMensajeResponseDTO actualizarAdminPin(String correoProduccion, AdminPinActualizarRequestDTO dto);
+
     List<VentaResponseDTO> listarVentas(String correoProduccion);
 
     List<VentaResponseDTO> listarVentasRango(String correoProduccion, LocalDateTime desde, LocalDateTime hasta);

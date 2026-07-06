@@ -27,15 +27,21 @@ import proyecto.repositorios.InventarioProduccionRepository;
 import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.PrecioClienteProductoRepository;
 import proyecto.repositorios.ProductoRepository;
+import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
 import proyecto.servicios.interfaces.VentaServicio;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -57,6 +63,8 @@ class ProduccionServicioImplTest {
     private InventarioProduccionRepository inventarioProduccionRepository;
     @Mock
     private MovimientoProduccionRepository movimientoProduccionRepository;
+    @Mock
+    private SedeRepository sedeRepository;
     @Mock
     private VentaServicio ventaServicio;
 
@@ -524,5 +532,123 @@ class ProduccionServicioImplTest {
         );
 
         assertEquals("Hay productos repetidos en la solicitud: 77", error.getMessage());
+    }
+
+    @Test
+    void obtenerEstadoAdminPinDebeIndicarSiLaSedeYaTienePin() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+        sede.setAdminPinHash("$2a$10$abc");
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+
+        var respuesta = produccionServicio.obtenerEstadoAdminPin("prod@correo.com");
+
+        assertTrue(respuesta.configurado());
+    }
+
+    @Test
+    void actualizarAdminPinDebeCrearPinCuandoLaSedeNoTieneUno() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(sedeRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(sede));
+        when(sedeRepository.save(any(Sede.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.actualizarAdminPin(
+                "prod@correo.com",
+                new proyecto.dto.AdminPinActualizarRequestDTO(null, "1234")
+        );
+
+        assertEquals("PIN actualizado correctamente", respuesta.mensaje());
+        assertNotNull(sede.getAdminPinHash());
+        assertNotEquals("1234", sede.getAdminPinHash());
+        verify(sedeRepository).save(sede);
+    }
+
+    @Test
+    void validarAdminPinDebeAceptarCuandoElPinCoincide() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+        sede.setAdminPinHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("1234"));
+        sede.setAdminPinIntentosFallidos(2);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(sedeRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(sede));
+        when(sedeRepository.save(any(Sede.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.validarAdminPin(
+                "prod@correo.com",
+                new proyecto.dto.AdminPinValidacionRequestDTO("1234")
+        );
+
+        assertTrue(respuesta.valido());
+        assertEquals("PIN valido", respuesta.mensaje());
+        assertEquals(0, sede.getAdminPinIntentosFallidos());
+        assertNull(sede.getAdminPinBloqueadoHasta());
+    }
+
+    @Test
+    void validarAdminPinDebeBloquearTemporalmenteDespuesDeMaximosIntentos() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+        sede.setAdminPinHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("1234"));
+        sede.setAdminPinIntentosFallidos(4);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(sedeRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(sede));
+        when(sedeRepository.save(any(Sede.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var respuesta = produccionServicio.validarAdminPin(
+                "prod@correo.com",
+                new proyecto.dto.AdminPinValidacionRequestDTO("9999")
+        );
+
+        assertFalse(respuesta.valido());
+        assertEquals("PIN bloqueado temporalmente. Intenta mas tarde", respuesta.mensaje());
+        assertEquals(0, sede.getAdminPinIntentosFallidos());
+        assertNotNull(sede.getAdminPinBloqueadoHasta());
+        assertTrue(sede.getAdminPinBloqueadoHasta().isAfter(LocalDateTime.now().minusMinutes(1)));
     }
 }

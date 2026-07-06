@@ -10,6 +10,15 @@ ALTER TABLE administrador
 ALTER TABLE empresa
     ADD COLUMN IF NOT EXISTS impresion_cocina_habilitada BOOLEAN NOT NULL DEFAULT TRUE;
 
+ALTER TABLE sede
+    ADD COLUMN IF NOT EXISTS admin_pin_hash VARCHAR(120);
+
+ALTER TABLE sede
+    ADD COLUMN IF NOT EXISTS admin_pin_intentos_fallidos INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE sede
+    ADD COLUMN IF NOT EXISTS admin_pin_bloqueado_hasta TIMESTAMP NULL;
+
 CREATE TABLE IF NOT EXISTS administrador_sede (
     administrador_id INTEGER NOT NULL,
     sede_id BIGINT NOT NULL,

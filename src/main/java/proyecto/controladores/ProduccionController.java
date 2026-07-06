@@ -159,6 +159,35 @@ public class ProduccionController {
         );
     }
 
+    @GetMapping("/admin-pin/estado")
+    public ResponseEntity<AdminPinEstadoResponseDTO> obtenerEstadoAdminPin(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.obtenerEstadoAdminPin(obtenerCorreo(authorization))
+        );
+    }
+
+    @PostMapping("/admin-pin/validar")
+    public ResponseEntity<AdminPinValidacionResponseDTO> validarAdminPin(
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody AdminPinValidacionRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.validarAdminPin(obtenerCorreo(authorization), dto)
+        );
+    }
+
+    @PutMapping("/admin-pin")
+    public ResponseEntity<AdminPinMensajeResponseDTO> actualizarAdminPin(
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody AdminPinActualizarRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.actualizarAdminPin(obtenerCorreo(authorization), dto)
+        );
+    }
+
     @PostMapping("/clientes/{clienteId}/precios")
     public ResponseEntity<PrecioClienteDTO> guardarPrecio(
             @RequestHeader("Authorization") String authorization,

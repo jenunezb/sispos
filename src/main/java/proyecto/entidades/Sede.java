@@ -3,6 +3,7 @@ package proyecto.entidades;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,4 +32,13 @@ public class Sede {
     @ManyToOne
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;
+
+    @Column(name = "admin_pin_hash", length = 120)
+    private String adminPinHash;
+
+    @Column(name = "admin_pin_intentos_fallidos", nullable = false)
+    private Integer adminPinIntentosFallidos = 0;
+
+    @Column(name = "admin_pin_bloqueado_hasta")
+    private LocalDateTime adminPinBloqueadoHasta;
 }

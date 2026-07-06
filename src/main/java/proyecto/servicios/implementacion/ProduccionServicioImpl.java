@@ -1,6 +1,7 @@
 package proyecto.servicios.implementacion;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import proyecto.dto.*;
@@ -10,6 +11,7 @@ import proyecto.repositorios.InventarioProduccionRepository;
 import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.PrecioClienteProductoRepository;
 import proyecto.repositorios.ProductoRepository;
+import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
 import proyecto.servicios.interfaces.ProduccionServicio;
 import proyecto.servicios.interfaces.VentaServicio;
@@ -27,13 +29,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProduccionServicioImpl implements ProduccionServicio {
 
+    private static final int ADMIN_PIN_MAX_INTENTOS = 5;
+    private static final long ADMIN_PIN_BLOQUEO_MINUTOS = 15;
+
     private final VendedorRepository vendedorRepository;
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
     private final PrecioClienteProductoRepository precioClienteProductoRepository;
     private final InventarioProduccionRepository inventarioProduccionRepository;
     private final MovimientoProduccionRepository movimientoProduccionRepository;
+    private final SedeRepository sedeRepository;
     private final VentaServicio ventaServicio;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Override
     @Transactional
@@ -382,6 +389,70 @@ public class ProduccionServicioImpl implements ProduccionServicio {
     }
 
     @Override
+    public AdminPinEstadoResponseDTO obtenerEstadoAdminPin(String correoProduccion) {
+        Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
+        return new AdminPinEstadoResponseDTO(pinConfigurado(sede));
+    }
+
+    @Override
+    @Transactional
+    public AdminPinValidacionResponseDTO validarAdminPin(String correoProduccion, AdminPinValidacionRequestDTO dto) {
+        validarFormatoPin(dto.pin(), "El PIN debe tener exactamente 4 digitos numericos");
+
+        Sede sede = obtenerSedeProduccionConBloqueo(correoProduccion);
+        if (!pinConfigurado(sede)) {
+            return new AdminPinValidacionResponseDTO(false, "No hay PIN configurado para esta sede");
+        }
+
+        LocalDateTime ahora = LocalDateTime.now();
+        if (sede.getAdminPinBloqueadoHasta() != null && sede.getAdminPinBloqueadoHasta().isAfter(ahora)) {
+            return new AdminPinValidacionResponseDTO(false, "PIN bloqueado temporalmente. Intenta mas tarde");
+        }
+
+        if (!passwordEncoder.matches(dto.pin(), sede.getAdminPinHash())) {
+            int intentos = (sede.getAdminPinIntentosFallidos() == null ? 0 : sede.getAdminPinIntentosFallidos()) + 1;
+            sede.setAdminPinIntentosFallidos(intentos);
+
+            if (intentos >= ADMIN_PIN_MAX_INTENTOS) {
+                sede.setAdminPinBloqueadoHasta(ahora.plusMinutes(ADMIN_PIN_BLOQUEO_MINUTOS));
+                sede.setAdminPinIntentosFallidos(0);
+                sedeRepository.save(sede);
+                return new AdminPinValidacionResponseDTO(false, "PIN bloqueado temporalmente. Intenta mas tarde");
+            }
+
+            sede.setAdminPinBloqueadoHasta(null);
+            sedeRepository.save(sede);
+            return new AdminPinValidacionResponseDTO(false, "PIN invalido");
+        }
+
+        sede.setAdminPinIntentosFallidos(0);
+        sede.setAdminPinBloqueadoHasta(null);
+        sedeRepository.save(sede);
+        return new AdminPinValidacionResponseDTO(true, "PIN valido");
+    }
+
+    @Override
+    @Transactional
+    public AdminPinMensajeResponseDTO actualizarAdminPin(String correoProduccion, AdminPinActualizarRequestDTO dto) {
+        validarFormatoPin(dto.pinNuevo(), "El PIN nuevo debe tener exactamente 4 digitos numericos");
+
+        Sede sede = obtenerSedeProduccionConBloqueo(correoProduccion);
+        if (pinConfigurado(sede)) {
+            validarFormatoPin(dto.pinActual(), "El PIN actual debe tener exactamente 4 digitos numericos");
+            if (!passwordEncoder.matches(dto.pinActual(), sede.getAdminPinHash())) {
+                throw new RuntimeException("El PIN actual es incorrecto");
+            }
+        }
+
+        sede.setAdminPinHash(passwordEncoder.encode(dto.pinNuevo()));
+        sede.setAdminPinIntentosFallidos(0);
+        sede.setAdminPinBloqueadoHasta(null);
+        sedeRepository.save(sede);
+
+        return new AdminPinMensajeResponseDTO("PIN actualizado correctamente");
+    }
+
+    @Override
     public List<VentaResponseDTO> listarVentas(String correoProduccion) {
         obtenerVendedorProduccion(correoProduccion);
         return ventaServicio.listarVentasPorCorreoVendedor(correoProduccion);
@@ -500,6 +571,12 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         return vendedor.getSede();
     }
 
+    private Sede obtenerSedeProduccionConBloqueo(String correoProduccion) {
+        Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
+        return sedeRepository.findByIdForUpdate(sede.getId())
+                .orElseThrow(() -> new RuntimeException("Sede de produccion no encontrada"));
+    }
+
     private ProduccionAjusteManualResultadoItemDTO ajustarInventarioItem(
             Sede sede,
             ProduccionAjusteManualRequestItemDTO item
@@ -531,5 +608,15 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         }
 
         return precioBase;
+    }
+
+    private boolean pinConfigurado(Sede sede) {
+        return sede.getAdminPinHash() != null && !sede.getAdminPinHash().isBlank();
+    }
+
+    private void validarFormatoPin(String pin, String mensajeError) {
+        if (pin == null || !pin.matches("\\d{4}")) {
+            throw new RuntimeException(mensajeError);
+        }
     }
 }
