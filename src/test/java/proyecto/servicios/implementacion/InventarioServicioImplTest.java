@@ -24,11 +24,13 @@ import proyecto.repositorios.ProductoMateriaPrimaRepository;
 import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.SedeRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -375,5 +377,51 @@ class InventarioServicioImplTest {
         verify(movimientoRepository, never()).save(any(MovimientoInventario.class));
         verify(notificacionStockMinimoService, never()).evaluarYNotificar(any(Inventario.class), any(Integer.class));
         verify(materiaPrimaSedeRepository, times(1)).findByMateriaPrimaAndSede(materiaPrima, sede);
+    }
+
+    @Test
+    void obtenerInventarioDiaDebeReconstruirStockHistoricoDesdeMovimientosPosteriores() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(1007960474L);
+
+        Producto producto = new Producto();
+        producto.setCodigo(77L);
+        producto.setNombre("Pasta milhojas");
+        producto.setEmpresa(empresa);
+        producto.setPrecioVenta(1_000D);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(324);
+
+        when(inventarioRepository.findVisiblesBySedeIdOrderByProductoCodigoAsc(5L))
+                .thenReturn(List.of(inventario));
+        when(movimientoRepository.resumenMovimientosDelDia(
+                5L,
+                LocalDateTime.of(2026, 7, 8, 0, 0),
+                LocalDateTime.of(2026, 7, 8, 23, 59, 59)
+        )).thenReturn(List.<Object[]>of(new Object[]{77L, 108, 0, 0, 432}));
+        when(movimientoRepository.resumenMovimientosPosteriores(
+                5L,
+                LocalDateTime.of(2026, 7, 8, 23, 59, 59)
+        )).thenReturn(List.<Object[]>of(new Object[]{77L, -324}));
+
+        var resultado = inventarioServicio.obtenerInventarioDia(
+                5L,
+                LocalDateTime.of(2026, 7, 8, 0, 0),
+                LocalDateTime.of(2026, 7, 8, 23, 59, 59)
+        );
+
+        assertEquals(1, resultado.size());
+        assertEquals(324, resultado.get(0).stockInicial());
+        assertEquals(648, resultado.get(0).stockActual());
+        assertEquals(432, resultado.get(0).entradas());
+        assertEquals(108, resultado.get(0).ventasDelDia());
+        assertTrue(resultado.get(0).totalVendido() > 0);
     }
 }

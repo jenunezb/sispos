@@ -312,7 +312,13 @@ public class InventarioServicioImpl implements InventarioServicio {
                         sedeId, fechaInicio, fechaFin
                 );
 
+        List<Object[]> movimientosPosteriores =
+                movimientoRepository.resumenMovimientosPosteriores(
+                        sedeId, fechaFin
+                );
+
         Map<Long, int[]> movimientosMap = new HashMap<>();
+        Map<Long, Integer> movimientosPosterioresMap = new HashMap<>();
 
         for (Object[] row : movimientos) {
             movimientosMap.put(
@@ -323,6 +329,13 @@ public class InventarioServicioImpl implements InventarioServicio {
                             ((Number) row[3]).intValue(), // salidas manuales
                             ((Number) row[4]).intValue()  // entradas
                     }
+            );
+        }
+
+        for (Object[] row : movimientosPosteriores) {
+            movimientosPosterioresMap.put(
+                    (Long) row[0],
+                    ((Number) row[1]).intValue()
             );
         }
 
@@ -359,7 +372,12 @@ public class InventarioServicioImpl implements InventarioServicio {
                         producto, sedeId
                 );
             } else {
-                stockActual = calcularStockReal(inv);
+                int stockActualVigente = calcularStockReal(inv);
+                int ajustePosterior = movimientosPosterioresMap.getOrDefault(
+                        codigoProducto,
+                        0
+                );
+                stockActual = stockActualVigente - ajustePosterior;
             }
 
             // -------------------------------

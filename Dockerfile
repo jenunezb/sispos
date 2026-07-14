@@ -1,19 +1,15 @@
 # =========================
 # STAGE 1: BUILD
 # =========================
-FROM eclipse-temurin:17-jdk AS build
+FROM gradle:8.8-jdk17 AS build
 
 WORKDIR /app
 
-COPY gradlew .
-COPY gradle gradle
 COPY build.gradle .
 COPY settings.gradle .
 COPY src src
 
-RUN sed -i 's/\r$//' gradlew
-RUN chmod +x gradlew
-RUN ./gradlew clean bootJar -x test
+RUN gradle --no-daemon clean bootJar -x test
 
 # =========================
 # STAGE 2: RUNTIME
