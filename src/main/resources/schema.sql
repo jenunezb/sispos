@@ -227,5 +227,12 @@ ALTER TABLE IF EXISTS movimiento_produccion
 ALTER TABLE IF EXISTS movimiento_produccion
     ADD COLUMN IF NOT EXISTS stock_nuevo INTEGER NULL;
 
+ALTER TABLE IF EXISTS movimiento_produccion
+    DROP CONSTRAINT IF EXISTS movimiento_produccion_tipo_check;
+
+ALTER TABLE IF EXISTS movimiento_produccion
+    ADD CONSTRAINT movimiento_produccion_tipo_check
+    CHECK (tipo IN ('PRODUCCION', 'DESPACHO', 'AJUSTE'));
+
 CREATE INDEX IF NOT EXISTS idx_movimiento_produccion_sede_tipo_fecha
     ON movimiento_produccion (sede_id, tipo, fecha DESC);
