@@ -21,6 +21,7 @@ import proyecto.entidades.PrecioClienteProducto;
 import proyecto.entidades.Producto;
 import proyecto.entidades.Sede;
 import proyecto.entidades.TipoPerfilVendedor;
+import proyecto.entidades.TipoMovimientoProduccion;
 import proyecto.entidades.Vendedor;
 import proyecto.repositorios.ClienteRepository;
 import proyecto.repositorios.InventarioProduccionRepository;
@@ -31,6 +32,7 @@ import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
 import proyecto.servicios.interfaces.VentaServicio;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -460,6 +463,75 @@ class ProduccionServicioImplTest {
         assertEquals(430, respuesta.resultado().get(0).stockNuevo());
         assertEquals(430, inventario.getStockActual());
         verify(inventarioProduccionRepository).save(inventario);
+        verify(movimientoProduccionRepository).save(argThat(movimiento ->
+                movimiento.getTipo() == TipoMovimientoProduccion.AJUSTE
+                        && movimiento.getCantidad() == -20
+                        && movimiento.getProducto() == producto
+        ));
+    }
+
+    @Test
+    void informeHistoricoDebeDescontarMovimientosPosterioresDelStockActual() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(14L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        Producto producto = new Producto();
+        producto.setCodigo(453L);
+        producto.setNombre("Pastel de pollo");
+        producto.setActivo(true);
+
+        InventarioProduccion inventario = new InventarioProduccion();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(515);
+
+        MovimientoProduccion produccionViernes = movimiento(producto, sede, TipoMovimientoProduccion.PRODUCCION, 503);
+        MovimientoProduccion despachoViernes = movimiento(producto, sede, TipoMovimientoProduccion.DESPACHO, 516);
+        LocalDate fecha = LocalDate.of(2026, 7, 10);
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(movimientoProduccionRepository.findBySedeIdAndFechaBetweenOrderByFechaAsc(
+                14L, fecha.atStartOfDay(), fecha.atTime(java.time.LocalTime.MAX)))
+                .thenReturn(List.of(produccionViernes, despachoViernes));
+        when(movimientoProduccionRepository.sumarVariacionStockPosterior(
+                14L,
+                fecha.atTime(java.time.LocalTime.MAX),
+                TipoMovimientoProduccion.PRODUCCION,
+                TipoMovimientoProduccion.DESPACHO))
+                .thenReturn(List.<Object[]>of(new Object[]{453L, -70L}));
+        when(inventarioProduccionRepository.findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(14L))
+                .thenReturn(List.of(inventario));
+
+        var informe = produccionServicio.obtenerInformeDiario("prod@correo.com", fecha);
+        var resumen = informe.productos().get(0);
+
+        assertEquals(598, resumen.stockInicial());
+        assertEquals(503, resumen.producido());
+        assertEquals(516, resumen.despachado());
+        assertEquals(585, resumen.stockFinal());
+    }
+
+    private MovimientoProduccion movimiento(
+            Producto producto,
+            Sede sede,
+            TipoMovimientoProduccion tipo,
+            int cantidad
+    ) {
+        MovimientoProduccion movimiento = new MovimientoProduccion();
+        movimiento.setProducto(producto);
+        movimiento.setSede(sede);
+        movimiento.setTipo(tipo);
+        movimiento.setCantidad(cantidad);
+        return movimiento;
     }
 
     @Test

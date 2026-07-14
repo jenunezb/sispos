@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import proyecto.dto.*;
 import proyecto.entidades.*;
 import proyecto.repositorios.ClienteRepository;
@@ -372,7 +373,8 @@ public class ProduccionServicioImpl implements ProduccionServicio {
             throw new IllegalArgumentException("Debe enviar al menos un item para ajustar");
         }
 
-        Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
+        Vendedor vendedor = obtenerVendedorProduccion(correoProduccion);
+        Sede sede = obtenerSedeProduccion(vendedor);
         Map<Long, Boolean> itemsProcesados = new HashMap<>();
         dto.items().forEach(item -> {
             if (itemsProcesados.putIfAbsent(item.productoId(), true) != null) {
@@ -381,7 +383,7 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         });
 
         List<ProduccionAjusteManualResultadoItemDTO> resultado = dto.items().stream()
-                .map(item -> ajustarInventarioItem(sede, item))
+                .map(item -> ajustarInventarioItem(vendedor, sede, item))
                 .filter(java.util.Objects::nonNull)
                 .toList();
 
@@ -465,6 +467,7 @@ public class ProduccionServicioImpl implements ProduccionServicio {
     }
 
     @Override
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public InformeProduccionDiaDTO obtenerInformeDiario(String correoProduccion, LocalDate fecha) {
         Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
         LocalDateTime inicio = fecha.atStartOfDay();
@@ -476,6 +479,19 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         Map<Long, List<MovimientoProduccion>> movimientosPorProducto = movimientos.stream()
                 .filter(mov -> mov.getProducto() != null)
                 .collect(Collectors.groupingBy(mov -> mov.getProducto().getCodigo()));
+
+        Map<Long, Integer> variacionPosteriorPorProducto = movimientoProduccionRepository
+                .sumarVariacionStockPosterior(
+                        sede.getId(),
+                        fin,
+                        TipoMovimientoProduccion.PRODUCCION,
+                        TipoMovimientoProduccion.DESPACHO
+                )
+                .stream()
+                .collect(Collectors.toMap(
+                        fila -> ((Number) fila[0]).longValue(),
+                        fila -> ((Number) fila[1]).intValue()
+                ));
 
         List<ResumenProductoProduccionDTO> productos = inventarioProduccionRepository
                 .findBySedeIdAndProductoActivoTrueOrderByProductoCodigoAsc(sede.getId())
@@ -494,8 +510,14 @@ public class ProduccionServicioImpl implements ProduccionServicio {
                             .mapToInt(MovimientoProduccion::getCantidad)
                             .sum();
 
-                    int stockFinal = inventario.getStockActual();
-                    int stockInicial = stockFinal - producido + despachado;
+                    int ajustes = movimientosProducto.stream()
+                            .filter(mov -> mov.getTipo() == TipoMovimientoProduccion.AJUSTE)
+                            .mapToInt(MovimientoProduccion::getCantidad)
+                            .sum();
+
+                    int stockFinal = inventario.getStockActual()
+                            - variacionPosteriorPorProducto.getOrDefault(inventario.getProducto().getCodigo(), 0);
+                    int stockInicial = stockFinal - producido + despachado - ajustes;
 
                     return new ResumenProductoProduccionDTO(
                             inventario.getProducto().getCodigo(),
@@ -578,6 +600,7 @@ public class ProduccionServicioImpl implements ProduccionServicio {
     }
 
     private ProduccionAjusteManualResultadoItemDTO ajustarInventarioItem(
+            Vendedor vendedor,
             Sede sede,
             ProduccionAjusteManualRequestItemDTO item
     ) {
@@ -592,6 +615,15 @@ public class ProduccionServicioImpl implements ProduccionServicio {
 
         inventario.setStockActual(item.stockNuevo());
         inventarioProduccionRepository.save(inventario);
+
+        MovimientoProduccion movimiento = new MovimientoProduccion();
+        movimiento.setProducto(inventario.getProducto());
+        movimiento.setSede(sede);
+        movimiento.setVendedor(vendedor);
+        movimiento.setTipo(TipoMovimientoProduccion.AJUSTE);
+        movimiento.setCantidad(item.stockNuevo() - stockAnterior);
+        movimiento.setObservacion("Ajuste manual de inventario");
+        movimientoProduccionRepository.save(movimiento);
 
         return new ProduccionAjusteManualResultadoItemDTO(
                 item.productoId(),
