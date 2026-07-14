@@ -220,3 +220,12 @@ CREATE INDEX IF NOT EXISTS idx_caja_turno_sede_estado
 
 CREATE INDEX IF NOT EXISTS idx_caja_turno_fecha_apertura
     ON caja_turno (fecha_apertura);
+
+ALTER TABLE IF EXISTS movimiento_produccion
+    ADD COLUMN IF NOT EXISTS stock_anterior INTEGER NULL;
+
+ALTER TABLE IF EXISTS movimiento_produccion
+    ADD COLUMN IF NOT EXISTS stock_nuevo INTEGER NULL;
+
+CREATE INDEX IF NOT EXISTS idx_movimiento_produccion_sede_tipo_fecha
+    ON movimiento_produccion (sede_id, tipo, fecha DESC);

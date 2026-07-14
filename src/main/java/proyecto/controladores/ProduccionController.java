@@ -159,6 +159,15 @@ public class ProduccionController {
         );
     }
 
+    @GetMapping("/inventario/ajuste-manual/historial")
+    public ResponseEntity<List<ProduccionMovimientoManualDTO>> listarHistorialAjustesManuales(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarHistorialAjustesManuales(obtenerCorreo(authorization))
+        );
+    }
+
     @GetMapping("/admin-pin/estado")
     public ResponseEntity<AdminPinEstadoResponseDTO> obtenerEstadoAdminPin(
             @RequestHeader("Authorization") String authorization

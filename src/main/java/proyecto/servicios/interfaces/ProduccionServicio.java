@@ -41,6 +41,8 @@ public interface ProduccionServicio {
             ProduccionAjusteManualRequestDTO dto
     );
 
+    List<ProduccionMovimientoManualDTO> listarHistorialAjustesManuales(String correoProduccion);
+
     AdminPinEstadoResponseDTO obtenerEstadoAdminPin(String correoProduccion);
 
     AdminPinValidacionResponseDTO validarAdminPin(String correoProduccion, AdminPinValidacionRequestDTO dto);

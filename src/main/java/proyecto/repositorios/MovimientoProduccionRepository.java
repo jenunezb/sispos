@@ -17,6 +17,11 @@ public interface MovimientoProduccionRepository extends JpaRepository<Movimiento
 
     List<MovimientoProduccion> findBySedeIdAndFechaBetweenOrderByFechaAsc(Long sedeId, LocalDateTime inicio, LocalDateTime fin);
 
+    List<MovimientoProduccion> findTop200BySedeIdAndTipoOrderByFechaDesc(
+            Long sedeId,
+            TipoMovimientoProduccion tipo
+    );
+
     @Query("""
             select m.producto.codigo,
                    sum(case

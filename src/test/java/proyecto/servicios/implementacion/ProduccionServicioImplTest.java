@@ -466,8 +466,61 @@ class ProduccionServicioImplTest {
         verify(movimientoProduccionRepository).save(argThat(movimiento ->
                 movimiento.getTipo() == TipoMovimientoProduccion.AJUSTE
                         && movimiento.getCantidad() == -20
+                        && movimiento.getStockAnterior() == 450
+                        && movimiento.getStockNuevo() == 430
+                        && movimiento.getVendedor() == produccion
                         && movimiento.getProducto() == producto
         ));
+    }
+
+    @Test
+    void historialAjustesManualesDebeInformarProductoResponsableYHora() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        Vendedor produccion = new Vendedor();
+        produccion.setCodigo(91);
+        produccion.setNombre("Operador Produccion");
+        produccion.setCorreo("prod@correo.com");
+        produccion.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
+        produccion.setEmpresa(empresa);
+        produccion.setSede(sede);
+
+        Producto producto = new Producto();
+        producto.setCodigo(77L);
+        producto.setNombre("Pastel de pollo");
+
+        LocalDateTime fecha = LocalDateTime.of(2026, 7, 14, 9, 30);
+        MovimientoProduccion ajuste = movimiento(producto, sede, TipoMovimientoProduccion.AJUSTE, -20);
+        ajuste.setId(300L);
+        ajuste.setStockAnterior(450);
+        ajuste.setStockNuevo(430);
+        ajuste.setVendedor(produccion);
+        ajuste.setFecha(fecha);
+        ajuste.setObservacion("Ajuste manual de inventario");
+
+        when(vendedorRepository.findByCorreo("prod@correo.com")).thenReturn(Optional.of(produccion));
+        when(movimientoProduccionRepository.findTop200BySedeIdAndTipoOrderByFechaDesc(
+                5L, TipoMovimientoProduccion.AJUSTE))
+                .thenReturn(List.of(ajuste));
+
+        var historial = produccionServicio.listarHistorialAjustesManuales("prod@correo.com");
+        var item = historial.get(0);
+
+        assertEquals(300L, item.id());
+        assertEquals(77L, item.productoId());
+        assertEquals("Pastel de pollo", item.productoNombre());
+        assertEquals(450, item.stockAnterior());
+        assertEquals(430, item.stockNuevo());
+        assertEquals(-20, item.diferencia());
+        assertEquals(91L, item.usuarioId());
+        assertEquals("Operador Produccion", item.usuarioNombre());
+        assertEquals("prod@correo.com", item.usuarioCorreo());
+        assertEquals(fecha, item.fecha());
     }
 
     @Test

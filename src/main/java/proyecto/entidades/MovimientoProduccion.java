@@ -47,6 +47,12 @@ public class MovimientoProduccion {
     @Column(length = 255)
     private String observacion;
 
+    @Column(name = "stock_anterior")
+    private Integer stockAnterior;
+
+    @Column(name = "stock_nuevo")
+    private Integer stockNuevo;
+
     @Column(nullable = false)
     private LocalDateTime fecha;
 

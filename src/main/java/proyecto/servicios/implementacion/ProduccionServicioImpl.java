@@ -391,6 +391,33 @@ public class ProduccionServicioImpl implements ProduccionServicio {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<ProduccionMovimientoManualDTO> listarHistorialAjustesManuales(String correoProduccion) {
+        Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
+
+        return movimientoProduccionRepository
+                .findTop200BySedeIdAndTipoOrderByFechaDesc(sede.getId(), TipoMovimientoProduccion.AJUSTE)
+                .stream()
+                .map(movimiento -> {
+                    Vendedor responsable = movimiento.getVendedor();
+                    return new ProduccionMovimientoManualDTO(
+                            movimiento.getId(),
+                            movimiento.getProducto().getCodigo(),
+                            movimiento.getProducto().getNombre(),
+                            movimiento.getStockAnterior(),
+                            movimiento.getStockNuevo(),
+                            movimiento.getCantidad(),
+                            responsable != null ? (long) responsable.getCodigo() : null,
+                            responsable != null ? responsable.getNombre() : null,
+                            responsable != null ? responsable.getCorreo() : null,
+                            movimiento.getFecha(),
+                            movimiento.getObservacion()
+                    );
+                })
+                .toList();
+    }
+
+    @Override
     public AdminPinEstadoResponseDTO obtenerEstadoAdminPin(String correoProduccion) {
         Sede sede = obtenerSedeProduccion(obtenerVendedorProduccion(correoProduccion));
         return new AdminPinEstadoResponseDTO(pinConfigurado(sede));
@@ -622,6 +649,8 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         movimiento.setVendedor(vendedor);
         movimiento.setTipo(TipoMovimientoProduccion.AJUSTE);
         movimiento.setCantidad(item.stockNuevo() - stockAnterior);
+        movimiento.setStockAnterior(stockAnterior);
+        movimiento.setStockNuevo(item.stockNuevo());
         movimiento.setObservacion("Ajuste manual de inventario");
         movimientoProduccionRepository.save(movimiento);
 
