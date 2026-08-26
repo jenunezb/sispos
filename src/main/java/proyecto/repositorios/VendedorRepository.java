@@ -18,6 +18,8 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
 
     Optional<Vendedor> findByCedula(String cedula);
 
+    Optional<Vendedor> findByCedulaAndSedeId(String cedula, Long sedeId);
+
     boolean existsByCedula(String cedula);
 
     @Query("SELECT e FROM Vendedor e WHERE e.cedula = :cedula")

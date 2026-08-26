@@ -171,9 +171,13 @@ public class AdministradorServicioImpl implements AdministradorServicio {
     @Override
     public void editarVendedor(UsuarioDTO dto) {
 
-        Vendedor vendedor = vendedorRepository.findByCedula(dto.cedula())
+        if (dto.sedeId() == null) {
+            throw new IllegalArgumentException("Debe indicar la sede del vendedor");
+        }
+
+        Vendedor vendedor = vendedorRepository.findByCedulaAndSedeId(dto.cedula(), dto.sedeId())
                 .orElseThrow(() ->
-                        new EntityNotFoundException("Vendedor no encontrado")
+                        new EntityNotFoundException("Vendedor no encontrado en la sede seleccionada")
                 );
 
         vendedor.setNombre(dto.nombre());

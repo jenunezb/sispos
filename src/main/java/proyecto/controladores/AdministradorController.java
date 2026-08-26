@@ -236,7 +236,16 @@ public class AdministradorController {
     }
 
     @PutMapping("/editarVendedor")
-    public ResponseEntity<MensajeDTO> editarVendedor(@Valid @RequestBody UsuarioDTO dto) throws Exception {
+    public ResponseEntity<MensajeDTO> editarVendedor(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody UsuarioDTO dto
+    ) throws Exception {
+
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        if (dto.sedeId() == null) {
+            throw new IllegalArgumentException("Debe indicar la sede del vendedor");
+        }
+        administradorAccesoService.validarAccesoASede(admin, dto.sedeId());
 
         administradorServicio.editarVendedor(dto);
 
