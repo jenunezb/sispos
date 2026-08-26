@@ -67,12 +67,16 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     @Transactional
     public MateriaPrimaSedeResponseDTO crearYVincular(@Valid CrearMateriaPrimaSedeDTO dto) {
 
+        Sede sede = sedeRepository.findById(dto.sedeId())
+                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
+
         MateriaPrima materiaPrima = materiaPrimaRepository
-                .findByNombreIgnoreCase(dto.nombre())
+                .findByNombreIgnoreCaseAndEmpresaNit(dto.nombre(), sede.getEmpresa().getNit())
                 .orElseGet(() -> {
                     MateriaPrima mp = new MateriaPrima();
                     mp.setNombre(dto.nombre());
                     mp.setActiva(dto.activa());
+                    mp.setEmpresa(sede.getEmpresa());
                     return materiaPrimaRepository.save(mp);
                 });
 
@@ -80,9 +84,6 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                 materiaPrima, dto.sedeId())) {
             throw new RuntimeException("La materia prima ya está vinculada a esta sede");
         }
-
-        Sede sede = sedeRepository.findById(dto.sedeId())
-                .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
         MateriaPrimaSede mpSede = new MateriaPrimaSede();
         mpSede.setMateriaPrima(materiaPrima);

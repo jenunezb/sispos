@@ -43,14 +43,19 @@ class MateriaPrimaSedeServiceImplTest {
 
     @Test
     void crearYVincularDebeGuardarMlPorVasoEnCeroPorqueElConsumoEsPorProducto() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+
         MateriaPrima materiaPrima = new MateriaPrima();
         materiaPrima.setCodigo(1L);
         materiaPrima.setNombre("Queso");
 
         Sede sede = new Sede();
         sede.setId(5L);
+        sede.setEmpresa(empresa);
 
-        when(materiaPrimaRepository.findByNombreIgnoreCase("Queso")).thenReturn(Optional.of(materiaPrima));
+        when(materiaPrimaRepository.findByNombreIgnoreCaseAndEmpresaNit("Queso", empresa.getNit()))
+                .thenReturn(Optional.of(materiaPrima));
         when(materiaPrimaSedeRepository.existsByMateriaPrimaAndSedeId(materiaPrima, 5L)).thenReturn(false);
         when(sedeRepository.findById(5L)).thenReturn(Optional.of(sede));
 
