@@ -242,10 +242,15 @@ public class AdministradorController {
     ) throws Exception {
 
         Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
-        if (dto.sedeId() == null) {
-            throw new IllegalArgumentException("Debe indicar la sede del vendedor");
+        Long sedeIdVendedor = dto.sedeId();
+        if (sedeIdVendedor == null) {
+            var vendedor = vendedorServicio.obtenerVendedorPorCorreo(dto.correo());
+            sedeIdVendedor = vendedor.getSede() != null ? vendedor.getSede().getId() : null;
         }
-        administradorAccesoService.validarAccesoASede(admin, dto.sedeId());
+        if (sedeIdVendedor == null) {
+            throw new IllegalArgumentException("El vendedor no tiene una sede asociada");
+        }
+        administradorAccesoService.validarAccesoASede(admin, sedeIdVendedor);
 
         administradorServicio.editarVendedor(dto);
 
