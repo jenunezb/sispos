@@ -55,8 +55,7 @@ public class SedeController {
             @RequestHeader("Authorization") String authorization,
             @PathVariable Long id
     ) {
-        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
-        administradorAccesoService.validarAccesoASede(admin, id);
+        administradorAccesoService.validarAccesoAutenticadoASede(authorization, id);
         return ResponseEntity.ok(
                 new MensajeDTO<>(false, sedeServicio.obtenerPorId(id))
         );

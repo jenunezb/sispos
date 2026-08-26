@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import proyecto.entidades.Administrador;
 import proyecto.entidades.Sede;
+import proyecto.entidades.Vendedor;
 import proyecto.repositorios.AdministradorRepository;
 import proyecto.repositorios.SedeRepository;
+import proyecto.repositorios.VendedorRepository;
 import proyecto.utils.JWTUtils;
 
 import java.util.List;
@@ -19,6 +21,7 @@ public class AdministradorAccesoService {
     private final JWTUtils jwtUtils;
     private final AdministradorRepository administradorRepository;
     private final SedeRepository sedeRepository;
+    private final VendedorRepository vendedorRepository;
 
     public Administrador obtenerAdministradorAutenticado(String authorization) {
         String token = authorization.replace("Bearer ", "");
@@ -75,6 +78,31 @@ public class AdministradorAccesoService {
         if (!tieneAccesoASede(administrador, sedeId)) {
             throw new RuntimeException("No tiene permisos para acceder a la sede seleccionada");
         }
+    }
+
+    public void validarAccesoAutenticadoASede(String authorization, Long sedeId) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+        String rol = (String) claims.getBody().get("rol");
+
+        if ("administrador".equals(rol)) {
+            Administrador administrador = administradorRepository.findByCorreo(correo)
+                    .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+            validarAccesoASede(administrador, sedeId);
+            return;
+        }
+
+        if ("vendedor".equals(rol)) {
+            Vendedor vendedor = vendedorRepository.findByCorreoIgnoreCase(correo)
+                    .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+            if (vendedor.getSede() == null || !sedeId.equals(vendedor.getSede().getId())) {
+                throw new RuntimeException("No tiene permisos para acceder a la sede seleccionada");
+            }
+            return;
+        }
+
+        throw new RuntimeException("No tiene permisos para acceder a este recurso");
     }
 
     public List<Sede> obtenerSedesVisibles(Administrador administrador) {
