@@ -11,6 +11,8 @@ public interface VentaServicio {
 
     Venta crearVenta(VentaRecuestDTO dto);
 
+    Venta crearVentaAutenticada(VentaRecuestDTO dto, String rol);
+
     Venta crearVentaProduccion(String correoProduccion, VentaRecuestDTO dto);
 
     List<VentaResponseDTO> listarVentasPorVendedor(Long vendedorId);

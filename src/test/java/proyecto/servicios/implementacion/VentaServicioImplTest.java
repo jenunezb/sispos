@@ -34,6 +34,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class VentaServicioImplTest {
@@ -54,6 +56,77 @@ class VentaServicioImplTest {
 
     @InjectMocks
     private VentaServicioImpl ventaServicio;
+
+    @Test
+    void rechazaClienteAjenoAntesDeGuardarVentaOModificarInventario() {
+        prepararVentaConCliente();
+        when(clienteRepository.findByIdAndEmpresaNit(7L, 123L)).thenReturn(Optional.empty());
+        var error = assertThrows(RuntimeException.class, () -> ventaServicio.crearVenta(ventaConCliente(7L)));
+        assertTrue(error.getMessage().contains("empresa de la venta"));
+        verify(ventaRepository, never()).save(any());
+        verifyNoInteractions(productoRepository, inventarioRepository, movimientoInventarioRepository);
+    }
+
+    @Test
+    void guardaClientePropioYDevuelveSusDatosCompletos() {
+        Empresa empresa = prepararVentaConCliente();
+        Cliente cliente = new Cliente();
+        cliente.setId(7L);
+        cliente.setEmpresa(empresa);
+        cliente.setNombre("Cliente A");
+        cliente.setDocumento("900-1");
+        cliente.setCorreo("cliente@ejemplo.com");
+        cliente.setTelefono("3001234567");
+        cliente.setDireccion("Calle 1");
+        when(clienteRepository.findByIdAndEmpresaNit(7L, 123L)).thenReturn(Optional.of(cliente));
+        when(ventaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var respuesta = ventaServicio.mapToResponse(ventaServicio.crearVenta(ventaConCliente(7L)));
+        assertEquals(7L, respuesta.clienteId());
+        assertEquals("900-1", respuesta.cliente().documento());
+        assertEquals("cliente@ejemplo.com", respuesta.cliente().correo());
+        assertEquals("3001234567", respuesta.cliente().telefono());
+        assertEquals("Calle 1", respuesta.cliente().direccion());
+    }
+
+    @Test
+    void rechazaClienteInactivo() {
+        prepararVentaConCliente();
+        Cliente cliente = new Cliente();
+        cliente.setActivo(false);
+        when(clienteRepository.findByIdAndEmpresaNit(7L, 123L)).thenReturn(Optional.of(cliente));
+        assertThrows(RuntimeException.class, () -> ventaServicio.crearVenta(ventaConCliente(7L)));
+        verify(ventaRepository, never()).save(any());
+    }
+
+    @Test
+    void consumidorFinalNoConsultaClientes() {
+        prepararVentaConCliente();
+        when(ventaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var respuesta = ventaServicio.mapToResponse(ventaServicio.crearVenta(ventaConCliente(null)));
+        org.junit.jupiter.api.Assertions.assertNull(respuesta.cliente());
+        verifyNoInteractions(clienteRepository);
+    }
+
+    private Empresa prepararVentaConCliente() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(123L);
+        Sede sede = new Sede();
+        sede.setId(22L);
+        sede.setEmpresa(empresa);
+        Vendedor vendedor = new Vendedor();
+        vendedor.setCorreo("vendedor@ejemplo.com");
+        vendedor.setEmpresa(empresa);
+        vendedor.setSede(sede);
+        when(vendedorRepository.findByCorreoIgnoreCase("vendedor@ejemplo.com")).thenReturn(Optional.of(vendedor));
+        when(sedeRepository.findByIdForUpdate(22L)).thenReturn(Optional.of(sede));
+        return empresa;
+    }
+
+    private VentaRecuestDTO ventaConCliente(Long clienteId) {
+        return new VentaRecuestDTO("vendedor@ejemplo.com", 22L, clienteId,
+                List.of(new DetalleVentaDTO(null, "Producto libre", 1000.0, 1)),
+                ModoPago.EFECTIVO, null, null, null);
+    }
 
     @Test
     void cambiarEstadoVentaDebeMarcarInvalidaYValidaPorEmpresa() {
@@ -93,6 +166,7 @@ class VentaServicioImplTest {
         vendedor.setTipoPerfil(TipoPerfilVendedor.PRODUCCION);
         vendedor.setSede(sedeProduccion);
         vendedor.setEmpresa(empresa);
+        sedeProduccion.setEmpresa(empresa);
 
         Cliente cliente = new Cliente();
         cliente.setId(7L);
@@ -120,7 +194,7 @@ class VentaServicioImplTest {
         );
 
         when(vendedorRepository.findByCorreoIgnoreCase("prod@correo.com")).thenReturn(Optional.of(vendedor));
-        when(clienteRepository.findById(7L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.findByIdAndEmpresaNit(7L, empresa.getNit())).thenReturn(Optional.of(cliente));
         when(productoRepository.findById(99L)).thenReturn(Optional.of(producto));
         when(sedeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(sedeProduccion));
         when(inventarioProduccionRepository.findByProductoCodigoAndSedeId(99L, 10L)).thenReturn(Optional.of(inventario));

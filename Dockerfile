@@ -9,7 +9,7 @@ COPY build.gradle .
 COPY settings.gradle .
 COPY src src
 
-RUN gradle --no-daemon clean bootJar -x test
+RUN gradle --no-daemon clean test bootJar
 
 # =========================
 # STAGE 2: RUNTIME
@@ -22,4 +22,4 @@ COPY --from=build /app/build/libs/pos-1.0.0.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java","-Xms64m","-Xmx160m","-XX:+UseSerialGC","-XX:MaxMetaspaceSize=96m","-jar","app.jar"]
+ENTRYPOINT ["java","-Xms128m","-Xmx512m","-XX:+UseSerialGC","-XX:MaxMetaspaceSize=256m","-jar","app.jar"]

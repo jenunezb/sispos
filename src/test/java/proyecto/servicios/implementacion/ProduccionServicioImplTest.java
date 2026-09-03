@@ -152,6 +152,8 @@ class ProduccionServicioImplTest {
         cliente.setNombre("Cliente Viejo");
         cliente.setTelefono("111");
         cliente.setDocumento("DOC1");
+        cliente.setCorreo("conservar@ejemplo.com");
+        cliente.setDireccion("Direccion existente");
         cliente.setEmpresa(empresa);
         cliente.setActivo(true);
 
@@ -168,6 +170,8 @@ class ProduccionServicioImplTest {
         assertEquals("Cliente Nuevo", respuesta.nombre());
         assertEquals("222", respuesta.telefono());
         assertEquals("DOC2", respuesta.documento());
+        assertEquals("conservar@ejemplo.com", respuesta.correo());
+        assertEquals("Direccion existente", respuesta.direccion());
     }
 
     @Test

@@ -52,18 +52,14 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         cliente.setNombre(dto.nombre());
         cliente.setTelefono(dto.telefono());
         cliente.setDocumento(dto.documento());
+        cliente.setCorreo(dto.correo());
+        cliente.setDireccion(dto.direccion());
         cliente.setEmpresa(empresa);
         cliente.setActivo(true);
 
         Cliente guardado = clienteRepository.save(cliente);
 
-        return new ClienteDTO(
-                guardado.getId(),
-                guardado.getNombre(),
-                guardado.getTelefono(),
-                guardado.getDocumento(),
-                guardado.getActivo()
-        );
+        return ClienteDTO.desde(guardado);
     }
 
     @Override
@@ -72,7 +68,7 @@ public class ProduccionServicioImpl implements ProduccionServicio {
 
         return clienteRepository.findByEmpresaNitAndActivoTrueOrderByNombreAsc(empresa.getNit())
                 .stream()
-                .map(c -> new ClienteDTO(c.getId(), c.getNombre(), c.getTelefono(), c.getDocumento(), c.getActivo()))
+                .map(ClienteDTO::desde)
                 .toList();
     }
 
@@ -89,15 +85,17 @@ public class ProduccionServicioImpl implements ProduccionServicio {
         cliente.setTelefono(dto.telefono());
         cliente.setDocumento(dto.documento());
 
+        // Los clientes antiguos de Produccion solo envian los tres campos originales.
+        if (dto.correo() != null) {
+            cliente.setCorreo(dto.correo());
+        }
+        if (dto.direccion() != null) {
+            cliente.setDireccion(dto.direccion());
+        }
+
         Cliente guardado = clienteRepository.save(cliente);
 
-        return new ClienteDTO(
-                guardado.getId(),
-                guardado.getNombre(),
-                guardado.getTelefono(),
-                guardado.getDocumento(),
-                guardado.getActivo()
-        );
+        return ClienteDTO.desde(guardado);
     }
 
     @Override

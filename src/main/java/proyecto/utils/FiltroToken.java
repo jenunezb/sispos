@@ -49,6 +49,8 @@ public class FiltroToken extends OncePerRequestFilter {
             if (requestURI.startsWith("/api/vendedor") || requestURI.startsWith("/api/administrador")
                     || requestURI.startsWith("/api/superadmin")
                     || requestURI.startsWith("/api/produccion")
+                    || requestURI.startsWith("/api/clientes")
+                    || requestURI.startsWith("/api/ventas")
                     || requestURI.startsWith("/api/sedes")
                     || requestURI.startsWith("/api/inventario")
                     || requestURI.startsWith("/api/inventarios")) {
@@ -63,6 +65,8 @@ public class FiltroToken extends OncePerRequestFilter {
                                     || requestURI.startsWith("/api/administrador/cajas"));
 
                     boolean noAutorizado =
+                            ((requestURI.startsWith("/api/clientes") || requestURI.startsWith("/api/ventas"))
+                                    && !"administrador".equals(rol) && !"vendedor".equals(rol) && !"produccion".equals(rol)) ||
                             (requestURI.startsWith("/api/vendedor") && !rol.equals("vendedor")) ||
                                     (requestURI.startsWith("/api/administrador") && !rol.equals("administrador") && !vendedorPuedeUsarRecursosPremium) ||
                                     (requestURI.startsWith("/api/superadmin") && (!rol.equals("administrador") || !Boolean.TRUE.equals(esSuperAdmin))) ||

@@ -8,6 +8,12 @@ group = 'co.com.dominiodigital'
 version = '1.0.0'
 description = 'Sistema POS para inventario de productos'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 repositories {
     mavenCentral()
 }

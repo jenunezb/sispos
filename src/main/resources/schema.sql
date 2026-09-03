@@ -1,6 +1,11 @@
 ALTER TABLE administrador
     ADD COLUMN IF NOT EXISTS es_super_admin BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- Directorio general: se ejecuta antes de la validacion de Hibernate.
+-- Aditivo e idempotente para despliegues y reinicios sin perder clientes existentes.
+ALTER TABLE cliente ADD COLUMN IF NOT EXISTS correo VARCHAR(254);
+ALTER TABLE cliente ADD COLUMN IF NOT EXISTS direccion VARCHAR(255);
+
 ALTER TABLE administrador
     ALTER COLUMN empresa_nit DROP NOT NULL;
 

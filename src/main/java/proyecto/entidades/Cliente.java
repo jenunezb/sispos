@@ -26,6 +26,12 @@ public class Cliente {
     @Column(length = 30)
     private String documento;
 
+    @Column(length = 254)
+    private String correo;
+
+    @Column(length = 255)
+    private String direccion;
+
     @Column(nullable = false)
     private Boolean activo = true;
 

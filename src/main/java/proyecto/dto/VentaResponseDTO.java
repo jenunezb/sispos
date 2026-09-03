@@ -15,6 +15,7 @@ public record VentaResponseDTO(
         String sedeUbicacion,
         Long clienteId,
         String clienteNombre,
+        ClienteDTO cliente,
         Boolean anulado,
         Boolean valido,
         List<DetalleVentaResponseDTO> detalles

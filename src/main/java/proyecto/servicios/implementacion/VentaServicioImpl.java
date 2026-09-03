@@ -7,6 +7,7 @@ import proyecto.dto.DetalleVentaDTO;
 import proyecto.dto.DetalleVentaResponseDTO;
 import proyecto.dto.VentaRecuestDTO;
 import proyecto.dto.VentaResponseDTO;
+import proyecto.dto.ClienteDTO;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.VentaServicio;
@@ -39,7 +40,16 @@ public class VentaServicioImpl implements VentaServicio {
     @Override
     @Transactional(timeout = 20)
     public Venta crearVenta(VentaRecuestDTO dto) {
-        return crearVentaInterna(dto, false);
+        return crearVentaInterna(dto, false, null);
+    }
+
+    @Override
+    @Transactional(timeout = 20)
+    public Venta crearVentaAutenticada(VentaRecuestDTO dto, String rol) {
+        if (!"administrador".equals(rol) && !"vendedor".equals(rol)) {
+            throw new IllegalArgumentException("Rol no autorizado para crear la venta");
+        }
+        return crearVentaInterna(dto, false, rol);
     }
 
     @Override
@@ -55,18 +65,20 @@ public class VentaServicioImpl implements VentaServicio {
                 dto.montoEfectivo(),
                 dto.montoTransferencia()
         );
-        return crearVentaInterna(dtoConCorreo, true);
+        return crearVentaInterna(dtoConCorreo, true, "produccion");
     }
 
-    private Venta crearVentaInterna(VentaRecuestDTO dto, boolean exigirPerfilProduccion) {
+    private Venta crearVentaInterna(VentaRecuestDTO dto, boolean exigirPerfilProduccion, String rol) {
 
         if (dto.detalles() == null || dto.detalles().isEmpty()) {
             throw new RuntimeException("La venta debe contener al menos un detalle");
         }
 
         String correo = dto.correo() == null ? "" : dto.correo().trim();
-        Optional<Vendedor> vendedorOpt = vendedorRepository.findByCorreoIgnoreCase(correo);
-        Optional<Administrador> adminOpt = administradorRepository.findByCorreoIgnoreCase(correo);
+        Optional<Vendedor> vendedorOpt = "administrador".equals(rol) ? Optional.empty()
+                : vendedorRepository.findByCorreoIgnoreCase(correo);
+        Optional<Administrador> adminOpt = rol != null && !"administrador".equals(rol) ? Optional.empty()
+                : administradorRepository.findByCorreoIgnoreCase(correo);
 
         Vendedor vendedor = null;
         Administrador administrador = null;
@@ -105,16 +117,15 @@ public class VentaServicioImpl implements VentaServicio {
 
         Cliente cliente = null;
         if (dto.clienteId() != null) {
-            cliente = clienteRepository.findById(dto.clienteId())
+            if (sede.getEmpresa() == null) {
+                throw new IllegalArgumentException("La sede de la venta no tiene empresa asociada");
+            }
+            cliente = clienteRepository.findByIdAndEmpresaNit(dto.clienteId(), sede.getEmpresa().getNit())
                     .filter(Cliente::getActivo)
-                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado o inactivo"));
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado, inactivo o no pertenece a la empresa de la venta"));
         }
 
-        if (esVendedorProduccion(vendedor)) {
-            if (cliente == null) {
-                throw new RuntimeException("Para perfil produccion el cliente es obligatorio");
-            }
-
+        if (esVendedorProduccion(vendedor) && cliente != null) {
             Empresa empresaProduccion = obtenerEmpresaVendedor(vendedor);
             if (cliente.getEmpresa() == null || !empresaProduccion.getNit().equals(cliente.getEmpresa().getNit())) {
                 throw new RuntimeException("El cliente no pertenece a la empresa del perfil produccion");
@@ -394,6 +405,7 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getSede().getUbicacion(),
                 venta.getCliente() != null ? venta.getCliente().getId() : null,
                 venta.getCliente() != null ? venta.getCliente().getNombre() : null,
+                ClienteDTO.desde(venta.getCliente()),
                 venta.getAnulado(),
                 !Boolean.TRUE.equals(venta.getAnulado()),
                 venta.getDetalles().stream()
