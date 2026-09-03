@@ -11,6 +11,7 @@ import proyecto.dto.*;
 import proyecto.entidades.EstadoComandaCocina;
 import proyecto.entidades.Venta;
 import proyecto.servicios.interfaces.AdministradorServicio;
+import proyecto.servicios.implementacion.ConfiguracionCocinaSedeService;
 import proyecto.servicios.interfaces.ComandaCocinaServicio;
 import proyecto.servicios.interfaces.ProduccionServicio;
 import proyecto.servicios.interfaces.VentaServicio;
@@ -28,6 +29,7 @@ public class ProduccionController {
     private final ProduccionServicio produccionServicio;
     private final VentaServicio ventaServicio;
     private final AdministradorServicio administradorServicio;
+    private final ConfiguracionCocinaSedeService configuracionCocinaSedeService;
     private final ComandaCocinaServicio comandaCocinaServicio;
     private final JWTUtils jwtUtils;
 
@@ -267,10 +269,9 @@ public class ProduccionController {
 
     @GetMapping("/impresion-cocina")
     public ResponseEntity<MensajeDTO<Boolean>> obtenerImpresionCocina(
-            @RequestHeader("Authorization") String authorization
+            @RequestHeader("Authorization") String authorization, @RequestParam Long sedeId
     ) {
-        String correo = obtenerCorreo(authorization);
-        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerImpresionCocinaHabilitada(correo)));
+        return ResponseEntity.ok(new MensajeDTO<>(false, configuracionCocinaSedeService.obtener(authorization, sedeId).habilitada()));
     }
 
     @GetMapping("/comandas-cocina")

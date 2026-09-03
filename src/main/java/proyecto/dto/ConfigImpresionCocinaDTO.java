@@ -1,6 +1,6 @@
 package proyecto.dto;
 
 public record ConfigImpresionCocinaDTO(
-        Boolean habilitada
+        @jakarta.validation.constraints.NotNull Boolean habilitada
 ) {
 }

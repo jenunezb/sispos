@@ -20,6 +20,7 @@ import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VentaRepository;
 import proyecto.servicios.implementacion.AdministradorAccesoService;
 import proyecto.servicios.interfaces.AdministradorServicio;
+import proyecto.servicios.implementacion.ConfiguracionCocinaSedeService;
 import proyecto.servicios.interfaces.InformeInventarioDiaService;
 import proyecto.servicios.interfaces.ProductoServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
@@ -35,6 +36,7 @@ import java.util.List;
 public class AdministradorController {
 
     private final AdministradorServicio administradorServicio;
+    private final ConfiguracionCocinaSedeService configuracionCocinaSedeService;
     private final ProductoServicio productoService;
     private final VendedorServicio vendedorServicio;
     private final InformeInventarioDiaService informeInventarioDiaService;
@@ -325,7 +327,7 @@ public class AdministradorController {
     @GetMapping("/cuentas/{correo}/impresion-cocina")
     public ResponseEntity<MensajeDTO<Boolean>> obtenerImpresionCocina(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable String correo
+            @PathVariable String correo, @RequestParam Long sedeId
     ) {
         Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
 
@@ -333,14 +335,14 @@ public class AdministradorController {
             throw new RuntimeException("No autorizado para consultar esta configuracion");
         }
 
-        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerImpresionCocinaHabilitada(correo)));
+        return ResponseEntity.ok(new MensajeDTO<>(false, configuracionCocinaSedeService.obtener(authorization, sedeId).habilitada()));
     }
 
     @PutMapping("/cuentas/{correo}/impresion-cocina")
     public ResponseEntity<MensajeDTO<String>> actualizarImpresionCocina(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable String correo,
-            @RequestBody ConfigImpresionCocinaDTO dto
+            @PathVariable String correo, @RequestParam Long sedeId,
+            @Valid @RequestBody ConfigImpresionCocinaDTO dto
     ) {
         Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
 
@@ -348,7 +350,8 @@ public class AdministradorController {
             throw new RuntimeException("No autorizado para actualizar esta configuracion");
         }
 
-        String mensaje = administradorServicio.actualizarImpresionCocinaHabilitada(correo, dto.habilitada());
+        configuracionCocinaSedeService.actualizar(authorization, sedeId, dto.habilitada());
+        String mensaje = "Configuracion de cocina de la sede actualizada correctamente";
         return ResponseEntity.ok(new MensajeDTO<>(false, mensaje));
     }
 

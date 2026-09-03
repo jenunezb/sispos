@@ -12,6 +12,7 @@ import proyecto.dto.InventarioVendedorResponseDTO;
 import proyecto.dto.MensajeDTO;
 import proyecto.entidades.Vendedor;
 import proyecto.servicios.interfaces.AdministradorServicio;
+import proyecto.servicios.implementacion.ConfiguracionCocinaSedeService;
 import proyecto.servicios.interfaces.InventarioServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
 import proyecto.utils.JWTUtils;
@@ -29,6 +30,7 @@ public class VendedorController {
     private final InventarioServicio inventarioServicio;
     private final VendedorServicio vendedorServicio;
     private final AdministradorServicio administradorServicio;
+    private final ConfiguracionCocinaSedeService configuracionCocinaSedeService;
     private final JWTUtils jwtUtils;
 
     @GetMapping("/inventario")
@@ -73,10 +75,9 @@ public class VendedorController {
 
     @GetMapping("/impresion-cocina")
     public ResponseEntity<MensajeDTO<Boolean>> obtenerImpresionCocina(
-            @RequestHeader("Authorization") String authorization
+            @RequestHeader("Authorization") String authorization, @RequestParam Long sedeId
     ) {
-        String correo = obtenerCorreo(authorization);
-        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerImpresionCocinaHabilitada(correo)));
+        return ResponseEntity.ok(new MensajeDTO<>(false, configuracionCocinaSedeService.obtener(authorization, sedeId).habilitada()));
     }
 
     private String obtenerCorreo(String authorization) {

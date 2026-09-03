@@ -45,15 +45,15 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
         UsuarioContexto contexto = resolverUsuario(dto.correo());
         Empresa empresa = contexto.obtenerEmpresa();
 
-        if (!Boolean.TRUE.equals(empresa.getImpresionCocinaHabilitada())) {
-            throw new RuntimeException("La impresion de cocina no esta habilitada para esta empresa");
-        }
-
         Sede sede = sedeRepository.findById(dto.sedeId())
                 .orElseThrow(() -> new RuntimeException("Sede no encontrada"));
 
         if (sede.getEmpresa() == null || !empresa.getNit().equals(sede.getEmpresa().getNit())) {
             throw new RuntimeException("La sede no pertenece a la empresa del usuario");
+        }
+
+        if (!Boolean.TRUE.equals(sede.getImpresionCocinaHabilitada())) {
+            throw new RuntimeException("La impresion de cocina no esta habilitada para esta sede");
         }
 
         LocalDateTime ahora = ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime();

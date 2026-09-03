@@ -16,6 +16,9 @@ public class Sede {
 
     private String ubicacion;
 
+    @Column(name = "impresion_cocina_habilitada", nullable = false)
+    private Boolean impresionCocinaHabilitada = true;
+
     @ManyToOne
     @JoinColumn(name = "admin_id")
     private Administrador administrador;

@@ -10,6 +10,21 @@ ALTER TABLE administrador
 ALTER TABLE empresa
     ADD COLUMN IF NOT EXISTS impresion_cocina_habilitada BOOLEAN NOT NULL DEFAULT TRUE;
 
+-- Inicializar solo los valores pendientes; nunca sobrescribir preferencias por sede.
+ALTER TABLE sede
+    ADD COLUMN IF NOT EXISTS impresion_cocina_habilitada BOOLEAN;
+
+UPDATE sede s
+SET impresion_cocina_habilitada = COALESCE(e.impresion_cocina_habilitada, TRUE)
+FROM empresa e
+WHERE s.empresa_id = e.nit AND s.impresion_cocina_habilitada IS NULL;
+
+UPDATE sede SET impresion_cocina_habilitada = TRUE
+WHERE impresion_cocina_habilitada IS NULL;
+
+ALTER TABLE sede ALTER COLUMN impresion_cocina_habilitada SET DEFAULT TRUE;
+ALTER TABLE sede ALTER COLUMN impresion_cocina_habilitada SET NOT NULL;
+
 ALTER TABLE sede
     ADD COLUMN IF NOT EXISTS admin_pin_hash VARCHAR(120);
 

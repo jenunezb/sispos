@@ -44,7 +44,8 @@ class ComandaCocinaServicioImplTest {
     void crearComandaDebeGuardarItemsYResponsableVendedor() {
         Empresa empresa = new Empresa();
         empresa.setNit(900123456L);
-        empresa.setImpresionCocinaHabilitada(true);
+        // La preferencia antigua de empresa no debe bloquear una sede habilitada.
+        empresa.setImpresionCocinaHabilitada(false);
 
         Sede sede = new Sede();
         sede.setId(7L);
@@ -90,14 +91,16 @@ class ComandaCocinaServicioImplTest {
     }
 
     @Test
-    void crearComandaDebeFallarSiLaEmpresaNoTieneImpresionCocinaHabilitada() {
+    void crearComandaDebeFallarSiLaSedeNoTieneImpresionCocinaHabilitada() {
         Empresa empresa = new Empresa();
         empresa.setNit(900123456L);
-        empresa.setImpresionCocinaHabilitada(false);
+        empresa.setImpresionCocinaHabilitada(true);
 
         Sede sede = new Sede();
         sede.setId(7L);
         sede.setEmpresa(empresa);
+
+        sede.setImpresionCocinaHabilitada(false);
 
         Vendedor vendedor = new Vendedor();
         vendedor.setCorreo("vendedor@correo.com");
@@ -114,7 +117,10 @@ class ComandaCocinaServicioImplTest {
         when(administradorRepository.findByCorreoIgnoreCase("vendedor@correo.com")).thenReturn(Optional.empty());
         when(vendedorRepository.findByCorreoIgnoreCase("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
 
-        assertThrows(RuntimeException.class, () -> comandaCocinaServicio.crearComanda(dto));
+        when(sedeRepository.findById(7L)).thenReturn(Optional.of(sede));
+        RuntimeException error = assertThrows(RuntimeException.class, () -> comandaCocinaServicio.crearComanda(dto));
+        assertEquals("La impresion de cocina no esta habilitada para esta sede", error.getMessage());
+        org.mockito.Mockito.verifyNoInteractions(comandaCocinaRepository);
     }
 
     @Test
