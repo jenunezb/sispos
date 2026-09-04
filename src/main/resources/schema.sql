@@ -1,6 +1,16 @@
 ALTER TABLE administrador
     ADD COLUMN IF NOT EXISTS es_super_admin BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- Hibernate genero originalmente este CHECK con los perfiles existentes en ese momento.
+-- Se recrea de forma idempotente para permitir cuentas exclusivas de cocina sin alterar
+-- los valores actuales de vendedor o produccion.
+ALTER TABLE vendedor
+    DROP CONSTRAINT IF EXISTS vendedor_tipo_perfil_check;
+
+ALTER TABLE vendedor
+    ADD CONSTRAINT vendedor_tipo_perfil_check
+    CHECK (tipo_perfil IN ('VENDEDOR', 'PRODUCCION', 'COCINA'));
+
 -- Directorio general: se ejecuta antes de la validacion de Hibernate.
 -- Aditivo e idempotente para despliegues y reinicios sin perder clientes existentes.
 ALTER TABLE cliente ADD COLUMN IF NOT EXISTS correo VARCHAR(254);
