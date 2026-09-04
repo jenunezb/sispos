@@ -6,6 +6,7 @@ import java.time.OffsetTime;
 import java.util.List;
 
 public record DianInvoiceData(
+        DianExtension extension,
         String profileExecutionId,
         String fullNumber,
         String cufe,
@@ -23,6 +24,18 @@ public record DianInvoiceData(
         List<Tax> taxes,
         List<Line> lines
 ) {
+    public record DianExtension(
+            String authorizationNumber,
+            LocalDate authorizationValidFrom,
+            LocalDate authorizationValidUntil,
+            String prefix,
+            long rangeFrom,
+            long rangeTo,
+            String supplierSoftwareId,
+            String softwareSecurityCode,
+            String qrCode
+    ) {}
+
     public record Party(
             String identification,
             String verificationDigit,

@@ -22,6 +22,8 @@ public class DianUblInvoiceBuilder {
     static final String INVOICE_NS = "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2";
     static final String CAC_NS = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
     static final String CBC_NS = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+    static final String EXT_NS = "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2";
+    static final String STS_NS = "dian:gov:co:facturaelectronica:Structures-2-1";
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ssXXX");
 
     public byte[] build(DianInvoiceData invoice) {
@@ -39,8 +41,11 @@ public class DianUblInvoiceBuilder {
             Element root = document.createElementNS(INVOICE_NS, "Invoice");
             root.setAttributeNS(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, "xmlns:cac", CAC_NS);
             root.setAttributeNS(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, "xmlns:cbc", CBC_NS);
+            root.setAttributeNS(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, "xmlns:ext", EXT_NS);
+            root.setAttributeNS(XMLConstants.XMLNS_ATTRIBUTE_NS_URI, "xmlns:sts", STS_NS);
             document.appendChild(root);
 
+            dianExtensions(document, root, invoice);
             text(document, root, CBC_NS, "cbc:UBLVersionID", "UBL 2.1");
             text(document, root, CBC_NS, "cbc:CustomizationID", "10");
             text(document, root, CBC_NS, "cbc:ProfileID", "DIAN 2.1: Factura Electrónica de Venta");
@@ -81,19 +86,71 @@ public class DianUblInvoiceBuilder {
         }
     }
 
+    private void dianExtensions(Document document, Element root, DianInvoiceData invoice) {
+        DianInvoiceData.DianExtension data = invoice.extension();
+        Element extensions = element(document, root, EXT_NS, "ext:UBLExtensions");
+        Element extension = element(document, extensions, EXT_NS, "ext:UBLExtension");
+        Element content = element(document, extension, EXT_NS, "ext:ExtensionContent");
+        Element dian = element(document, content, STS_NS, "sts:DianExtensions");
+
+        Element invoiceControl = element(document, dian, STS_NS, "sts:InvoiceControl");
+        text(document, invoiceControl, STS_NS, "sts:InvoiceAuthorization", data.authorizationNumber());
+        Element period = element(document, invoiceControl, STS_NS, "sts:AuthorizationPeriod");
+        text(document, period, CBC_NS, "cbc:StartDate", data.authorizationValidFrom().toString());
+        text(document, period, CBC_NS, "cbc:EndDate", data.authorizationValidUntil().toString());
+        Element authorized = element(document, invoiceControl, STS_NS, "sts:AuthorizedInvoices");
+        text(document, authorized, STS_NS, "sts:Prefix", data.prefix());
+        text(document, authorized, STS_NS, "sts:From", Long.toString(data.rangeFrom()));
+        text(document, authorized, STS_NS, "sts:To", Long.toString(data.rangeTo()));
+
+        Element source = element(document, dian, STS_NS, "sts:InvoiceSource");
+        Element countryCode = text(document, source, CBC_NS, "cbc:IdentificationCode", invoice.supplier().countryCode());
+        countryCode.setAttribute("listAgencyID", "6");
+        countryCode.setAttribute("listAgencyName", "United Nations Economic Commission for Europe");
+        countryCode.setAttribute("listSchemeURI", "urn:oasis:names:specification:ubl:codelist:gc:CountryIdentificationCode-2.1");
+
+        Element provider = element(document, dian, STS_NS, "sts:SoftwareProvider");
+        Element providerId = text(document, provider, STS_NS, "sts:ProviderID", invoice.supplier().identification());
+        dianIdentifierAttributes(providerId, invoice.supplier());
+        Element softwareId = text(document, provider, STS_NS, "sts:SoftwareID", data.supplierSoftwareId());
+        softwareId.setAttribute("schemeAgencyID", "195");
+        softwareId.setAttribute("schemeAgencyName", "CO, DIAN (Dirección de Impuestos y Aduanas Nacionales)");
+
+        Element securityCode = text(document, dian, STS_NS, "sts:SoftwareSecurityCode", data.softwareSecurityCode());
+        securityCode.setAttribute("schemeAgencyID", "195");
+        securityCode.setAttribute("schemeAgencyName", "CO, DIAN (Dirección de Impuestos y Aduanas Nacionales)");
+
+        Element authorizationProvider = element(document, dian, STS_NS, "sts:AuthorizationProvider");
+        Element dianId = text(document, authorizationProvider, STS_NS, "sts:AuthorizationProviderID", "800197268");
+        dianId.setAttribute("schemeAgencyID", "195");
+        dianId.setAttribute("schemeAgencyName", "CO, DIAN (Dirección de Impuestos y Aduanas Nacionales)");
+        dianId.setAttribute("schemeID", "4");
+        dianId.setAttribute("schemeName", "31");
+        text(document, dian, STS_NS, "sts:QRCode", data.qrCode());
+
+        // The XAdES signer will append the second UBLExtension once it has real signature content.
+    }
+
+    private void dianIdentifierAttributes(Element element, DianInvoiceData.Party party) {
+        element.setAttribute("schemeAgencyID", "195");
+        element.setAttribute("schemeAgencyName", "CO, DIAN (Dirección de Impuestos y Aduanas Nacionales)");
+        element.setAttribute("schemeID", optional(party.verificationDigit()));
+        element.setAttribute("schemeName", party.documentTypeCode());
+    }
+
     private void party(Document document, Element root, String elementName, DianInvoiceData.Party party) {
         Element wrapper = element(document, root, CAC_NS, elementName);
         text(document, wrapper, CBC_NS, "cbc:AdditionalAccountID", party.organizationTypeCode());
         Element partyElement = element(document, wrapper, CAC_NS, "cac:Party");
         Element physicalLocation = element(document, partyElement, CAC_NS, "cac:PhysicalLocation");
-        address(document, physicalLocation, party);
+        address(document, physicalLocation, party, "cac:Address");
         Element taxScheme = element(document, partyElement, CAC_NS, "cac:PartyTaxScheme");
         text(document, taxScheme, CBC_NS, "cbc:RegistrationName", party.registrationName());
         Element companyId = text(document, taxScheme, CBC_NS, "cbc:CompanyID", party.identification());
         companyId.setAttribute("schemeID", optional(party.verificationDigit()));
         companyId.setAttribute("schemeName", party.documentTypeCode());
         text(document, taxScheme, CBC_NS, "cbc:TaxLevelCode", party.taxLevelCode());
-        address(document, taxScheme, party);
+        address(document, taxScheme, party, "cac:RegistrationAddress");
         Element tax = element(document, taxScheme, CAC_NS, "cac:TaxScheme");
         text(document, tax, CBC_NS, "cbc:ID", party.taxCode());
         text(document, tax, CBC_NS, "cbc:Name", party.taxName());
@@ -106,8 +163,8 @@ public class DianUblInvoiceBuilder {
         text(document, contact, CBC_NS, "cbc:ElectronicMail", party.email());
     }
 
-    private void address(Document document, Element parent, DianInvoiceData.Party party) {
-        Element address = element(document, parent, CAC_NS, "cac:Address");
+    private void address(Document document, Element parent, DianInvoiceData.Party party, String elementName) {
+        Element address = element(document, parent, CAC_NS, elementName);
         text(document, address, CBC_NS, "cbc:ID", party.cityCode());
         text(document, address, CBC_NS, "cbc:CityName", party.cityName());
         text(document, address, CBC_NS, "cbc:PostalZone", party.postalCode());
@@ -199,6 +256,7 @@ public class DianUblInvoiceBuilder {
 
     private void validate(DianInvoiceData invoice) {
         if (invoice == null) throw new IllegalArgumentException("La factura es obligatoria");
+        validateExtension(invoice.extension());
         required(invoice.profileExecutionId(), "ambiente");
         if (!List.of("1", "2").contains(invoice.profileExecutionId())) {
             throw new IllegalArgumentException("El ambiente DIAN debe ser 1 o 2");
@@ -227,6 +285,24 @@ public class DianUblInvoiceBuilder {
             required(line.standardCode(), "código estándar del producto");
             requireAmounts(line.lineExtensionAmount(), line.unitPrice(), line.baseQuantity());
             if (line.taxes() == null) throw new IllegalArgumentException("Los impuestos de línea son obligatorios");
+        }
+    }
+
+    private void validateExtension(DianInvoiceData.DianExtension extension) {
+        if (extension == null) throw new IllegalArgumentException("La extensión DIAN es obligatoria");
+        required(extension.authorizationNumber(), "resolución de autorización");
+        required(extension.prefix(), "prefijo autorizado");
+        required(extension.supplierSoftwareId(), "Software ID");
+        required(extension.softwareSecurityCode(), "SoftwareSecurityCode");
+        required(extension.qrCode(), "código QR");
+        if (extension.authorizationValidFrom() == null || extension.authorizationValidUntil() == null) {
+            throw new IllegalArgumentException("La vigencia de la resolución es obligatoria");
+        }
+        if (extension.authorizationValidUntil().isBefore(extension.authorizationValidFrom())) {
+            throw new IllegalArgumentException("La vigencia de la resolución no es válida");
+        }
+        if (extension.rangeFrom() <= 0 || extension.rangeTo() < extension.rangeFrom()) {
+            throw new IllegalArgumentException("El rango autorizado no es válido");
         }
     }
 

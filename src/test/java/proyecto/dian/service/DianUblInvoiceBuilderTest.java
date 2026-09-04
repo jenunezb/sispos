@@ -8,6 +8,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetTime;
 import java.util.List;
@@ -20,6 +22,9 @@ class DianUblInvoiceBuilderTest {
     @Test
     void buildsUtf8NamespaceAwareUblWithoutConcatenatingUnescapedContent() throws Exception {
         byte[] xml = builder.build(invoice("Café & Pan <Especial>"));
+        Path generated = Path.of("build", "dian-validation", "invoice.xml");
+        Files.createDirectories(generated.getParent());
+        Files.write(generated, xml);
         Document document = parse(xml);
 
         assertEquals(DianUblInvoiceBuilder.INVOICE_NS, document.getDocumentElement().getNamespaceURI());
@@ -28,6 +33,11 @@ class DianUblInvoiceBuilderTest {
         assertEquals("Café & Pan <Especial>", document.getElementsByTagNameNS(DianUblInvoiceBuilder.CBC_NS, "Description").item(0).getTextContent());
         assertTrue(new String(xml, StandardCharsets.UTF_8).contains("Café &amp; Pan &lt;Especial&gt;"));
         assertEquals(1, document.getElementsByTagNameNS(DianUblInvoiceBuilder.CAC_NS, "InvoiceLine").getLength());
+        assertEquals("18760000001", document.getElementsByTagNameNS(DianUblInvoiceBuilder.STS_NS, "InvoiceAuthorization").item(0).getTextContent());
+        assertEquals("software-id-publico", document.getElementsByTagNameNS(DianUblInvoiceBuilder.STS_NS, "SoftwareID").item(0).getTextContent());
+        assertEquals(1, document.getElementsByTagNameNS(DianUblInvoiceBuilder.EXT_NS, "UBLExtension").getLength());
+        assertFalse(new String(xml, StandardCharsets.UTF_8).contains("pin-secreto"));
+        assertFalse(new String(xml, StandardCharsets.UTF_8).contains("clave-tecnica-secreta"));
     }
 
     @Test
@@ -39,6 +49,7 @@ class DianUblInvoiceBuilderTest {
                 "ZZ", "No aplica", "cliente@example.com"
         );
         DianInvoiceData invalid = new DianInvoiceData(
+                valid.extension(),
                 valid.profileExecutionId(), valid.fullNumber(), valid.cufe(), valid.issueDate(), valid.issueTime(),
                 valid.currencyCode(), valid.supplier(), invalidCustomer, valid.paymentMeansCode(),
                 valid.lineExtensionAmount(), valid.taxExclusiveAmount(), valid.taxInclusiveAmount(),
@@ -67,6 +78,11 @@ class DianUblInvoiceBuilderTest {
                 new BigDecimal("100.00"), BigDecimal.ONE, List.of(tax)
         );
         return new DianInvoiceData(
+                new DianInvoiceData.DianExtension(
+                        "18760000001", LocalDate.parse("2026-01-01"), LocalDate.parse("2026-12-31"),
+                        "SETP", 1, 5000000, "software-id-publico", "b".repeat(96),
+                        "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=" + "a".repeat(96)
+                ),
                 "2", "SETP1", "a".repeat(96), LocalDate.parse("2026-09-04"),
                 OffsetTime.parse("20:15:00-05:00"), "COP", supplier, customer, "10",
                 new BigDecimal("100.00"), new BigDecimal("100.00"), new BigDecimal("119.00"),

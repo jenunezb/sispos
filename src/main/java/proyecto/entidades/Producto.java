@@ -50,6 +50,9 @@ public class Producto implements Serializable {
     @Column(name = "tarifa_ica", precision = 9, scale = 6)
     private BigDecimal tarifaIca;
 
+    @Column(name = "precio_incluye_impuestos")
+    private Boolean precioIncluyeImpuestos;
+
     @Column(nullable = false)
     private Boolean estado = true;
 

@@ -44,11 +44,20 @@ public class Cliente {
     @Column(name = "municipio_codigo", length = 10)
     private String municipioCodigo;
 
+    @Column(name = "municipio_nombre", length = 100)
+    private String municipioNombre;
+
     @Column(name = "departamento_codigo", length = 10)
     private String departamentoCodigo;
 
+    @Column(name = "departamento_nombre", length = 100)
+    private String departamentoNombre;
+
     @Column(name = "pais_codigo", length = 3)
     private String paisCodigo;
+
+    @Column(name = "pais_nombre", length = 100)
+    private String paisNombre;
 
     @Column(name = "codigo_postal", length = 20)
     private String codigoPostal;
