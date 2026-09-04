@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ComandaCocinaServicio {
 
-    ComandaCocinaResponseDTO crearComanda(ComandaCocinaCrearDTO dto);
+    ComandaCocinaResponseDTO crearComanda(String correoAutenticado, ComandaCocinaCrearDTO dto);
 
     List<ComandaCocinaResponseDTO> listarComandasActivas(String correo);
 

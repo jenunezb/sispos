@@ -149,6 +149,10 @@ public class AdministradorServicioImpl implements AdministradorServicio {
             return TipoPerfilVendedor.PRODUCCION;
         }
 
+        if ("COCINA".equalsIgnoreCase(perfil.trim())) {
+            return TipoPerfilVendedor.COCINA;
+        }
+
         return TipoPerfilVendedor.VENDEDOR;
     }
 

@@ -1,6 +1,7 @@
 package proyecto.controladores;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,9 +48,11 @@ public class VentaController {
 
     @PostMapping("/comandas-cocina")
     public ResponseEntity<ComandaCocinaResponseDTO> crearComandaCocina(
-            @RequestBody ComandaCocinaCrearDTO dto
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ComandaCocinaCrearDTO dto
     ) {
-        return ResponseEntity.ok(comandaCocinaServicio.crearComanda(dto));
+        String correo = jwtUtils.parseJwt(authorization.replace("Bearer ", "")).getBody().getSubject();
+        return ResponseEntity.ok(comandaCocinaServicio.crearComanda(correo, dto));
     }
 
     @GetMapping("/{ventaId}")

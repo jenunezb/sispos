@@ -41,9 +41,11 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         LoginCuentaDTO cuenta = cuentaRepo.findLoginByCorreo(loginDTO.email())
                 .orElseThrow(() -> new RuntimeException("Credenciales incorrectas"));
 
-        if ("vendedor".equals(cuenta.getRol()) && (cuenta.getEstado() == null || cuenta.getEstado() != 1)) {
+        if (esCuentaOperativa(cuenta.getRol()) && (cuenta.getEstado() == null || cuenta.getEstado() != 1)) {
             throw new RuntimeException(
-                    "El vendedor se encuentra desactivado. Comuníquese con el administrador."
+                    "vendedor".equals(cuenta.getRol())
+                            ? "El vendedor se encuentra desactivado. Comuníquese con el administrador."
+                            : "La cuenta se encuentra desactivada. Comuníquese con el administrador."
             );
         }
 
@@ -96,7 +98,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
     }
 
     private PremiumAccesoInfo resolverPremiumAcceso(LoginCuentaDTO cuenta) {
-        if (!"vendedor".equals(cuenta.getRol())) {
+        if (!esCuentaOperativa(cuenta.getRol())) {
             return new PremiumAccesoInfo(null, null, false, false);
         }
 
@@ -115,6 +117,10 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
                     );
                 })
                 .orElseGet(() -> new PremiumAccesoInfo(null, null, false, false));
+    }
+
+    private boolean esCuentaOperativa(String rol) {
+        return "vendedor".equals(rol) || "produccion".equals(rol) || "cocina".equals(rol);
     }
 
     private SuscripcionLoginInfo evaluarSuscripcionLogin(LoginCuentaDTO cuenta) {

@@ -49,6 +49,7 @@ public class FiltroToken extends OncePerRequestFilter {
             if (requestURI.startsWith("/api/vendedor") || requestURI.startsWith("/api/administrador")
                     || requestURI.startsWith("/api/superadmin")
                     || requestURI.startsWith("/api/produccion")
+                    || requestURI.startsWith("/api/cocina")
                     || requestURI.startsWith("/api/clientes")
                     || requestURI.startsWith("/api/ventas")
                     || requestURI.startsWith("/api/sedes")
@@ -71,6 +72,9 @@ public class FiltroToken extends OncePerRequestFilter {
                                     (requestURI.startsWith("/api/administrador") && !rol.equals("administrador") && !vendedorPuedeUsarRecursosPremium) ||
                                     (requestURI.startsWith("/api/superadmin") && (!rol.equals("administrador") || !Boolean.TRUE.equals(esSuperAdmin))) ||
                                     (requestURI.startsWith("/api/produccion") && !rol.equals("produccion"));
+                    noAutorizado = noAutorizado
+                            || (requestURI.startsWith("/api/cocina") && !rol.equals("cocina"))
+                            || (rol.equals("cocina") && !requestURI.startsWith("/api/cocina"));
 
                     if (noAutorizado) {
                         crearRespuestaError("No tiene los permisos para acceder a este recurso",

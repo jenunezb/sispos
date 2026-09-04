@@ -22,6 +22,7 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
                    c.password AS password,
                    CASE
                        WHEN a.codigo IS NOT NULL THEN 'administrador'
+                       WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'COCINA' THEN 'cocina'
                        WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'PRODUCCION' THEN 'produccion'
                        WHEN v.codigo IS NOT NULL THEN 'vendedor'
                        ELSE 'administrador'
@@ -52,8 +53,9 @@ public interface CuentaRepo extends JpaRepository<Cuenta, Integer> {
             WHERE c.correo = :correo
             ORDER BY CASE
                          WHEN a.codigo IS NOT NULL THEN 0
-                         WHEN v.codigo IS NOT NULL AND v.tipo_perfil <> 'PRODUCCION' THEN 1
+                         WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'VENDEDOR' THEN 1
                          WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'PRODUCCION' THEN 2
+                         WHEN v.codigo IS NOT NULL AND v.tipo_perfil = 'COCINA' THEN 3
                          ELSE 3
                      END,
                      c.codigo

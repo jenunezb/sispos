@@ -37,12 +37,12 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
 
     @Override
     @Transactional
-    public ComandaCocinaResponseDTO crearComanda(ComandaCocinaCrearDTO dto) {
+    public ComandaCocinaResponseDTO crearComanda(String correoAutenticado, ComandaCocinaCrearDTO dto) {
         if (dto.detalles() == null || dto.detalles().isEmpty()) {
             throw new RuntimeException("La comanda debe contener al menos un item");
         }
 
-        UsuarioContexto contexto = resolverUsuario(dto.correo());
+        UsuarioContexto contexto = resolverUsuario(correoAutenticado);
         Empresa empresa = contexto.obtenerEmpresa();
 
         Sede sede = sedeRepository.findById(dto.sedeId())
@@ -50,6 +50,10 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
 
         if (sede.getEmpresa() == null || !empresa.getNit().equals(sede.getEmpresa().getNit())) {
             throw new RuntimeException("La sede no pertenece a la empresa del usuario");
+        }
+
+        if (contexto.vendedor() != null && !contexto.obtenerSedeId().equals(sede.getId())) {
+            throw new RuntimeException("La sede no corresponde al usuario autenticado");
         }
 
         if (!Boolean.TRUE.equals(sede.getImpresionCocinaHabilitada())) {
@@ -87,10 +91,14 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
     @Override
     @Transactional(readOnly = true)
     public List<ComandaCocinaResponseDTO> listarComandasActivas(String correo) {
-        Empresa empresa = resolverUsuario(correo).obtenerEmpresa();
+        UsuarioContexto contexto = resolverUsuario(correo);
+        List<ComandaCocina> comandas = contexto.vendedor() != null
+                ? comandaCocinaRepository.findDetalleBySedeIdAndEstadoInOrderByFechaCreacionAsc(
+                        contexto.obtenerSedeId(), ESTADOS_ACTIVOS)
+                : comandaCocinaRepository.findDetalleByEmpresaNitAndEstadoInOrderByFechaCreacionAsc(
+                        contexto.obtenerEmpresa().getNit(), ESTADOS_ACTIVOS);
 
-        return comandaCocinaRepository
-                .findDetalleByEmpresaNitAndEstadoInOrderByFechaCreacionAsc(empresa.getNit(), ESTADOS_ACTIVOS)
+        return comandas
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -99,9 +107,12 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
     @Override
     @Transactional
     public ComandaCocinaResponseDTO actualizarEstado(String correo, Long comandaId, EstadoComandaCocina estado) {
-        Empresa empresa = resolverUsuario(correo).obtenerEmpresa();
+        UsuarioContexto contexto = resolverUsuario(correo);
+        Optional<ComandaCocina> encontrada = contexto.vendedor() != null
+                ? comandaCocinaRepository.findDetalleBySedeIdAndId(contexto.obtenerSedeId(), comandaId)
+                : comandaCocinaRepository.findDetalleByEmpresaNitAndId(contexto.obtenerEmpresa().getNit(), comandaId);
 
-        ComandaCocina comanda = comandaCocinaRepository.findDetalleByEmpresaNitAndId(empresa.getNit(), comandaId)
+        ComandaCocina comanda = encontrada
                 .orElseThrow(() -> new RuntimeException("Comanda no encontrada"));
 
         comanda.setEstado(estado);
@@ -179,6 +190,13 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
             }
 
             throw new RuntimeException("El usuario no tiene empresa asociada");
+        }
+
+        private Long obtenerSedeId() {
+            if (vendedor == null || vendedor.getSede() == null || vendedor.getSede().getId() == null) {
+                throw new RuntimeException("El usuario no tiene una sede asociada");
+            }
+            return vendedor.getSede().getId();
         }
     }
 }

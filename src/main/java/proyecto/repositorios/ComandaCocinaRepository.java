@@ -37,11 +37,42 @@ public interface ComandaCocinaRepository extends JpaRepository<ComandaCocina, Lo
         LEFT JOIN FETCH c.sede s
         LEFT JOIN FETCH c.vendedor
         LEFT JOIN FETCH c.administrador
+        WHERE s.id = :sedeId
+          AND c.estado IN :estados
+        ORDER BY c.fechaCreacion ASC
+    """)
+    List<ComandaCocina> findDetalleBySedeIdAndEstadoInOrderByFechaCreacionAsc(
+            @Param("sedeId") Long sedeId,
+            @Param("estados") Collection<EstadoComandaCocina> estados
+    );
+
+    @Query("""
+        SELECT DISTINCT c
+        FROM ComandaCocina c
+        LEFT JOIN FETCH c.detalles
+        LEFT JOIN FETCH c.sede s
+        LEFT JOIN FETCH c.vendedor
+        LEFT JOIN FETCH c.administrador
         WHERE s.empresa.nit = :empresaNit
           AND c.id = :comandaId
     """)
     Optional<ComandaCocina> findDetalleByEmpresaNitAndId(
             @Param("empresaNit") Long empresaNit,
+            @Param("comandaId") Long comandaId
+    );
+
+    @Query("""
+        SELECT DISTINCT c
+        FROM ComandaCocina c
+        LEFT JOIN FETCH c.detalles
+        LEFT JOIN FETCH c.sede s
+        LEFT JOIN FETCH c.vendedor
+        LEFT JOIN FETCH c.administrador
+        WHERE s.id = :sedeId
+          AND c.id = :comandaId
+    """)
+    Optional<ComandaCocina> findDetalleBySedeIdAndId(
+            @Param("sedeId") Long sedeId,
             @Param("comandaId") Long comandaId
     );
 }

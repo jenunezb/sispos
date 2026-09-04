@@ -77,7 +77,7 @@ class ComandaCocinaServicioImplTest {
             return comanda;
         });
 
-        ComandaCocinaResponseDTO response = comandaCocinaServicio.crearComanda(dto);
+        ComandaCocinaResponseDTO response = comandaCocinaServicio.crearComanda("vendedor@correo.com", dto);
 
         assertEquals(15L, response.id());
         assertEquals(3, response.totalItems());
@@ -118,7 +118,8 @@ class ComandaCocinaServicioImplTest {
         when(vendedorRepository.findByCorreoIgnoreCase("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
 
         when(sedeRepository.findById(7L)).thenReturn(Optional.of(sede));
-        RuntimeException error = assertThrows(RuntimeException.class, () -> comandaCocinaServicio.crearComanda(dto));
+        RuntimeException error = assertThrows(RuntimeException.class,
+                () -> comandaCocinaServicio.crearComanda("vendedor@correo.com", dto));
         assertEquals("La impresion de cocina no esta habilitada para esta sede", error.getMessage());
         org.mockito.Mockito.verifyNoInteractions(comandaCocinaRepository);
     }
@@ -147,7 +148,7 @@ class ComandaCocinaServicioImplTest {
 
         when(administradorRepository.findByCorreoIgnoreCase("produccion@correo.com")).thenReturn(Optional.empty());
         when(vendedorRepository.findByCorreoIgnoreCase("produccion@correo.com")).thenReturn(Optional.of(produccion));
-        when(comandaCocinaRepository.findDetalleByEmpresaNitAndId(900123456L, 3L)).thenReturn(Optional.of(comanda));
+        when(comandaCocinaRepository.findDetalleBySedeIdAndId(9L, 3L)).thenReturn(Optional.of(comanda));
         when(comandaCocinaRepository.save(any(ComandaCocina.class))).thenAnswer(inv -> inv.getArgument(0));
 
         ComandaCocinaResponseDTO response = comandaCocinaServicio.actualizarEstado(
@@ -158,5 +159,28 @@ class ComandaCocinaServicioImplTest {
 
         assertEquals(EstadoComandaCocina.LISTA, response.estado());
         assertNull(response.observaciones());
+    }
+
+    @Test
+    void listarComandasDeCuentaOperativaDebeFiltrarPorSuSede() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+        Sede sede = new Sede();
+        sede.setId(9L);
+        sede.setEmpresa(empresa);
+        Vendedor cocina = new Vendedor();
+        cocina.setCorreo("cocina@correo.com");
+        cocina.setTipoPerfil(TipoPerfilVendedor.COCINA);
+        cocina.setSede(sede);
+
+        when(administradorRepository.findByCorreoIgnoreCase("cocina@correo.com")).thenReturn(Optional.empty());
+        when(vendedorRepository.findByCorreoIgnoreCase("cocina@correo.com")).thenReturn(Optional.of(cocina));
+        when(comandaCocinaRepository.findDetalleBySedeIdAndEstadoInOrderByFechaCreacionAsc(
+                org.mockito.ArgumentMatchers.eq(9L), org.mockito.ArgumentMatchers.anyCollection()))
+                .thenReturn(List.of());
+
+        assertEquals(0, comandaCocinaServicio.listarComandasActivas("cocina@correo.com").size());
+        verify(comandaCocinaRepository).findDetalleBySedeIdAndEstadoInOrderByFechaCreacionAsc(
+                org.mockito.ArgumentMatchers.eq(9L), org.mockito.ArgumentMatchers.anyCollection());
     }
 }
