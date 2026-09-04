@@ -18,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class MesaEstadoEventosService {
 
     private static final long TIMEOUT_MILLIS = 30L * 60L * 1000L;
+    private static final String PADDING_ANTI_BUFFER = " ".repeat(2048);
     private final Map<Long, CopyOnWriteArrayList<SseEmitter>> suscriptoresPorSede = new ConcurrentHashMap<>();
 
     public SseEmitter suscribir(Long sedeId) {
@@ -32,7 +33,10 @@ public class MesaEstadoEventosService {
         emitter.onError(error -> remover.run());
 
         try {
-            emitter.send(SseEmitter.event().name("conectado").data(Map.of("sedeId", sedeId)));
+            emitter.send(SseEmitter.event()
+                    .name("conectado")
+                    .comment(PADDING_ANTI_BUFFER)
+                    .data(Map.of("sedeId", sedeId)));
         } catch (IOException ex) {
             remover.run();
             emitter.completeWithError(ex);
@@ -51,6 +55,7 @@ public class MesaEstadoEventosService {
                 emitter.send(SseEmitter.event()
                         .name("mesa-actualizada")
                         .id(evento.mesa().id() + ":" + evento.mesa().version())
+                        .comment(PADDING_ANTI_BUFFER)
                         .data(payload));
             } catch (IOException | IllegalStateException ex) {
                 remover(evento.sedeId(), emitter);

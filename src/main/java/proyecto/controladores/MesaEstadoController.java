@@ -52,13 +52,17 @@ public class MesaEstadoController {
     }
 
     @GetMapping(value = "/sede/{sedeId}/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter eventosPorSede(
+    public ResponseEntity<SseEmitter> eventosPorSede(
             @RequestHeader("Authorization") String authorization,
             @PathVariable Long sedeId
     ) {
         SessionData sessionData = obtenerSessionData(authorization);
         mesaEstadoServicio.validarAccesoASede(sessionData.correo(), sessionData.rol(), sedeId);
-        return mesaEstadoEventosService.suscribir(sedeId);
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, no-transform")
+                .header("X-Accel-Buffering", "no")
+                .header("Connection", "keep-alive")
+                .body(mesaEstadoEventosService.suscribir(sedeId));
     }
 
     private SessionData obtenerSessionData(String authorization) {
