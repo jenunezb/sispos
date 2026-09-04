@@ -11,6 +11,7 @@ import proyecto.dto.ClienteDTO;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.VentaServicio;
+import proyecto.servicios.interfaces.MesaEstadoServicio;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -36,6 +37,7 @@ public class VentaServicioImpl implements VentaServicio {
     private final InventarioProduccionRepository inventarioProduccionRepository;
     private final MovimientoProduccionRepository movimientoProduccionRepository;
     private final NotificacionStockMinimoService notificacionStockMinimoService;
+    private final MesaEstadoServicio mesaEstadoServicio;
 
     @Override
     @Transactional(timeout = 20)
@@ -63,7 +65,8 @@ public class VentaServicioImpl implements VentaServicio {
                 dto.modoPago(),
                 dto.montoRecibido(),
                 dto.montoEfectivo(),
-                dto.montoTransferencia()
+                dto.montoTransferencia(),
+                dto.mesaId()
         );
         return crearVentaInterna(dtoConCorreo, true, "produccion");
     }
@@ -204,7 +207,9 @@ public class VentaServicioImpl implements VentaServicio {
         venta.setTotal(total);
         aplicarMontosPago(venta, dto, total);
 
-        return ventaRepository.save(venta);
+        Venta ventaGuardada = ventaRepository.save(venta);
+        mesaEstadoServicio.liberarMesaPorVenta(sede.getId(), dto.mesaId());
+        return ventaGuardada;
     }
 
     private void procesarDescuentoInventarioGeneral(Producto producto, Sede sede, Integer cantidad) {

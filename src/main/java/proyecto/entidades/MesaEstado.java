@@ -37,6 +37,31 @@ public class MesaEstado {
     @Column(nullable = false, length = 20)
     private String estado;
 
+    @Column(nullable = false, length = 20)
+    private String tipo;
+
+    @Column(nullable = false)
+    private Boolean visible;
+
+    @Column(name = "orden_visual", nullable = false)
+    private Integer ordenVisual;
+
+    @Column(name = "domicilio_direccion", length = 255)
+    private String domicilioDireccion;
+
+    @Column(name = "domicilio_costo")
+    private Double domicilioCosto;
+
+    @Column(name = "domicilio_nombre_recibe", length = 150)
+    private String domicilioNombreRecibe;
+
+    @Column(name = "domicilio_celular_recibe", length = 30)
+    private String domicilioCelularRecibe;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @Column(name = "fecha_actualizacion", nullable = false)
     private LocalDateTime fechaActualizacion;
 

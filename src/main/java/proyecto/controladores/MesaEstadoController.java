@@ -5,10 +5,13 @@ import io.jsonwebtoken.Jws;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import proyecto.dto.MensajeDTO;
 import proyecto.dto.MesaEstadoDTO;
 import proyecto.servicios.interfaces.MesaEstadoServicio;
+import proyecto.servicios.implementacion.MesaEstadoEventosService;
 import proyecto.utils.JWTUtils;
 
 import java.util.List;
@@ -20,6 +23,7 @@ public class MesaEstadoController {
 
     private final MesaEstadoServicio mesaEstadoServicio;
     private final JWTUtils jwtUtils;
+    private final MesaEstadoEventosService mesaEstadoEventosService;
 
     @GetMapping("/sede/{sedeId}")
     public ResponseEntity<MensajeDTO<List<MesaEstadoDTO>>> listarPorSede(
@@ -45,6 +49,16 @@ public class MesaEstadoController {
                 false,
                 mesaEstadoServicio.guardarMesa(sessionData.correo(), sessionData.rol(), sedeId, mesaId, dto)
         ));
+    }
+
+    @GetMapping(value = "/sede/{sedeId}/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter eventosPorSede(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long sedeId
+    ) {
+        SessionData sessionData = obtenerSessionData(authorization);
+        mesaEstadoServicio.validarAccesoASede(sessionData.correo(), sessionData.rol(), sedeId);
+        return mesaEstadoEventosService.suscribir(sedeId);
     }
 
     private SessionData obtenerSessionData(String authorization) {

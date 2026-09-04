@@ -17,7 +17,7 @@ public interface MesaEstadoRepository extends JpaRepository<MesaEstado, Long> {
         FROM MesaEstado m
         LEFT JOIN FETCH m.items
         WHERE m.sede.id = :sedeId
-        ORDER BY m.mesaReferenciaId ASC
+        ORDER BY m.ordenVisual ASC, m.mesaReferenciaId ASC
     """)
     List<MesaEstado> findDetalleBySedeId(@Param("sedeId") Long sedeId);
 

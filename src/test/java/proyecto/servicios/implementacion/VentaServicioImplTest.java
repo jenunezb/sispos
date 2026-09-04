@@ -21,6 +21,7 @@ import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
 import proyecto.repositorios.VentaRepository;
+import proyecto.servicios.interfaces.MesaEstadoServicio;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +54,7 @@ class VentaServicioImplTest {
     @Mock private InventarioProduccionRepository inventarioProduccionRepository;
     @Mock private MovimientoProduccionRepository movimientoProduccionRepository;
     @Mock private NotificacionStockMinimoService notificacionStockMinimoService;
+    @Mock private MesaEstadoServicio mesaEstadoServicio;
 
     @InjectMocks
     private VentaServicioImpl ventaServicio;

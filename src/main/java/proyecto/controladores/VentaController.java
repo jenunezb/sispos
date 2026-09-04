@@ -38,7 +38,8 @@ public class VentaController {
         } else {
             accesoService.validarSede(authorization, dto.sedeId());
             VentaRecuestDTO autenticada = new VentaRecuestDTO(correo, dto.sedeId(), dto.clienteId(),
-                    dto.detalles(), dto.modoPago(), dto.montoRecibido(), dto.montoEfectivo(), dto.montoTransferencia());
+                    dto.detalles(), dto.modoPago(), dto.montoRecibido(), dto.montoEfectivo(), dto.montoTransferencia(),
+                    dto.mesaId());
             venta = ventaService.crearVentaAutenticada(autenticada, claims.get("rol", String.class));
         }
         return ResponseEntity.ok( ventaService.mapToResponse(venta));

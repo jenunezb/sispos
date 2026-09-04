@@ -199,6 +199,39 @@ CREATE TABLE IF NOT EXISTS gasto_diario (
     CONSTRAINT fk_gasto_diario_administrador FOREIGN KEY (administrador_id) REFERENCES administrador(codigo)
 );
 
+-- Estado compartido del punto de venta. Las columnas son aditivas para conservar
+-- todas las mesas y carritos que ya existan en instalaciones desplegadas.
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS tipo VARCHAR(20);
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS visible BOOLEAN;
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS orden_visual INTEGER;
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS domicilio_direccion VARCHAR(255);
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS domicilio_costo DOUBLE PRECISION;
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS domicilio_nombre_recibe VARCHAR(150);
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS domicilio_celular_recibe VARCHAR(30);
+ALTER TABLE mesa_estado ADD COLUMN IF NOT EXISTS version BIGINT;
+
+UPDATE mesa_estado
+SET tipo = CASE
+        WHEN mesa_referencia_id = 0 THEN 'MOSTRADOR'
+        WHEN mesa_referencia_id = 1 THEN 'BARRA'
+        WHEN mesa_referencia_id IN (9991, 9992, 9993, 9994, 9999) THEN 'DOMICILIO'
+        ELSE 'MESA'
+    END
+WHERE tipo IS NULL;
+
+UPDATE mesa_estado SET visible = TRUE WHERE visible IS NULL;
+UPDATE mesa_estado SET orden_visual = mesa_referencia_id::INTEGER WHERE orden_visual IS NULL;
+UPDATE mesa_estado SET version = 0 WHERE version IS NULL;
+
+ALTER TABLE mesa_estado ALTER COLUMN tipo SET DEFAULT 'MESA';
+ALTER TABLE mesa_estado ALTER COLUMN tipo SET NOT NULL;
+ALTER TABLE mesa_estado ALTER COLUMN visible SET DEFAULT TRUE;
+ALTER TABLE mesa_estado ALTER COLUMN visible SET NOT NULL;
+ALTER TABLE mesa_estado ALTER COLUMN orden_visual SET DEFAULT 0;
+ALTER TABLE mesa_estado ALTER COLUMN orden_visual SET NOT NULL;
+ALTER TABLE mesa_estado ALTER COLUMN version SET DEFAULT 0;
+ALTER TABLE mesa_estado ALTER COLUMN version SET NOT NULL;
+
 ALTER TABLE gasto_diario
     ALTER COLUMN administrador_id DROP NOT NULL;
 

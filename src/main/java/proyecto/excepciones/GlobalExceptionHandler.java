@@ -2,6 +2,7 @@ package proyecto.excepciones;
 
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.QueryTimeoutException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.TransactionTimedOutException;
@@ -11,6 +12,19 @@ import proyecto.dto.MensajeDTO;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler({
+            MesaVersionConflictException.class,
+            ObjectOptimisticLockingFailureException.class
+    })
+    public ResponseEntity<MensajeDTO<String>> manejarConflictoDeVersion(Exception ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new MensajeDTO<>(
+                        true,
+                        "La mesa fue modificada por otro usuario. Recarga su estado antes de volver a guardar."
+                ));
+    }
 
     @ExceptionHandler({
             CannotAcquireLockException.class,

@@ -1,12 +1,15 @@
 package proyecto.servicios.implementacion;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import proyecto.dto.InventarioDTO;
 import proyecto.dto.MesaEstadoDTO;
 import proyecto.dto.MesaEstadoItemDTO;
 import proyecto.entidades.*;
+import proyecto.eventos.MesaEstadoActualizadoEvento;
+import proyecto.excepciones.MesaVersionConflictException;
 import proyecto.repositorios.AdministradorRepository;
 import proyecto.repositorios.MesaEstadoRepository;
 import proyecto.repositorios.SedeRepository;
@@ -28,6 +31,7 @@ public class MesaEstadoServicioImpl implements MesaEstadoServicio {
     private final AdministradorRepository administradorRepository;
     private final VendedorRepository vendedorRepository;
     private final AdministradorAccesoService administradorAccesoService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -54,11 +58,24 @@ public class MesaEstadoServicioImpl implements MesaEstadoServicio {
         MesaEstado mesaEstado = mesaEstadoRepository.findDetalleBySedeIdAndMesaReferenciaId(sedeId, mesaId)
                 .orElseGet(MesaEstado::new);
 
+        if (mesaEstado.getId() != null && dto.version() != null && !dto.version().equals(mesaEstado.getVersion())) {
+            throw new MesaVersionConflictException();
+        }
+
         mesaEstado.setSede(sede);
         mesaEstado.setMesaReferenciaId(mesaId);
         mesaEstado.setNumero(dto.numero() != null ? dto.numero() : 0);
         mesaEstado.setNombre(limpiar(dto.nombre()));
         mesaEstado.setEstado(normalizarEstado(dto.estado(), dto.carrito()));
+        mesaEstado.setTipo(dto.tipo() != null ? normalizarTipo(dto.tipo(), mesaId) : valorODefecto(mesaEstado.getTipo(), inferirTipo(mesaId)));
+        mesaEstado.setVisible(dto.visible() != null ? dto.visible() : valorODefecto(mesaEstado.getVisible(), true));
+        mesaEstado.setOrdenVisual(dto.ordenVisual() != null ? dto.ordenVisual() : valorODefecto(mesaEstado.getOrdenVisual(), ordenPorDefecto(mesaId)));
+        if (dto.tipo() != null) {
+            mesaEstado.setDomicilioDireccion(limpiar(dto.domicilioDireccion()));
+            mesaEstado.setDomicilioCosto(dto.domicilioCosto() == null ? null : Math.max(0D, dto.domicilioCosto()));
+            mesaEstado.setDomicilioNombreRecibe(limpiar(dto.domicilioNombreRecibe()));
+            mesaEstado.setDomicilioCelularRecibe(limpiar(dto.domicilioCelularRecibe()));
+        }
         mesaEstado.setFechaActualizacion(ahoraBogota());
 
         List<MesaEstadoItem> items = new ArrayList<>();
@@ -87,7 +104,9 @@ public class MesaEstadoServicioImpl implements MesaEstadoServicio {
         mesaEstado.getItems().clear();
         mesaEstado.getItems().addAll(items);
 
-        return mapToDto(mesaEstadoRepository.save(mesaEstado));
+        MesaEstadoDTO guardada = mapToDto(mesaEstadoRepository.saveAndFlush(mesaEstado));
+        eventPublisher.publishEvent(new MesaEstadoActualizadoEvento(sedeId, guardada));
+        return guardada;
     }
 
     private MesaEstadoDTO mapToDto(MesaEstado mesaEstado) {
@@ -114,8 +133,39 @@ public class MesaEstadoServicioImpl implements MesaEstadoServicio {
                         item.getCantidad(),
                         item.getTotal()
                 )).toList(),
-                mesaEstado.getNombre()
+                mesaEstado.getNombre(),
+                mesaEstado.getTipo(),
+                mesaEstado.getVisible(),
+                mesaEstado.getOrdenVisual(),
+                mesaEstado.getDomicilioDireccion(),
+                mesaEstado.getDomicilioCosto(),
+                mesaEstado.getDomicilioNombreRecibe(),
+                mesaEstado.getDomicilioCelularRecibe(),
+                mesaEstado.getVersion()
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void validarAccesoASede(String correo, String rol, Long sedeId) {
+        validarAcceso(correo, rol, sedeId);
+    }
+
+    @Override
+    @Transactional
+    public void liberarMesaPorVenta(Long sedeId, Long mesaId) {
+        if (sedeId == null || mesaId == null) return;
+        mesaEstadoRepository.findDetalleBySedeIdAndMesaReferenciaId(sedeId, mesaId).ifPresent(mesa -> {
+            mesa.getItems().clear();
+            mesa.setEstado("LIBRE");
+            mesa.setDomicilioDireccion(null);
+            mesa.setDomicilioCosto(null);
+            mesa.setDomicilioNombreRecibe(null);
+            mesa.setDomicilioCelularRecibe(null);
+            mesa.setFechaActualizacion(ahoraBogota());
+            MesaEstadoDTO liberada = mapToDto(mesaEstadoRepository.saveAndFlush(mesa));
+            eventPublisher.publishEvent(new MesaEstadoActualizadoEvento(sedeId, liberada));
+        });
     }
 
     private void validarAcceso(String correo, String rol, Long sedeId) {
@@ -153,6 +203,32 @@ public class MesaEstadoServicioImpl implements MesaEstadoServicio {
             return "OCUPADA";
         }
         return "LIBRE";
+    }
+
+    private String normalizarTipo(String tipo, Long mesaId) {
+        String normalizado = tipo.trim().toUpperCase();
+        return switch (normalizado) {
+            case "MOSTRADOR", "BARRA", "MESA", "DOMICILIO" -> normalizado;
+            default -> inferirTipo(mesaId);
+        };
+    }
+
+    private String inferirTipo(Long mesaId) {
+        if (mesaId == 0L) return "MOSTRADOR";
+        if (mesaId == 1L) return "BARRA";
+        if (mesaId == 9999L || (mesaId >= 9991L && mesaId <= 9994L)) return "DOMICILIO";
+        return "MESA";
+    }
+
+    private int ordenPorDefecto(Long mesaId) {
+        if (mesaId == 0L) return 0;
+        if (mesaId == 1L) return 1;
+        if (mesaId >= 9991L && mesaId <= 9994L) return 14 + mesaId.intValue() - 9991;
+        return mesaId.intValue();
+    }
+
+    private <T> T valorODefecto(T valor, T defecto) {
+        return valor != null ? valor : defecto;
     }
 
     private LocalDateTime ahoraBogota() {
