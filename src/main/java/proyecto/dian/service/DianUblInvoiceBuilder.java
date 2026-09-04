@@ -179,8 +179,11 @@ public class DianUblInvoiceBuilder {
 
     private void paymentMeans(Document document, Element root, DianInvoiceData invoice) {
         Element payment = element(document, root, CAC_NS, "cac:PaymentMeans");
-        text(document, payment, CBC_NS, "cbc:ID", "1");
+        text(document, payment, CBC_NS, "cbc:ID", invoice.paymentFormCode());
         text(document, payment, CBC_NS, "cbc:PaymentMeansCode", invoice.paymentMeansCode());
+        if (invoice.paymentDueDate() != null) {
+            text(document, payment, CBC_NS, "cbc:PaymentDueDate", invoice.paymentDueDate().toString());
+        }
     }
 
     private void taxTotal(Document document, Element parent, DianInvoiceData.Tax tax, String currency) {
@@ -264,6 +267,7 @@ public class DianUblInvoiceBuilder {
         required(invoice.fullNumber(), "número de factura");
         required(invoice.cufe(), "CUFE");
         required(invoice.currencyCode(), "moneda");
+        required(invoice.paymentFormCode(), "forma de pago");
         required(invoice.paymentMeansCode(), "medio de pago");
         if (invoice.issueDate() == null || invoice.issueTime() == null) {
             throw new IllegalArgumentException("La fecha y hora de emisión son obligatorias");

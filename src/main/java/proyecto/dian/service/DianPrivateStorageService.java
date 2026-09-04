@@ -44,6 +44,25 @@ public class DianPrivateStorageService {
         }
     }
 
+    public byte[] readXml(Long companyNit, Long documentId, String stage) {
+        if (companyNit == null || companyNit <= 0 || documentId == null || documentId <= 0) {
+            throw new IllegalArgumentException("Empresa y documento son obligatorios");
+        }
+        if (stage == null || !stage.matches("request|signed|response")) {
+            throw new IllegalArgumentException("Etapa de almacenamiento no válida");
+        }
+        Path source = root.resolve(companyNit.toString()).resolve(documentId.toString())
+                .resolve(stage + ".xml").normalize();
+        ensureInsideRoot(source);
+        try {
+            return Files.readAllBytes(source);
+        } catch (NoSuchFileException exception) {
+            throw new IllegalStateException("No se encontró el XML DIAN almacenado");
+        } catch (IOException exception) {
+            throw new IllegalStateException("No fue posible leer el documento DIAN", exception);
+        }
+    }
+
     private void ensureInsideRoot(Path path) {
         if (!path.startsWith(root)) throw new IllegalArgumentException("Ruta de almacenamiento no válida");
     }

@@ -49,6 +49,8 @@ public class DianSaleValidationService {
                 requiredText(company.getTipoPersonaFiscal(), "empresa.tipoPersonaFiscal", missing);
                 requiredText(company.getResponsabilidadFiscal(), "empresa.responsabilidadFiscal", missing);
                 requiredText(company.getRegimenFiscal(), "empresa.regimenFiscal", missing);
+                requiredText(company.getTributoCodigo(), "empresa.tributoCodigo", missing);
+                requiredText(company.getTributoNombre(), "empresa.tributoNombre", missing);
                 requiredText(company.getCorreoFacturacion(), "empresa.correoFacturacion", missing);
                 requiredText(first(branch.getDireccionFiscal(), company.getDireccionFiscal()), "emisor.direccionFiscal", missing);
                 requiredText(first(branch.getMunicipioCodigo(), company.getMunicipioCodigo()), "emisor.municipioCodigo", missing);
@@ -71,6 +73,8 @@ public class DianSaleValidationService {
             requiredText(customer.getTipoPersonaFiscal(), "cliente.tipoPersonaFiscal", missing);
             requiredText(customer.getResponsabilidadFiscal(), "cliente.responsabilidadFiscal", missing);
             requiredText(customer.getRegimenFiscal(), "cliente.regimenFiscal", missing);
+            requiredText(customer.getTributoCodigo(), "cliente.tributoCodigo", missing);
+            requiredText(customer.getTributoNombre(), "cliente.tributoNombre", missing);
             requiredText(customer.getDireccion(), "cliente.direccion", missing);
             requiredText(customer.getMunicipioCodigo(), "cliente.municipioCodigo", missing);
             requiredText(customer.getMunicipioNombre(), "cliente.municipioNombre", missing);

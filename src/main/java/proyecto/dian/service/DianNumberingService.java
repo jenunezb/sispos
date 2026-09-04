@@ -74,7 +74,8 @@ public class DianNumberingService {
         range.setCurrentNumber(next);
         ranges.save(range);
         return new AllocatedNumber(range.getId(), range.getPrefix(), next, range.getPrefix() + next,
-                range.getResolutionNumber(), range.getValidFrom(), range.getValidUntil());
+                range.getResolutionNumber(), range.getRangeFrom(), range.getRangeTo(),
+                range.getValidFrom(), range.getValidUntil());
     }
 
     private void validate(DianNumberingRangeRequest request) {
@@ -89,5 +90,6 @@ public class DianNumberingService {
     }
 
     public record AllocatedNumber(Long rangeId, String prefix, long consecutive, String fullNumber,
-                                  String resolutionNumber, LocalDate validFrom, LocalDate validUntil) {}
+                                  String resolutionNumber, long rangeFrom, long rangeTo,
+                                  LocalDate validFrom, LocalDate validUntil) {}
 }

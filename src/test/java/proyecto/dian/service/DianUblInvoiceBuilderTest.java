@@ -51,7 +51,8 @@ class DianUblInvoiceBuilderTest {
         DianInvoiceData invalid = new DianInvoiceData(
                 valid.extension(),
                 valid.profileExecutionId(), valid.fullNumber(), valid.cufe(), valid.issueDate(), valid.issueTime(),
-                valid.currencyCode(), valid.supplier(), invalidCustomer, valid.paymentMeansCode(),
+                valid.currencyCode(), valid.supplier(), invalidCustomer, valid.paymentFormCode(),
+                valid.paymentMeansCode(), valid.paymentDueDate(),
                 valid.lineExtensionAmount(), valid.taxExclusiveAmount(), valid.taxInclusiveAmount(),
                 valid.allowanceTotalAmount(), valid.payableAmount(), valid.taxes(), valid.lines()
         );
@@ -84,7 +85,8 @@ class DianUblInvoiceBuilderTest {
                         "https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey=" + "a".repeat(96)
                 ),
                 "2", "SETP1", "a".repeat(96), LocalDate.parse("2026-09-04"),
-                OffsetTime.parse("20:15:00-05:00"), "COP", supplier, customer, "10",
+                OffsetTime.parse("20:15:00-05:00"), "COP", supplier, customer, "1", "10",
+                LocalDate.parse("2026-09-04"),
                 new BigDecimal("100.00"), new BigDecimal("100.00"), new BigDecimal("119.00"),
                 BigDecimal.ZERO, new BigDecimal("119.00"), List.of(tax), List.of(line)
         );

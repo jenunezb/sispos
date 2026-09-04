@@ -82,6 +82,26 @@ public class DianCertificateService {
         return new DianCertificateResponse(environment, false, null, null);
     }
 
+    SigningMaterial load(DianConfiguration configuration) {
+        if (configuration == null || configuration.getCertificateReference() == null
+                || configuration.getCertificatePasswordEncrypted() == null) {
+            throw new IllegalStateException("Falta cargar el certificado digital P12/PFX");
+        }
+        Long companyNit = configuration.getEmpresa().getNit();
+        String secretContext = context(companyNit, configuration.getEnvironment());
+        try {
+            byte[] encrypted = Files.readAllBytes(resolve(configuration.getCertificateReference()));
+            return new SigningMaterial(
+                    crypto.decryptBytes(encrypted, secretContext + ":certificate"),
+                    crypto.decrypt(configuration.getCertificatePasswordEncrypted(),
+                            secretContext + ":certificate-password"));
+        } catch (java.nio.file.NoSuchFileException exception) {
+            throw new IllegalStateException("No se encontró el certificado digital almacenado");
+        } catch (IOException exception) {
+            throw new IllegalStateException("No fue posible leer el certificado digital", exception);
+        }
+    }
+
     private void validateUpload(MultipartFile file, String password) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("Debe cargar un certificado P12 o PFX");
         if (file.getSize() > MAX_CERTIFICATE_BYTES) throw new IllegalArgumentException("El certificado supera el limite de 5 MB");
@@ -160,4 +180,5 @@ public class DianCertificateService {
     }
 
     private record CertificateInfo(LocalDateTime expiration, String subject) {}
+    record SigningMaterial(byte[] pkcs12, String password) {}
 }

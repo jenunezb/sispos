@@ -25,6 +25,10 @@ public class DianDocumentPreparationService {
     private final DianElectronicDocumentRepository documents;
     private final DianNumberingService numbering;
     private final VentaRepository sales;
+    private final DianInvoiceMapper invoiceMapper;
+    private final DianUblInvoiceBuilder invoiceBuilder;
+    private final DianPrivateStorageService storage;
+    private final DianCryptoService crypto;
 
     public DianDocumentResponse prepare(String authorization, Long saleId, DianDocumentPreparationRequest request) {
         Empresa company = tenantContext.requireCompanyAdministrator(authorization);
@@ -65,6 +69,34 @@ public class DianDocumentPreparationService {
                 ? configuration.getTestSetId() : null);
         document.setStatus(DianDocumentStatus.DRAFT);
         document.setAttempts(0);
+        document = documents.saveAndFlush(document);
+
+        String secretContext = "dian:" + company.getNit() + ":" + request.environment().name();
+        String softwarePin = decryptRequired(configuration.getSoftwarePinEncrypted(), secretContext + ":pin",
+                "Software PIN");
+        String technicalKey = decryptRequired(configuration.getTechnicalKeyEncrypted(),
+                secretContext + ":technical-key", "clave técnica");
+        DianInvoiceData mapped = invoiceMapper.map(sale, request.environment(), allocated,
+                required(configuration.getSoftwareId(), "Software ID"), softwarePin, technicalKey);
+        byte[] xml = invoiceBuilder.build(mapped);
+        document.setCufeOrCude(mapped.cufe());
+        document.setSoftwareSecurityCode(mapped.extension().softwareSecurityCode());
+        document.setRequestXmlStorageReference(storage.storeXml(company.getNit(), document.getId(), "request", xml));
+        document.setStatus(DianDocumentStatus.GENERATED);
         return DianDocumentResponse.from(documents.save(document));
+    }
+
+    private String decryptRequired(String encrypted, String context, String name) {
+        if (encrypted == null || encrypted.isBlank()) {
+            throw new IllegalStateException("Falta configurar " + name + " para generar la factura DIAN");
+        }
+        return crypto.decrypt(encrypted, context);
+    }
+
+    private String required(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Falta configurar " + name + " para generar la factura DIAN");
+        }
+        return value;
     }
 }

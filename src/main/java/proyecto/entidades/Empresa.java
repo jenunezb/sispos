@@ -42,6 +42,12 @@ public class Empresa implements Serializable {
     @Column(name = "regimen_fiscal", length = 100)
     private String regimenFiscal;
 
+    @Column(name = "tributo_codigo", length = 10)
+    private String tributoCodigo;
+
+    @Column(name = "tributo_nombre", length = 100)
+    private String tributoNombre;
+
     @Column(name = "direccion_fiscal", length = 255)
     private String direccionFiscal;
 
