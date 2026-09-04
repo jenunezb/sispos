@@ -14,4 +14,6 @@ public interface VendedorServicio {
     List<VendedorDTO> listarVendedores(Long empresaNit, List<Long> sedeIds);
     Vendedor obtenerVendedorPorCorreo(String correo);
     BalanceSedeVendedor balancePorSedeId(String email, LocalDateTime desde, LocalDateTime hasta);
+
+    BalanceSedeVendedor balanceTurnoActual(String email);
 }

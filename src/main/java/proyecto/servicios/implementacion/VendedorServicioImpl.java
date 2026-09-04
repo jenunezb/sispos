@@ -7,10 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import proyecto.dto.BalanceSedeVendedor;
 import proyecto.dto.VendedorDTO;
 import proyecto.entidades.ModoPago;
+import proyecto.entidades.EstadoCaja;
 import proyecto.entidades.Sede;
 import proyecto.entidades.Vendedor;
 import proyecto.entidades.Venta;
 import proyecto.repositorios.GastoDiarioRepository;
+import proyecto.repositorios.CajaTurnoRepository;
 import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VendedorRepository;
@@ -19,6 +21,8 @@ import proyecto.servicios.interfaces.VendedorServicio;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import proyecto.utils.FechaColombiaUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +35,7 @@ public class VendedorServicioImpl implements VendedorServicio {
     private final MovimientoProduccionRepository movimientoProduccionRepository;
     private final GastoDiarioRepository gastoDiarioRepository;
     private final SuscripcionFeatureService suscripcionFeatureService;
+    private final CajaTurnoRepository cajaTurnoRepository;
 
     @Override
     public void cambiarEstado(Long codigo, Boolean estado) {
@@ -149,6 +154,21 @@ public class VendedorServicioImpl implements VendedorServicio {
                 .gastosEfectivo(gastosEfectivo)
                 .cajaEsperada(ventasEfectivo - gastosEfectivo)
                 .build();
+    }
+
+    @Override
+    public BalanceSedeVendedor balanceTurnoActual(String email) {
+        Vendedor vendedor = vendedorRepository.findByCorreo(email)
+                .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+        if (vendedor.getSede() == null || vendedor.getSede().getId() == null) {
+            throw new RuntimeException("El vendedor no tiene una sede asociada");
+        }
+        Long sedeId = vendedor.getSede().getId();
+        LocalDateTime desde = cajaTurnoRepository
+                .findFirstBySedeIdAndEstadoOrderByFechaAperturaDesc(sedeId, EstadoCaja.ABIERTA)
+                .map(caja -> caja.getFechaApertura())
+                .orElseGet(() -> FechaColombiaUtils.hoy().atStartOfDay());
+        return balancePorSedeId(email, desde, FechaColombiaUtils.ahora());
     }
 
     private double defaultDouble(Double valor) {

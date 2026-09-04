@@ -20,6 +20,7 @@ import proyecto.servicios.interfaces.CajaTurnoServicio;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import proyecto.utils.FechaColombiaUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +43,7 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
         CajaTurno caja = new CajaTurno();
         caja.setSede(sede);
         caja.setAdministradorApertura(administrador);
-        caja.setFechaApertura(LocalDateTime.now());
+        caja.setFechaApertura(FechaColombiaUtils.ahora());
         caja.setEstado(EstadoCaja.ABIERTA);
         caja.setBaseInicial(dto.baseInicial());
         caja.setObservacion(normalizarTexto(dto.observacion()));
@@ -66,7 +67,7 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
         CajaTurno caja = new CajaTurno();
         caja.setSede(sede);
         caja.setVendedorApertura(vendedor);
-        caja.setFechaApertura(LocalDateTime.now());
+        caja.setFechaApertura(FechaColombiaUtils.ahora());
         caja.setEstado(EstadoCaja.ABIERTA);
         caja.setBaseInicial(dto.baseInicial());
         caja.setObservacion(normalizarTexto(dto.observacion()));
@@ -87,7 +88,7 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
             throw new RuntimeException("La caja seleccionada ya fue cerrada");
         }
 
-        LocalDateTime fechaCierre = LocalDateTime.now();
+        LocalDateTime fechaCierre = FechaColombiaUtils.ahora();
         CajaResumenDTO resumen = construirResumen(caja, fechaCierre);
         double efectivoContado = dto.efectivoContado() != null ? dto.efectivoContado() : 0.0;
 
@@ -113,7 +114,7 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
             throw new RuntimeException("La caja seleccionada ya fue cerrada");
         }
 
-        LocalDateTime fechaCierre = LocalDateTime.now();
+        LocalDateTime fechaCierre = FechaColombiaUtils.ahora();
         CajaResumenDTO resumen = construirResumen(caja, fechaCierre);
         double efectivoContado = dto.efectivoContado() != null ? dto.efectivoContado() : 0.0;
 
@@ -154,7 +155,7 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
     }
 
     private CajaTurnoResponseDTO mapToResponse(CajaTurno caja) {
-        CajaResumenDTO resumen = construirResumen(caja, caja.getFechaCierre() != null ? caja.getFechaCierre() : LocalDateTime.now());
+        CajaResumenDTO resumen = construirResumen(caja, caja.getFechaCierre() != null ? caja.getFechaCierre() : FechaColombiaUtils.ahora());
 
         return new CajaTurnoResponseDTO(
                 caja.getId(),

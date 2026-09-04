@@ -51,18 +51,12 @@ public class VendedorController {
             @RequestParam(required = false) String hasta
     ) {
 
-        LocalDateTime fDesde;
-        LocalDateTime fHasta;
-
         if (desde != null && hasta != null) {
-            fDesde = LocalDate.parse(desde).atStartOfDay();
-            fHasta = LocalDate.parse(hasta).atTime(23, 59, 59);
-        } else {
-            fDesde = LocalDate.now().atStartOfDay();
-            fHasta = LocalDate.now().atTime(23, 59, 59);
+            LocalDateTime fDesde = LocalDate.parse(desde).atStartOfDay();
+            LocalDateTime fHasta = LocalDate.parse(hasta).atTime(23, 59, 59);
+            return vendedorServicio.balancePorSedeId(correo, fDesde, fHasta);
         }
-
-        return vendedorServicio.balancePorSedeId(correo, fDesde, fHasta);
+        return vendedorServicio.balanceTurnoActual(correo);
     }
 
     @GetMapping("/logo")

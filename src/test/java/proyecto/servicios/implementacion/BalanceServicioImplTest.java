@@ -6,7 +6,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.BalanceGeneralDTO;
+import proyecto.entidades.CajaTurno;
+import proyecto.entidades.EstadoCaja;
 import proyecto.entidades.Sede;
+import proyecto.repositorios.CajaTurnoRepository;
 import proyecto.repositorios.DetalleVentaRepository;
 import proyecto.repositorios.GastoDiarioRepository;
 import proyecto.repositorios.InventarioRepository;
@@ -15,8 +18,11 @@ import proyecto.repositorios.VentaRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +41,8 @@ class BalanceServicioImplTest {
     private GastoDiarioRepository gastoDiarioRepository;
     @Mock
     private SuscripcionFeatureService suscripcionFeatureService;
+    @Mock
+    private CajaTurnoRepository cajaTurnoRepository;
 
     @InjectMocks
     private BalanceServicioImpl balanceServicio;
@@ -76,5 +84,29 @@ class BalanceServicioImplTest {
 
         verify(sedeRepository).findByEmpresaNit(empresaNit);
         verify(detalleVentaRepository).costoProduccionPorSedeEntreFechas(1L, desde, hasta);
+    }
+
+    @Test
+    void balanceActualUsaAperturaDeCajaAunqueCruceMedianoche() {
+        Long empresaNit = 900123456L;
+        LocalDateTime apertura = LocalDateTime.of(2026, 8, 15, 20, 0);
+        Sede sede = new Sede();
+        sede.setId(1L);
+        sede.setUbicacion("Nocturna");
+        CajaTurno caja = new CajaTurno();
+        caja.setSede(sede);
+        caja.setEstado(EstadoCaja.ABIERTA);
+        caja.setFechaApertura(apertura);
+
+        when(sedeRepository.findByEmpresaNit(empresaNit)).thenReturn(List.of(sede));
+        when(cajaTurnoRepository.findFirstBySedeIdAndEstadoOrderByFechaAperturaDesc(1L, EstadoCaja.ABIERTA))
+                .thenReturn(Optional.of(caja));
+        when(ventaRepository.totalVentasPorSedeEntreFechas(eq(1L), eq(apertura), any(LocalDateTime.class)))
+                .thenReturn(85000.0);
+
+        var balances = balanceServicio.balancePorSedeHoy(empresaNit);
+
+        assertEquals(85000.0, balances.get(0).totalVentas());
+        verify(ventaRepository).totalVentasPorSedeEntreFechas(eq(1L), eq(apertura), any(LocalDateTime.class));
     }
 }

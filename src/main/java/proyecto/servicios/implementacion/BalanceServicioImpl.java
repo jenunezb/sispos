@@ -5,17 +5,20 @@ import org.springframework.stereotype.Service;
 import proyecto.dto.BalanceGeneralDTO;
 import proyecto.dto.BalanceSedeDTO;
 import proyecto.entidades.ModoPago;
+import proyecto.entidades.EstadoCaja;
 import proyecto.entidades.Sede;
 import proyecto.repositorios.DetalleVentaRepository;
 import proyecto.repositorios.GastoDiarioRepository;
 import proyecto.repositorios.InventarioRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.VentaRepository;
+import proyecto.repositorios.CajaTurnoRepository;
 import proyecto.servicios.interfaces.BalanceServicio;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import proyecto.utils.FechaColombiaUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -27,12 +30,11 @@ public class BalanceServicioImpl implements BalanceServicio {
     private final SedeRepository sedeRepository;
     private final GastoDiarioRepository gastoDiarioRepository;
     private final SuscripcionFeatureService suscripcionFeatureService;
+    private final CajaTurnoRepository cajaTurnoRepository;
 
     @Override
     public BalanceGeneralDTO balanceDelDia(Long empresaNit) {
-        LocalDateTime desde = LocalDate.now().atStartOfDay();
-        LocalDateTime hasta = LocalDate.now().atTime(23, 59, 59);
-        return balanceGeneral(empresaNit, desde, hasta);
+        return consolidarBalanceGeneral(balancePorSedeHoy(empresaNit));
     }
 
     @Override
@@ -45,7 +47,10 @@ public class BalanceServicioImpl implements BalanceServicio {
 
         List<Sede> sedes = sedeRepository.findByEmpresaNit(empresaNit);
 
-        return sedes.stream().map(sede -> {
+        return sedes.stream().map(sede -> construirBalanceSede(sede, desde, hasta)).toList();
+    }
+
+    private BalanceSedeDTO construirBalanceSede(Sede sede, LocalDateTime desde, LocalDateTime hasta) {
 
             Double ventas = ventaRepository.totalVentasPorSedeEntreFechas(sede.getId(), desde, hasta);
             Double costo = detalleVentaRepository.costoProduccionPorSedeEntreFechas(sede.getId(), desde, hasta);
@@ -88,17 +93,21 @@ public class BalanceServicioImpl implements BalanceServicio {
                     stock,
                     cantVentas
             );
-
-        }).toList();
     }
 
     @Override
     public List<BalanceSedeDTO> balancePorSedeHoy(Long empresaNit) {
-
-        LocalDateTime desde = LocalDate.now().atStartOfDay();
-        LocalDateTime hasta = LocalDate.now().atTime(23, 59, 59);
-
-        return balancePorSede(empresaNit, desde, hasta);
+        LocalDateTime ahora = FechaColombiaUtils.ahora();
+        LocalDateTime inicioDia = FechaColombiaUtils.hoy().atStartOfDay();
+        return sedeRepository.findByEmpresaNit(empresaNit).stream()
+                .map(sede -> {
+                    LocalDateTime desde = cajaTurnoRepository
+                            .findFirstBySedeIdAndEstadoOrderByFechaAperturaDesc(sede.getId(), EstadoCaja.ABIERTA)
+                            .map(caja -> caja.getFechaApertura())
+                            .orElse(inicioDia);
+                    return construirBalanceSede(sede, desde, ahora);
+                })
+                .toList();
     }
 
     private BalanceGeneralDTO consolidarBalanceGeneral(List<BalanceSedeDTO> balances) {
