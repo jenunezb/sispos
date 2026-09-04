@@ -26,6 +26,33 @@ public class Cliente {
     @Column(length = 30)
     private String documento;
 
+    @Column(name = "tipo_documento_fiscal", length = 10)
+    private String tipoDocumentoFiscal;
+
+    @Column(name = "dv", length = 5)
+    private String dv;
+
+    @Column(name = "tipo_persona_fiscal", length = 10)
+    private String tipoPersonaFiscal;
+
+    @Column(name = "responsabilidad_fiscal", length = 100)
+    private String responsabilidadFiscal;
+
+    @Column(name = "regimen_fiscal", length = 100)
+    private String regimenFiscal;
+
+    @Column(name = "municipio_codigo", length = 10)
+    private String municipioCodigo;
+
+    @Column(name = "departamento_codigo", length = 10)
+    private String departamentoCodigo;
+
+    @Column(name = "pais_codigo", length = 3)
+    private String paisCodigo;
+
+    @Column(name = "codigo_postal", length = 20)
+    private String codigoPostal;
+
     @Column(length = 254)
     private String correo;
 

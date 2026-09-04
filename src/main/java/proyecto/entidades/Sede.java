@@ -16,6 +16,21 @@ public class Sede {
 
     private String ubicacion;
 
+    @Column(name = "direccion_fiscal", length = 255)
+    private String direccionFiscal;
+
+    @Column(name = "municipio_codigo", length = 10)
+    private String municipioCodigo;
+
+    @Column(name = "departamento_codigo", length = 10)
+    private String departamentoCodigo;
+
+    @Column(name = "pais_codigo", length = 3)
+    private String paisCodigo;
+
+    @Column(name = "codigo_postal", length = 20)
+    private String codigoPostal;
+
     @Column(name = "impresion_cocina_habilitada", nullable = false)
     private Boolean impresionCocinaHabilitada = true;
 

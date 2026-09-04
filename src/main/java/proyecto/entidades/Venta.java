@@ -3,6 +3,7 @@ package proyecto.entidades;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @ToString
@@ -18,6 +19,30 @@ public class Venta {
 
     private LocalDateTime fecha;
     private Double total;
+
+    @Column(name = "moneda_codigo", length = 3)
+    private String monedaCodigo;
+
+    @Column(name = "forma_pago_dian", length = 10)
+    private String formaPagoDian;
+
+    @Column(name = "medio_pago_dian", length = 10)
+    private String medioPagoDian;
+
+    @Column(name = "fecha_vencimiento_pago")
+    private LocalDateTime fechaVencimientoPago;
+
+    @Column(name = "subtotal_fiscal", precision = 19, scale = 6)
+    private BigDecimal subtotalFiscal;
+
+    @Column(name = "impuestos_fiscal", precision = 19, scale = 6)
+    private BigDecimal impuestosFiscal;
+
+    @Column(name = "descuentos_fiscal", precision = 19, scale = 6)
+    private BigDecimal descuentosFiscal;
+
+    @Column(name = "total_fiscal", precision = 19, scale = 6)
+    private BigDecimal totalFiscal;
 
     // Puede vender un vendedor
     @ManyToOne
