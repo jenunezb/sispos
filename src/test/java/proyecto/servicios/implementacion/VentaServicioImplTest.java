@@ -15,6 +15,7 @@ import proyecto.repositorios.ClienteRepository;
 import proyecto.repositorios.InventarioProduccionRepository;
 import proyecto.repositorios.InventarioRepository;
 import proyecto.repositorios.MateriaPrimaSedeRepository;
+import proyecto.repositorios.MesaEstadoRepository;
 import proyecto.repositorios.MovimientoInventarioRepository;
 import proyecto.repositorios.MovimientoProduccionRepository;
 import proyecto.repositorios.PrecioClienteProductoRepository;
@@ -56,6 +57,7 @@ class VentaServicioImplTest {
     @Mock private MovimientoProduccionRepository movimientoProduccionRepository;
     @Mock private NotificacionStockMinimoService notificacionStockMinimoService;
     @Mock private MesaEstadoServicio mesaEstadoServicio;
+    @Mock private MesaEstadoRepository mesaEstadoRepository;
 
     @InjectMocks
     private VentaServicioImpl ventaServicio;
@@ -128,7 +130,34 @@ class VentaServicioImplTest {
         assertEquals(3000.0, respuesta.costoDomicilio());
         assertEquals("Laura", respuesta.nombreRecibeDomicilio());
         assertEquals("3001234567", respuesta.celularRecibeDomicilio());
-        assertEquals(15000.0, respuesta.total());
+        assertEquals(12000.0, respuesta.total());
+    }
+
+    @Test
+    void ventaDomicilioRecuperaDatosDeMesaParaFrontendAnterior() {
+        prepararVentaConCliente();
+        MesaEstado mesa = new MesaEstado();
+        mesa.setTipo("DOMICILIO");
+        mesa.setDomicilioDireccion("Carrera 7 # 20-10");
+        mesa.setDomicilioCosto(2500.0);
+        mesa.setDomicilioNombreRecibe("Andres");
+        mesa.setDomicilioCelularRecibe("3100000000");
+        when(mesaEstadoRepository.findDetalleBySedeIdAndMesaReferenciaId(22L, 9991L))
+                .thenReturn(Optional.of(mesa));
+        when(ventaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        VentaRecuestDTO dtoAnterior = new VentaRecuestDTO(
+                "vendedor@ejemplo.com", 22L, null,
+                List.of(new DetalleVentaDTO(null, "Hamburguesa", 10000.0, 1)),
+                ModoPago.EFECTIVO, 12500.0, 12500.0, 0.0, 9991L
+        );
+
+        VentaResponseDTO respuesta = ventaServicio.mapToResponse(ventaServicio.crearVenta(dtoAnterior));
+
+        assertTrue(respuesta.esDomicilio());
+        assertEquals("Carrera 7 # 20-10", respuesta.direccionDomicilio());
+        assertEquals(2500.0, respuesta.costoDomicilio());
+        assertEquals("Andres", respuesta.nombreRecibeDomicilio());
+        assertEquals(10000.0, respuesta.total());
     }
 
     private Empresa prepararVentaConCliente() {

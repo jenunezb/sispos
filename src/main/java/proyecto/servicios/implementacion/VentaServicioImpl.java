@@ -38,6 +38,7 @@ public class VentaServicioImpl implements VentaServicio {
     private final MovimientoProduccionRepository movimientoProduccionRepository;
     private final NotificacionStockMinimoService notificacionStockMinimoService;
     private final MesaEstadoServicio mesaEstadoServicio;
+    private final MesaEstadoRepository mesaEstadoRepository;
 
     @Override
     @Transactional(timeout = 20)
@@ -208,24 +209,36 @@ public class VentaServicioImpl implements VentaServicio {
             total += detalle.getSubtotal();
         }
 
-        boolean esDomicilio = Boolean.TRUE.equals(dto.esDomicilio());
-        double costoDomicilio = esDomicilio && dto.costoDomicilio() != null ? dto.costoDomicilio() : 0.0;
+        MesaEstado mesaOrigen = dto.mesaId() == null ? null : mesaEstadoRepository
+                .findDetalleBySedeIdAndMesaReferenciaId(sede.getId(), dto.mesaId())
+                .orElse(null);
+        boolean esDomicilio = Boolean.TRUE.equals(dto.esDomicilio())
+                || textoPresente(dto.direccionDomicilio())
+                || (dto.costoDomicilio() != null && dto.costoDomicilio() > 0)
+                || (mesaOrigen != null && "DOMICILIO".equalsIgnoreCase(mesaOrigen.getTipo()));
+        String direccionDomicilio = primerTexto(dto.direccionDomicilio(),
+                mesaOrigen != null ? mesaOrigen.getDomicilioDireccion() : null);
+        Double costoInformado = dto.costoDomicilio() != null
+                ? dto.costoDomicilio()
+                : mesaOrigen != null ? mesaOrigen.getDomicilioCosto() : null;
+        double costoDomicilio = esDomicilio && costoInformado != null ? costoInformado : 0.0;
         if (costoDomicilio < 0) {
             throw new RuntimeException("El costo del domicilio no puede ser negativo");
         }
-        if (esDomicilio && (dto.direccionDomicilio() == null || dto.direccionDomicilio().isBlank())) {
+        if (esDomicilio && !textoPresente(direccionDomicilio)) {
             throw new RuntimeException("La direccion del domicilio es obligatoria");
         }
 
         venta.setEsDomicilio(esDomicilio);
-        venta.setDireccionDomicilio(esDomicilio ? dto.direccionDomicilio().trim() : null);
+        venta.setDireccionDomicilio(esDomicilio ? direccionDomicilio : null);
         venta.setCostoDomicilio(costoDomicilio);
-        venta.setNombreRecibeDomicilio(esDomicilio ? textoOpcional(dto.nombreRecibeDomicilio()) : null);
-        venta.setCelularRecibeDomicilio(esDomicilio ? textoOpcional(dto.celularRecibeDomicilio()) : null);
-        total += costoDomicilio;
+        venta.setNombreRecibeDomicilio(esDomicilio ? primerTexto(dto.nombreRecibeDomicilio(),
+                mesaOrigen != null ? mesaOrigen.getDomicilioNombreRecibe() : null) : null);
+        venta.setCelularRecibeDomicilio(esDomicilio ? primerTexto(dto.celularRecibeDomicilio(),
+                mesaOrigen != null ? mesaOrigen.getDomicilioCelularRecibe() : null) : null);
         venta.setDetalles(detalles);
         venta.setTotal(total);
-        aplicarMontosPago(venta, dto, total);
+        aplicarMontosPago(venta, dto, total, costoDomicilio);
 
         Venta ventaGuardada = ventaRepository.save(venta);
         mesaEstadoServicio.liberarMesaPorVenta(sede.getId(), dto.mesaId());
@@ -455,6 +468,15 @@ public class VentaServicioImpl implements VentaServicio {
         return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
+    private boolean textoPresente(String valor) {
+        return textoOpcional(valor) != null;
+    }
+
+    private String primerTexto(String principal, String respaldo) {
+        String limpio = textoOpcional(principal);
+        return limpio != null ? limpio : textoOpcional(respaldo);
+    }
+
     private Long siguienteConsecutivoPorSede(Long sedeId) {
         return ventaRepository.findMaxNumeroConsecutivoBySedeId(sedeId) + 1;
     }
@@ -563,14 +585,15 @@ public class VentaServicioImpl implements VentaServicio {
         throw new RuntimeException("El vendedor no tiene empresa asociada");
     }
 
-    private void aplicarMontosPago(Venta venta, VentaRecuestDTO dto, double total) {
+    private void aplicarMontosPago(Venta venta, VentaRecuestDTO dto, double totalVenta, double costoDomicilio) {
         double montoEfectivo = 0.0;
         double montoTransferencia = 0.0;
+        double totalCobrado = totalVenta + costoDomicilio;
 
         if (venta.getModoPago() == ModoPago.EFECTIVO) {
-            montoEfectivo = total;
+            montoEfectivo = totalVenta;
         } else if (venta.getModoPago() == ModoPago.TRANSFERENCIA) {
-            montoTransferencia = total;
+            montoTransferencia = totalVenta;
         } else if (venta.getModoPago() == ModoPago.MIXTO) {
             if (dto.montoEfectivo() == null || dto.montoTransferencia() == null) {
                 throw new RuntimeException("Para pago mixto debes enviar montoEfectivo y montoTransferencia");
@@ -583,9 +606,15 @@ public class VentaServicioImpl implements VentaServicio {
                 throw new RuntimeException("En pago mixto ambos montos deben ser mayores a 0");
             }
 
-            if (Math.abs((montoEfectivo + montoTransferencia) - total) > 0.01d) {
+            if (Math.abs((montoEfectivo + montoTransferencia) - totalCobrado) > 0.01d) {
                 throw new RuntimeException("La suma de efectivo y transferencia debe ser igual al total");
             }
+
+            double domicilioPendiente = costoDomicilio;
+            double descuentoEfectivo = Math.min(montoEfectivo, domicilioPendiente);
+            montoEfectivo -= descuentoEfectivo;
+            domicilioPendiente -= descuentoEfectivo;
+            montoTransferencia = Math.max(0.0, montoTransferencia - domicilioPendiente);
         }
 
         venta.setMontoEfectivo(montoEfectivo);
