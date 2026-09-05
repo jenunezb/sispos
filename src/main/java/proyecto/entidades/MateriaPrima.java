@@ -19,11 +19,15 @@ public class MateriaPrima {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long codigo;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String nombre;
 
     @Column(nullable = false)
     private boolean activa = true;
+
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 
     @OneToMany(mappedBy = "materiaPrima")
     private List<MateriaPrimaSede> sedes = new ArrayList<>();
