@@ -75,6 +75,21 @@ public class Venta {
     @Column(name = "monto_transferencia")
     private Double montoTransferencia;
 
+    @Column(name = "es_domicilio", nullable = false)
+    private Boolean esDomicilio = false;
+
+    @Column(name = "direccion_domicilio", length = 500)
+    private String direccionDomicilio;
+
+    @Column(name = "costo_domicilio")
+    private Double costoDomicilio;
+
+    @Column(name = "nombre_recibe_domicilio", length = 255)
+    private String nombreRecibeDomicilio;
+
+    @Column(name = "celular_recibe_domicilio", length = 50)
+    private String celularRecibeDomicilio;
+
     @Column(nullable = false)
     private Boolean anulado = false;
 }

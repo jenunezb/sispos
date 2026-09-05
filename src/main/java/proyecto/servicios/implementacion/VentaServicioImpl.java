@@ -66,7 +66,12 @@ public class VentaServicioImpl implements VentaServicio {
                 dto.montoRecibido(),
                 dto.montoEfectivo(),
                 dto.montoTransferencia(),
-                dto.mesaId()
+                dto.mesaId(),
+                dto.esDomicilio(),
+                dto.direccionDomicilio(),
+                dto.costoDomicilio(),
+                dto.nombreRecibeDomicilio(),
+                dto.celularRecibeDomicilio()
         );
         return crearVentaInterna(dtoConCorreo, true, "produccion");
     }
@@ -203,6 +208,21 @@ public class VentaServicioImpl implements VentaServicio {
             total += detalle.getSubtotal();
         }
 
+        boolean esDomicilio = Boolean.TRUE.equals(dto.esDomicilio());
+        double costoDomicilio = esDomicilio && dto.costoDomicilio() != null ? dto.costoDomicilio() : 0.0;
+        if (costoDomicilio < 0) {
+            throw new RuntimeException("El costo del domicilio no puede ser negativo");
+        }
+        if (esDomicilio && (dto.direccionDomicilio() == null || dto.direccionDomicilio().isBlank())) {
+            throw new RuntimeException("La direccion del domicilio es obligatoria");
+        }
+
+        venta.setEsDomicilio(esDomicilio);
+        venta.setDireccionDomicilio(esDomicilio ? dto.direccionDomicilio().trim() : null);
+        venta.setCostoDomicilio(costoDomicilio);
+        venta.setNombreRecibeDomicilio(esDomicilio ? textoOpcional(dto.nombreRecibeDomicilio()) : null);
+        venta.setCelularRecibeDomicilio(esDomicilio ? textoOpcional(dto.celularRecibeDomicilio()) : null);
+        total += costoDomicilio;
         venta.setDetalles(detalles);
         venta.setTotal(total);
         aplicarMontosPago(venta, dto, total);
@@ -422,8 +442,17 @@ public class VentaServicioImpl implements VentaServicio {
                                 d.getSubtotal(),
                                 d.getNombreLibre()
                         ))
-                        .toList()
+                        .toList(),
+                Boolean.TRUE.equals(venta.getEsDomicilio()),
+                venta.getDireccionDomicilio(),
+                venta.getCostoDomicilio() != null ? venta.getCostoDomicilio() : 0.0,
+                venta.getNombreRecibeDomicilio(),
+                venta.getCelularRecibeDomicilio()
         );
+    }
+
+    private String textoOpcional(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
     private Long siguienteConsecutivoPorSede(Long sedeId) {

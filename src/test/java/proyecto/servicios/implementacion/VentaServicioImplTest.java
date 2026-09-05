@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.DetalleVentaDTO;
 import proyecto.dto.VentaRecuestDTO;
+import proyecto.dto.VentaResponseDTO;
 import proyecto.entidades.*;
 import proyecto.repositorios.AdministradorRepository;
 import proyecto.repositorios.ClienteRepository;
@@ -107,6 +108,27 @@ class VentaServicioImplTest {
         var respuesta = ventaServicio.mapToResponse(ventaServicio.crearVenta(ventaConCliente(null)));
         org.junit.jupiter.api.Assertions.assertNull(respuesta.cliente());
         verifyNoInteractions(clienteRepository);
+    }
+
+    @Test
+    void ventaDomicilioConservaDatosYSumaCostoAlTotal() {
+        prepararVentaConCliente();
+        when(ventaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        VentaRecuestDTO dto = new VentaRecuestDTO(
+                "vendedor@ejemplo.com", 22L, null,
+                List.of(new DetalleVentaDTO(null, "Hamburguesa", 12000.0, 1)),
+                ModoPago.EFECTIVO, 15000.0, 15000.0, 0.0, 9991L,
+                true, "Calle 10 # 5-20", 3000.0, "Laura", "3001234567"
+        );
+
+        VentaResponseDTO respuesta = ventaServicio.mapToResponse(ventaServicio.crearVenta(dto));
+
+        assertTrue(respuesta.esDomicilio());
+        assertEquals("Calle 10 # 5-20", respuesta.direccionDomicilio());
+        assertEquals(3000.0, respuesta.costoDomicilio());
+        assertEquals("Laura", respuesta.nombreRecibeDomicilio());
+        assertEquals("3001234567", respuesta.celularRecibeDomicilio());
+        assertEquals(15000.0, respuesta.total());
     }
 
     private Empresa prepararVentaConCliente() {

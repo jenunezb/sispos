@@ -40,7 +40,8 @@ public class VentaController {
             accesoService.validarSede(authorization, dto.sedeId());
             VentaRecuestDTO autenticada = new VentaRecuestDTO(correo, dto.sedeId(), dto.clienteId(),
                     dto.detalles(), dto.modoPago(), dto.montoRecibido(), dto.montoEfectivo(), dto.montoTransferencia(),
-                    dto.mesaId());
+                    dto.mesaId(), dto.esDomicilio(), dto.direccionDomicilio(), dto.costoDomicilio(),
+                    dto.nombreRecibeDomicilio(), dto.celularRecibeDomicilio());
             venta = ventaService.crearVentaAutenticada(autenticada, claims.get("rol", String.class));
         }
         return ResponseEntity.ok( ventaService.mapToResponse(venta));
