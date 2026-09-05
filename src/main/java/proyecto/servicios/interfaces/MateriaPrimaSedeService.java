@@ -2,8 +2,6 @@ package proyecto.servicios.interfaces;
 
 import jakarta.validation.Valid;
 import proyecto.dto.*;
-import proyecto.entidades.MateriaPrima;
-import proyecto.entidades.MateriaPrimaSede;
 
 import java.util.List;
 
@@ -32,6 +30,12 @@ public interface MateriaPrimaSedeService {
     void actualizarMateriaPrimaSede(Long id, MateriaPrimaSedeUpdate dto);
 
     void vincularProducto(VincularProductoDTO dto);
+
+    void actualizarConsumoProducto(Long materiaPrimaSedeId, Long productoId, ActualizarConsumoProductoDTO dto);
+
+    List<MateriaPrimaProductoDTO> listarProductosVinculados(Long materiaPrimaSedeId);
+
+    void desvincularProducto(Long materiaPrimaSedeId, Long productoId);
 
 }
 

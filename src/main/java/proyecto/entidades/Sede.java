@@ -3,10 +3,11 @@ package proyecto.entidades;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter @Setter @NoArgsConstructor @ToString
+@Getter @Setter @NoArgsConstructor @ToString(exclude = {"administrador", "administradoresAsignados", "vendedores", "materiasPrimas", "empresa"})
 @Entity
 public class Sede {
     @Id
@@ -15,9 +16,39 @@ public class Sede {
 
     private String ubicacion;
 
+    @Column(name = "direccion_fiscal", length = 255)
+    private String direccionFiscal;
+
+    @Column(name = "municipio_codigo", length = 10)
+    private String municipioCodigo;
+
+    @Column(name = "municipio_nombre", length = 100)
+    private String municipioNombre;
+
+    @Column(name = "departamento_codigo", length = 10)
+    private String departamentoCodigo;
+
+    @Column(name = "departamento_nombre", length = 100)
+    private String departamentoNombre;
+
+    @Column(name = "pais_codigo", length = 3)
+    private String paisCodigo;
+
+    @Column(name = "pais_nombre", length = 100)
+    private String paisNombre;
+
+    @Column(name = "codigo_postal", length = 20)
+    private String codigoPostal;
+
+    @Column(name = "impresion_cocina_habilitada", nullable = false)
+    private Boolean impresionCocinaHabilitada = true;
+
     @ManyToOne
     @JoinColumn(name = "admin_id")
     private Administrador administrador;
+
+    @ManyToMany(mappedBy = "sedesAsignadas")
+    private List<Administrador> administradoresAsignados = new ArrayList<>();
 
     @OneToMany(mappedBy = "sede")
     private List<Vendedor> vendedores;
@@ -28,4 +59,13 @@ public class Sede {
     @ManyToOne
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;
+
+    @Column(name = "admin_pin_hash", length = 120)
+    private String adminPinHash;
+
+    @Column(name = "admin_pin_intentos_fallidos", nullable = false)
+    private Integer adminPinIntentosFallidos = 0;
+
+    @Column(name = "admin_pin_bloqueado_hasta")
+    private LocalDateTime adminPinBloqueadoHasta;
 }

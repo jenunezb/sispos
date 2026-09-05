@@ -1,0 +1,11 @@
+.git
+.gradle
+.idea
+build
+node_modules
+tmp
+output
+outputs
+.env
+.env.*
+*.log
