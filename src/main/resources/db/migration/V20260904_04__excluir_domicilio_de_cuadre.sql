@@ -7,6 +7,10 @@ WITH ventas_domicilio AS (
     FROM venta
     WHERE es_domicilio = TRUE
       AND COALESCE(costo_domicilio, 0) > 0
+      AND ABS(total - (
+          COALESCE((SELECT SUM(d.subtotal) FROM detalle_venta d WHERE d.venta_id = venta.id), 0)
+          + COALESCE(costo_domicilio, 0)
+      )) < 0.01
 )
 UPDATE venta v
 SET total = GREATEST(0, v.total - d.costo),

@@ -496,6 +496,31 @@ ALTER TABLE venta ADD COLUMN IF NOT EXISTS costo_domicilio DOUBLE PRECISION NOT 
 ALTER TABLE venta ADD COLUMN IF NOT EXISTS nombre_recibe_domicilio VARCHAR(255);
 ALTER TABLE venta ADD COLUMN IF NOT EXISTS celular_recibe_domicilio VARCHAR(50);
 
+-- Corrige una sola vez las ventas creadas por la version que incluyo el domicilio como ingreso.
+-- La comparacion contra la suma de detalles hace esta actualizacion segura en cada reinicio.
+WITH ventas_domicilio_infladas AS (
+    SELECT v.id,
+           COALESCE(v.costo_domicilio, 0) AS costo,
+           COALESCE(v.monto_efectivo, CASE WHEN v.modo_pago = 'EFECTIVO' THEN v.total ELSE 0 END) AS efectivo_original,
+           COALESCE(v.monto_transferencia, CASE WHEN v.modo_pago = 'TRANSFERENCIA' THEN v.total ELSE 0 END) AS transferencia_original
+    FROM venta v
+    WHERE v.es_domicilio = TRUE
+      AND COALESCE(v.costo_domicilio, 0) > 0
+      AND ABS(v.total - (
+          COALESCE((SELECT SUM(d.subtotal) FROM detalle_venta d WHERE d.venta_id = v.id), 0)
+          + COALESCE(v.costo_domicilio, 0)
+      )) < 0.01
+)
+UPDATE venta v
+SET total = GREATEST(0, v.total - d.costo),
+    monto_efectivo = GREATEST(0, d.efectivo_original - d.costo),
+    monto_transferencia = GREATEST(
+        0,
+        d.transferencia_original - GREATEST(0, d.costo - d.efectivo_original)
+    )
+FROM ventas_domicilio_infladas d
+WHERE v.id = d.id;
+
 ALTER TABLE detalle_venta ADD COLUMN IF NOT EXISTS precio_unitario_fiscal NUMERIC(19,6);
 ALTER TABLE detalle_venta ADD COLUMN IF NOT EXISTS subtotal_fiscal NUMERIC(19,6);
 ALTER TABLE detalle_venta ADD COLUMN IF NOT EXISTS descuento_fiscal NUMERIC(19,6);
