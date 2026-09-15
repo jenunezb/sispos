@@ -527,3 +527,8 @@ ALTER TABLE detalle_venta ADD COLUMN IF NOT EXISTS descuento_fiscal NUMERIC(19,6
 ALTER TABLE detalle_venta ADD COLUMN IF NOT EXISTS base_impuesto_fiscal NUMERIC(19,6);
 ALTER TABLE detalle_venta ADD COLUMN IF NOT EXISTS tarifa_impuesto_fiscal NUMERIC(9,6);
 ALTER TABLE detalle_venta ADD COLUMN IF NOT EXISTS valor_impuesto_fiscal NUMERIC(19,6);
+ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS unidad_base VARCHAR(20);
+ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS presentacion VARCHAR(80);
+ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS contenido_presentacion DOUBLE PRECISION;
+ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS precio_presentacion DOUBLE PRECISION;
+ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS costo_unitario DOUBLE PRECISION;

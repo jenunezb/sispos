@@ -27,6 +27,10 @@ public interface MateriaPrimaSedeService {
 
     List<MateriaPrimaSedeDTO> listarTodas();
 
+    List<MateriaPrimaSedeDTO> listarPorSedes(List<Long> sedeIds);
+
+    List<CargaMateriaPrimaResultadoDTO> cargarMasivamente(CargaMateriaPrimaMasivaDTO dto);
+
     void actualizarMateriaPrimaSede(Long id, MateriaPrimaSedeUpdate dto);
 
     void eliminarMateriaPrima(Long materiaPrimaId);

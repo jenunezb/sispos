@@ -9,6 +9,10 @@ import proyecto.dto.*;
 import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.ProductoMateriaPrima;
 import proyecto.servicios.implementacion.MateriaPrimaSedeServiceImpl;
+import proyecto.servicios.implementacion.AdministradorAccesoService;
+import proyecto.entidades.Administrador;
+import proyecto.entidades.Sede;
+import proyecto.repositorios.SedeRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +23,8 @@ import java.util.Map;
 public class MateriaPrimaController {
 
     private final MateriaPrimaSedeServiceImpl materiaPrimaSedeService;
+    private final AdministradorAccesoService administradorAccesoService;
+    private final SedeRepository sedeRepository;
 
     /**
      * Crear una nueva materia prima
@@ -45,8 +51,28 @@ public class MateriaPrimaController {
 
     //Listar Todas las materias primas
     @GetMapping
-    public ResponseEntity<List<MateriaPrimaSedeDTO>> listarTodas() {
-        return ResponseEntity.ok(materiaPrimaSedeService.listarTodas());
+    public ResponseEntity<List<MateriaPrimaSedeDTO>> listarTodas(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) Long empresaNit
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        List<Sede> sedes = admin.isEsSuperAdmin()
+                ? sedeRepository.findByEmpresaNit(administradorAccesoService.resolverEmpresaNit(admin, empresaNit))
+                : administradorAccesoService.obtenerSedesVisibles(admin);
+        return ResponseEntity.ok(materiaPrimaSedeService.listarPorSedes(
+                sedes.stream().map(Sede::getId).toList()
+        ));
+    }
+
+    @PostMapping("/carga-masiva")
+    public ResponseEntity<List<CargaMateriaPrimaResultadoDTO>> cargarMasivamente(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody CargaMateriaPrimaMasivaDTO dto
+    ) {
+        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
+        administradorAccesoService.validarAccesoASede(admin, dto.sedeId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(materiaPrimaSedeService.cargarMasivamente(dto));
     }
 
     /**

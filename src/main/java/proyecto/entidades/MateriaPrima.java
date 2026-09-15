@@ -25,6 +25,20 @@ public class MateriaPrima {
     @Column(nullable = false)
     private boolean activa = true;
 
+    @Column(name = "unidad_base")
+    private String unidadBase = "ML";
+
+    private String presentacion;
+
+    @Column(name = "contenido_presentacion")
+    private Double contenidoPresentacion;
+
+    @Column(name = "precio_presentacion")
+    private Double precioPresentacion;
+
+    @Column(name = "costo_unitario")
+    private Double costoUnitario;
+
     @ManyToOne
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;

@@ -10,6 +10,7 @@ import proyecto.repositorios.*;
 import proyecto.servicios.interfaces.MateriaPrimaSedeService;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -168,7 +169,19 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     }
     @Override
     public List<MateriaPrimaSedeDTO> listarTodas() {
-        return materiaPrimaSedeRepository.findAll()
+        return mapearMaterias(materiaPrimaSedeRepository.findAll());
+    }
+
+    @Override
+    public List<MateriaPrimaSedeDTO> listarPorSedes(List<Long> sedeIds) {
+        if (sedeIds == null || sedeIds.isEmpty()) {
+            return List.of();
+        }
+        return mapearMaterias(materiaPrimaSedeRepository.findBySedeIdInOrderByIdAsc(sedeIds));
+    }
+
+    private List<MateriaPrimaSedeDTO> mapearMaterias(List<MateriaPrimaSede> materias) {
+        return materias
                 .stream()
                 .map(mp -> new MateriaPrimaSedeDTO(
                         mp.getId(),
@@ -336,6 +349,96 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
                         relacion.getMlConsumidos()
                 ))
                 .toList();
+    }
+
+    @Override
+    public List<CargaMateriaPrimaResultadoDTO> cargarMasivamente(CargaMateriaPrimaMasivaDTO dto) {
+        Sede sede = sedeRepository.findById(dto.sedeId())
+                .orElseThrow(() -> new IllegalStateException("Sede no encontrada"));
+        if (sede.getEmpresa() == null) {
+            throw new IllegalStateException("La sede no tiene empresa asociada");
+        }
+
+        java.util.Set<String> nombres = new java.util.HashSet<>();
+        for (CargaMateriaPrimaItemDTO item : dto.items()) {
+            String nombreNormalizado = item.nombre().trim().toLowerCase(Locale.ROOT);
+            if (!nombres.add(nombreNormalizado)) {
+                throw new IllegalArgumentException("La materia prima '" + item.nombre().trim() + "' está repetida en la carga");
+            }
+        }
+
+        return dto.items().stream().map(item -> cargarItem(sede, item)).toList();
+    }
+
+    private CargaMateriaPrimaResultadoDTO cargarItem(Sede sede, CargaMateriaPrimaItemDTO item) {
+        String unidad = normalizarUnidad(item.unidadBase());
+        String nombre = item.nombre().trim();
+        MateriaPrima materia = materiaPrimaRepository
+                .findByNombreIgnoreCaseAndEmpresaNit(nombre, sede.getEmpresa().getNit())
+                .orElse(null);
+        boolean creada = materia == null;
+
+        if (creada) {
+            materia = new MateriaPrima();
+            materia.setNombre(nombre);
+            materia.setEmpresa(sede.getEmpresa());
+            materia.setActiva(true);
+            materia.setUnidadBase(unidad);
+            materia.setCostoUnitario(0D);
+            materia = materiaPrimaRepository.save(materia);
+        } else {
+            String unidadActual = materia.getUnidadBase();
+            if (unidadActual != null && !unidadActual.equalsIgnoreCase(unidad)) {
+                throw new IllegalArgumentException(
+                        materia.getNombre() + " ya está configurada en " + unidadActual
+                );
+            }
+        }
+
+        double cantidadAgregada = item.cantidadPresentaciones() * item.contenidoPresentacion();
+        double valorCompra = item.cantidadPresentaciones() * item.precioPresentacion();
+        double costoCompraUnitario = item.precioPresentacion() / item.contenidoPresentacion();
+        double stockAnteriorTotal = materiaPrimaSedeRepository.sumarStockMateriaPrima(materia.getCodigo());
+        boolean tieneCostoAnterior = materia.getCostoUnitario() != null && materia.getCostoUnitario() > 0;
+        double costoAnterior = tieneCostoAnterior ? materia.getCostoUnitario() : 0D;
+        double costoPromedio = stockAnteriorTotal > 0 && tieneCostoAnterior
+                ? ((stockAnteriorTotal * costoAnterior) + valorCompra) / (stockAnteriorTotal + cantidadAgregada)
+                : costoCompraUnitario;
+
+        materia.setUnidadBase(unidad);
+        materia.setPresentacion(item.presentacion().trim());
+        materia.setContenidoPresentacion(item.contenidoPresentacion());
+        materia.setPrecioPresentacion(item.precioPresentacion());
+        materia.setCostoUnitario(costoPromedio);
+        materiaPrimaRepository.save(materia);
+
+        MateriaPrimaSede materiaSede = materiaPrimaSedeRepository
+                .findByMateriaPrimaCodigoAndSedeId(materia.getCodigo(), sede.getId())
+                .orElse(null);
+        if (materiaSede == null) {
+            materiaSede = new MateriaPrimaSede();
+            materiaSede.setMateriaPrima(materia);
+            materiaSede.setSede(sede);
+            materiaSede.setActiva(true);
+            materiaSede.setCantidadActualMl(0);
+            materiaSede.setMlPorVaso(0);
+        }
+        materiaSede.setCantidadActualMl(materiaSede.getCantidadActualMl() + cantidadAgregada);
+        materiaSede.setActiva(true);
+        materiaPrimaSedeRepository.save(materiaSede);
+
+        return new CargaMateriaPrimaResultadoDTO(
+                materia.getCodigo(), materia.getNombre(), creada, unidad,
+                cantidadAgregada, materiaSede.getCantidadActualMl(), costoPromedio
+        );
+    }
+
+    private String normalizarUnidad(String unidad) {
+        String normalizada = unidad.trim().toUpperCase(Locale.ROOT);
+        if (!java.util.Set.of("UNIDAD", "GRAMO", "ML").contains(normalizada)) {
+            throw new IllegalArgumentException("Unidad de materia prima inválida: " + unidad);
+        }
+        return normalizada;
     }
 
     @Override

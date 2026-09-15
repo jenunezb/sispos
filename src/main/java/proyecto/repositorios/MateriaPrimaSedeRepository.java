@@ -36,6 +36,11 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
 
     List<MateriaPrimaSede> findByMateriaPrimaCodigo(Long materiaPrimaId);
 
+    List<MateriaPrimaSede> findBySedeIdInOrderByIdAsc(List<Long> sedeIds);
+
+    @Query("SELECT COALESCE(SUM(m.cantidadActualMl), 0) FROM MateriaPrimaSede m WHERE m.materiaPrima.codigo = :materiaPrimaId")
+    double sumarStockMateriaPrima(@Param("materiaPrimaId") Long materiaPrimaId);
+
     @Query("""
         SELECT mps
         FROM MateriaPrimaSede mps

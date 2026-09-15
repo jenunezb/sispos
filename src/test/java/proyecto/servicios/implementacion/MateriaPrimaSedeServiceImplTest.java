@@ -8,6 +8,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.ActualizarConsumoProductoDTO;
 import proyecto.dto.CrearMateriaPrimaSedeDTO;
+import proyecto.dto.CargaMateriaPrimaItemDTO;
+import proyecto.dto.CargaMateriaPrimaMasivaDTO;
 import proyecto.entidades.Empresa;
 import proyecto.entidades.Inventario;
 import proyecto.entidades.MateriaPrima;
@@ -23,6 +25,7 @@ import proyecto.repositorios.ProductoRepository;
 import proyecto.repositorios.SedeRepository;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -104,5 +107,42 @@ class MateriaPrimaSedeServiceImplTest {
 
         assertEquals(125, relacion.getMlConsumidos());
         verify(productoMateriaPrimaRepository).save(relacion);
+    }
+
+    @Test
+    void cargaMasivaDebeAlimentarExistenteYCalcularCostoPromedio() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+
+        MateriaPrima materia = new MateriaPrima();
+        materia.setCodigo(10L);
+        materia.setNombre("Cucharas");
+        materia.setUnidadBase("UNIDAD");
+        materia.setCostoUnitario(50D);
+
+        MateriaPrimaSede materiaSede = new MateriaPrimaSede();
+        materiaSede.setMateriaPrima(materia);
+        materiaSede.setSede(sede);
+        materiaSede.setCantidadActualMl(200D);
+
+        when(sedeRepository.findById(5L)).thenReturn(Optional.of(sede));
+        when(materiaPrimaRepository.findByNombreIgnoreCaseAndEmpresaNit("Cucharas", empresa.getNit()))
+                .thenReturn(Optional.of(materia));
+        when(materiaPrimaSedeRepository.sumarStockMateriaPrima(10L)).thenReturn(200D);
+        when(materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(10L, 5L))
+                .thenReturn(Optional.of(materiaSede));
+
+        var resultado = materiaPrimaSedeService.cargarMasivamente(new CargaMateriaPrimaMasivaDTO(
+                5L,
+                List.of(new CargaMateriaPrimaItemDTO("Cucharas", "UNIDAD", "Paquete", 2, 100, 7000))
+        ));
+
+        assertEquals(400D, materiaSede.getCantidadActualMl());
+        assertEquals(60D, materia.getCostoUnitario());
+        assertEquals(1, resultado.size());
+        assertEquals(false, resultado.get(0).creada());
     }
 }
