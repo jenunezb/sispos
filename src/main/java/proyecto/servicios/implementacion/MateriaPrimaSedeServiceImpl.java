@@ -133,6 +133,10 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
     }
     @Override
     public ProductoMateriaPrimaRequestDTO vincularMateriaPrima(Long productoId, Long materiaPrimaId, double mlConsumidos) {
+        if (mlConsumidos <= 0) {
+            throw new IllegalArgumentException("El consumo del ingrediente debe ser mayor a cero");
+        }
+
 
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
@@ -195,6 +199,20 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         mpSede.setActiva(dto.activa());
 
         materiaPrimaSedeRepository.save(mpSede);
+    }
+
+    @Override
+    public void eliminarMateriaPrima(Long materiaPrimaId) {
+        MateriaPrima materiaPrima = materiaPrimaRepository.findById(materiaPrimaId)
+                .orElseThrow(() -> new IllegalStateException("Materia prima no encontrada"));
+
+        productoMateriaPrimaRepository.deleteAllInBatch(
+                productoMateriaPrimaRepository.findByMateriaPrimaCodigoOrderByProductoNombreAsc(materiaPrimaId)
+        );
+        materiaPrimaSedeRepository.deleteAllInBatch(
+                materiaPrimaSedeRepository.findByMateriaPrimaCodigo(materiaPrimaId)
+        );
+        materiaPrimaRepository.delete(materiaPrima);
     }
 
     /**
@@ -300,6 +318,49 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         ProductoMateriaPrima relacion = productoMateriaPrimaRepository
                 .findByMateriaPrimaCodigoAndProductoCodigo(mpSede.getMateriaPrima().getCodigo(), productoId)
                 .orElseThrow(() -> new IllegalStateException("El producto no está vinculado a esta materia prima"));
+
+        productoMateriaPrimaRepository.delete(relacion);
+    }
+
+    @Override
+    public List<IngredienteProductoDTO> listarIngredientesProducto(Long productoId) {
+        if (!productoRepository.existsById(productoId)) {
+            throw new IllegalStateException("Producto no encontrado");
+        }
+
+        return productoMateriaPrimaRepository.findByProductoCodigo(productoId)
+                .stream()
+                .map(relacion -> new IngredienteProductoDTO(
+                        relacion.getMateriaPrima().getCodigo(),
+                        relacion.getMateriaPrima().getNombre(),
+                        relacion.getMlConsumidos()
+                ))
+                .toList();
+    }
+
+    @Override
+    public void actualizarIngredienteProducto(
+            Long productoId,
+            Long materiaPrimaId,
+            ActualizarConsumoProductoDTO dto
+    ) {
+        if (dto.mlConsumidos() <= 0) {
+            throw new IllegalArgumentException("El consumo del ingrediente debe ser mayor a cero");
+        }
+
+        ProductoMateriaPrima relacion = productoMateriaPrimaRepository
+                .findByMateriaPrimaCodigoAndProductoCodigo(materiaPrimaId, productoId)
+                .orElseThrow(() -> new IllegalStateException("El ingrediente no pertenece al producto"));
+
+        relacion.setMlConsumidos(dto.mlConsumidos());
+        productoMateriaPrimaRepository.save(relacion);
+    }
+
+    @Override
+    public void eliminarIngredienteProducto(Long productoId, Long materiaPrimaId) {
+        ProductoMateriaPrima relacion = productoMateriaPrimaRepository
+                .findByMateriaPrimaCodigoAndProductoCodigo(materiaPrimaId, productoId)
+                .orElseThrow(() -> new IllegalStateException("El ingrediente no pertenece al producto"));
 
         productoMateriaPrimaRepository.delete(relacion);
     }

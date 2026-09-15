@@ -34,6 +34,8 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
 
     List<MateriaPrimaSede> findBySedeIdOrderByIdAsc(Long sedeId);
 
+    List<MateriaPrimaSede> findByMateriaPrimaCodigo(Long materiaPrimaId);
+
     @Query("""
         SELECT mps
         FROM MateriaPrimaSede mps

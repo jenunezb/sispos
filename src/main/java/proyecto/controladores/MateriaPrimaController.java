@@ -77,6 +77,13 @@ public class MateriaPrimaController {
         return ResponseEntity.ok("Materia prima actualizada correctamente");
     }
 
+    /** Elimina definitivamente una materia prima y todas sus vinculaciones. */
+    @DeleteMapping("/{materiaPrimaId}")
+    public ResponseEntity<Map<String, String>> eliminarMateriaPrima(@PathVariable Long materiaPrimaId) {
+        materiaPrimaSedeService.eliminarMateriaPrima(materiaPrimaId);
+        return ResponseEntity.ok(Map.of("mensaje", "Materia prima eliminada definitivamente"));
+    }
+
     /**
      * Vincular un producto a una materia prima en una sede
      */
@@ -112,6 +119,43 @@ public class MateriaPrimaController {
     ) {
         materiaPrimaSedeService.desvincularProducto(materiaPrimaSedeId, productoId);
         return ResponseEntity.ok(Map.of("mensaje", "Producto desvinculado correctamente"));
+    }
+
+    @GetMapping("/productos/{productoId}/ingredientes")
+    public ResponseEntity<List<IngredienteProductoDTO>> listarIngredientesProducto(
+            @PathVariable Long productoId
+    ) {
+        return ResponseEntity.ok(materiaPrimaSedeService.listarIngredientesProducto(productoId));
+    }
+
+    @PostMapping("/productos/{productoId}/ingredientes/{materiaPrimaId}")
+    public ResponseEntity<ProductoMateriaPrimaRequestDTO> agregarIngredienteProducto(
+            @PathVariable Long productoId,
+            @PathVariable Long materiaPrimaId,
+            @RequestParam double mlConsumidos
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                materiaPrimaSedeService.vincularMateriaPrima(productoId, materiaPrimaId, mlConsumidos)
+        );
+    }
+
+    @PutMapping("/productos/{productoId}/ingredientes/{materiaPrimaId}")
+    public ResponseEntity<Map<String, String>> actualizarIngredienteProducto(
+            @PathVariable Long productoId,
+            @PathVariable Long materiaPrimaId,
+            @Valid @RequestBody ActualizarConsumoProductoDTO dto
+    ) {
+        materiaPrimaSedeService.actualizarIngredienteProducto(productoId, materiaPrimaId, dto);
+        return ResponseEntity.ok(Map.of("mensaje", "Ingrediente actualizado correctamente"));
+    }
+
+    @DeleteMapping("/productos/{productoId}/ingredientes/{materiaPrimaId}")
+    public ResponseEntity<Map<String, String>> eliminarIngredienteProducto(
+            @PathVariable Long productoId,
+            @PathVariable Long materiaPrimaId
+    ) {
+        materiaPrimaSedeService.eliminarIngredienteProducto(productoId, materiaPrimaId);
+        return ResponseEntity.ok(Map.of("mensaje", "Ingrediente retirado correctamente"));
     }
 
 }

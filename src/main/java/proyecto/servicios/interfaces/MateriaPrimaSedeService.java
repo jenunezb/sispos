@@ -29,6 +29,8 @@ public interface MateriaPrimaSedeService {
 
     void actualizarMateriaPrimaSede(Long id, MateriaPrimaSedeUpdate dto);
 
+    void eliminarMateriaPrima(Long materiaPrimaId);
+
     void vincularProducto(VincularProductoDTO dto);
 
     void actualizarConsumoProducto(Long materiaPrimaSedeId, Long productoId, ActualizarConsumoProductoDTO dto);
@@ -36,6 +38,12 @@ public interface MateriaPrimaSedeService {
     List<MateriaPrimaProductoDTO> listarProductosVinculados(Long materiaPrimaSedeId);
 
     void desvincularProducto(Long materiaPrimaSedeId, Long productoId);
+
+    List<IngredienteProductoDTO> listarIngredientesProducto(Long productoId);
+
+    void actualizarIngredienteProducto(Long productoId, Long materiaPrimaId, ActualizarConsumoProductoDTO dto);
+
+    void eliminarIngredienteProducto(Long productoId, Long materiaPrimaId);
 
 }
 

@@ -1,9 +1,9 @@
 package proyecto.dto;
 
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 
 public record ActualizarConsumoProductoDTO(
-        @PositiveOrZero
+        @Positive
         double mlConsumidos
 ) {
 }
