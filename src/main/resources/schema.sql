@@ -25,6 +25,27 @@ ALTER TABLE administrador
 ALTER TABLE empresa
     ADD COLUMN IF NOT EXISTS impresion_cocina_habilitada BOOLEAN NOT NULL DEFAULT TRUE;
 
+-- Modulo opcional de complementos, apagado para empresas y productos existentes.
+ALTER TABLE empresa ADD COLUMN IF NOT EXISTS complementos_habilitados BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE producto ADD COLUMN IF NOT EXISTS complementos_habilitados BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE producto ADD COLUMN IF NOT EXISTS complementos_gratis INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS producto_complemento (
+ id BIGSERIAL PRIMARY KEY, producto_id BIGINT NOT NULL, materia_prima_id BIGINT NOT NULL,
+ nombre VARCHAR(120) NOT NULL, precio_adicional DOUBLE PRECISION NOT NULL DEFAULT 0,
+ cantidad_consumo DOUBLE PRECISION NOT NULL, activo BOOLEAN NOT NULL DEFAULT TRUE,
+ CONSTRAINT fk_pc_producto FOREIGN KEY (producto_id) REFERENCES producto(codigo) ON DELETE CASCADE,
+ CONSTRAINT fk_pc_materia FOREIGN KEY (materia_prima_id) REFERENCES materia_prima(codigo),
+ CONSTRAINT uk_pc_producto_materia UNIQUE (producto_id, materia_prima_id)
+);
+CREATE TABLE IF NOT EXISTS detalle_venta_complemento (
+ id BIGSERIAL PRIMARY KEY, detalle_venta_id BIGINT NOT NULL, complemento_id BIGINT NULL,
+ nombre VARCHAR(120) NOT NULL, cantidad INTEGER NOT NULL, precio_unitario DOUBLE PRECISION NOT NULL,
+ subtotal DOUBLE PRECISION NOT NULL,
+ CONSTRAINT fk_dvc_detalle FOREIGN KEY (detalle_venta_id) REFERENCES detalle_venta(id) ON DELETE CASCADE,
+ CONSTRAINT fk_dvc_config FOREIGN KEY (complemento_id) REFERENCES producto_complemento(id) ON DELETE SET NULL
+);
+
 -- Inicializar solo los valores pendientes; nunca sobrescribir preferencias por sede.
 ALTER TABLE sede
     ADD COLUMN IF NOT EXISTS impresion_cocina_habilitada BOOLEAN;

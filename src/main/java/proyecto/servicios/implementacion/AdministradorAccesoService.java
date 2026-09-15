@@ -105,6 +105,25 @@ public class AdministradorAccesoService {
         throw new RuntimeException("No tiene permisos para acceder a este recurso");
     }
 
+    public void validarAccesoAutenticadoAEmpresa(String authorization, Long empresaNit) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        String correo = claims.getBody().getSubject();
+        String rol = (String) claims.getBody().get("rol");
+        if ("administrador".equals(rol)) {
+            Administrador admin = administradorRepository.findByCorreo(correo).orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+            if (!admin.isEsSuperAdmin() && (admin.getEmpresa() == null || !empresaNit.equals(admin.getEmpresa().getNit()))) throw new RuntimeException("No tiene acceso a esta empresa");
+            return;
+        }
+        if ("vendedor".equals(rol)) {
+            Vendedor v = vendedorRepository.findByCorreoIgnoreCase(correo).orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+            Long nit = v.getEmpresa() != null ? v.getEmpresa().getNit() : v.getSede() != null && v.getSede().getEmpresa() != null ? v.getSede().getEmpresa().getNit() : null;
+            if (!empresaNit.equals(nit)) throw new RuntimeException("No tiene acceso a esta empresa");
+            return;
+        }
+        throw new RuntimeException("No tiene permisos para acceder a este recurso");
+    }
+
     public List<Sede> obtenerSedesVisibles(Administrador administrador) {
         if (administrador.isEsSuperAdmin()) {
             return sedeRepository.findAll();

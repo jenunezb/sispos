@@ -58,6 +58,12 @@ public class Producto implements Serializable {
 
     private Boolean activo = true;
 
+    @Column(name = "complementos_habilitados", nullable = false)
+    private Boolean complementosHabilitados = false;
+
+    @Column(name = "complementos_gratis", nullable = false)
+    private Integer complementosGratis = 0;
+
     @ManyToOne
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;

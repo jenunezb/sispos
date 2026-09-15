@@ -39,6 +39,7 @@ public class VentaServicioImpl implements VentaServicio {
     private final NotificacionStockMinimoService notificacionStockMinimoService;
     private final MesaEstadoServicio mesaEstadoServicio;
     private final MesaEstadoRepository mesaEstadoRepository;
+    private final ProductoComplementoRepository productoComplementoRepository;
 
     @Override
     @Transactional(timeout = 20)
@@ -188,7 +189,8 @@ public class VentaServicioImpl implements VentaServicio {
 
                 detalle.setProducto(producto);
                 detalle.setPrecioUnitario(precioUnitario);
-                detalle.setSubtotal(precioUnitario * d.cantidad());
+                double subtotalComplementos = procesarComplementos(d, producto, sede, detalle);
+                detalle.setSubtotal((precioUnitario * d.cantidad()) + subtotalComplementos);
             }
 
             else {
@@ -462,6 +464,41 @@ public class VentaServicioImpl implements VentaServicio {
                 venta.getNombreRecibeDomicilio(),
                 venta.getCelularRecibeDomicilio()
         );
+    }
+
+    private double procesarComplementos(DetalleVentaDTO dto, Producto producto, Sede sede, DetalleVenta detalle) {
+        List<proyecto.dto.ComplementoSeleccionDTO> selecciones = dto.complementos() == null ? List.of() : dto.complementos();
+        if (selecciones.isEmpty()) return 0D;
+        boolean modulo = producto.getEmpresa() != null && Boolean.TRUE.equals(producto.getEmpresa().getComplementosHabilitados());
+        if (!modulo || !Boolean.TRUE.equals(producto.getComplementosHabilitados())) {
+            throw new RuntimeException("Los complementos no estan habilitados para este producto");
+        }
+        List<ProductoComplemento> permitidos = productoComplementoRepository.findByProductoCodigoAndActivoTrueOrderByNombreAsc(producto.getCodigo());
+        int cupos = Math.max(0, producto.getComplementosGratis() == null ? 0 : producto.getComplementosGratis());
+        double total = 0D;
+        for (proyecto.dto.ComplementoSeleccionDTO seleccion : selecciones) {
+            int cantidad = seleccion.cantidad() == null ? 0 : seleccion.cantidad();
+            if (cantidad <= 0) throw new RuntimeException("La cantidad del topping debe ser mayor a cero");
+            ProductoComplemento config = permitidos.stream().filter(c -> c.getId().equals(seleccion.complementoId())).findFirst()
+                    .orElseThrow(() -> new RuntimeException("Topping no valido para " + producto.getNombre()));
+            int gratis = Math.min(cupos, cantidad);
+            cupos -= gratis;
+            int cobrados = cantidad - gratis;
+            double precio = config.getPrecioAdicional() == null ? 0D : config.getPrecioAdicional();
+            double subtotal = cobrados * precio * dto.cantidad();
+            double consumo = config.getCantidadConsumo() * cantidad * dto.cantidad();
+            MateriaPrimaSede stock = materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(config.getMateriaPrima().getCodigo(), sede.getId())
+                    .orElseThrow(() -> new RuntimeException("No hay " + config.getNombre() + " en esta sede"));
+            if (stock.getCantidadActualMl() < consumo) throw new RuntimeException("Materia prima insuficiente: " + config.getNombre());
+            stock.setCantidadActualMl(stock.getCantidadActualMl() - consumo);
+            materiaPrimaSedeRepository.save(stock);
+            DetalleVentaComplemento guardado = new DetalleVentaComplemento();
+            guardado.setDetalleVenta(detalle); guardado.setComplemento(config); guardado.setNombre(config.getNombre());
+            guardado.setCantidad(cantidad); guardado.setPrecioUnitario(precio); guardado.setSubtotal(subtotal);
+            detalle.getComplementos().add(guardado);
+            total += subtotal;
+        }
+        return total;
     }
 
     private String textoOpcional(String valor) {

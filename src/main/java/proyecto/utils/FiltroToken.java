@@ -54,7 +54,8 @@ public class FiltroToken extends OncePerRequestFilter {
                     || requestURI.startsWith("/api/ventas")
                     || requestURI.startsWith("/api/sedes")
                     || requestURI.startsWith("/api/inventario")
-                    || requestURI.startsWith("/api/inventarios")) {
+                    || requestURI.startsWith("/api/inventarios")
+                    || requestURI.startsWith("/api/complementos")) {
                 if (token != null) {
                     Jws<Claims> jws = jwtUtils.parseJwt(token);
                     String rol = (String) jws.getBody().get("rol");

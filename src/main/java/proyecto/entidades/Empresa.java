@@ -84,6 +84,9 @@ public class Empresa implements Serializable {
     @Column(nullable = false)
     private Boolean impresionCocinaHabilitada = true;
 
+    @Column(name = "complementos_habilitados", nullable = false)
+    private Boolean complementosHabilitados = false;
+
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL)
     private List<Sede> sedes;
 

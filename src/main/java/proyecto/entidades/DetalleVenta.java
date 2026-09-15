@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @ToString
 @Entity
@@ -51,5 +53,8 @@ public class DetalleVenta {
 
     @Column(nullable = true)
     private String nombreLibre;
+
+    @OneToMany(mappedBy = "detalleVenta", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DetalleVentaComplemento> complementos = new ArrayList<>();
 
 }
