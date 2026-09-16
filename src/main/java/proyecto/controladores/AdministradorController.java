@@ -469,6 +469,7 @@ public class AdministradorController {
     }
 
     @GetMapping("/sistema/ventas")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<MensajeDTO<List<VentaSeguimientoDTO>>> listarVentasSistema(
             @RequestHeader("Authorization") String authorization,
             @RequestParam(required = false) Long empresaNit,
@@ -522,7 +523,10 @@ public class AdministradorController {
                                 d.getCantidad(),
                                 d.getPrecioUnitario(),
                                 d.getSubtotal(),
-                                d.getNombreLibre()
+                                d.getNombreLibre(),
+                                d.getComplementos().stream().map(c -> new DetalleVentaComplementoDTO(
+                                        c.getNombre(), c.getCantidad(), c.getPrecioUnitario(), c.getSubtotal()
+                                )).toList()
                         ))
                         .toList()
         );

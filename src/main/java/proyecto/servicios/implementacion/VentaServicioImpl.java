@@ -455,7 +455,10 @@ public class VentaServicioImpl implements VentaServicio {
                                 d.getCantidad(),
                                 d.getPrecioUnitario(),
                                 d.getSubtotal(),
-                                d.getNombreLibre()
+                                d.getNombreLibre(),
+                                d.getComplementos().stream().map(c -> new proyecto.dto.DetalleVentaComplementoDTO(
+                                        c.getNombre(), c.getCantidad(), c.getPrecioUnitario(), c.getSubtotal()
+                                )).toList()
                         ))
                         .toList(),
                 Boolean.TRUE.equals(venta.getEsDomicilio()),
