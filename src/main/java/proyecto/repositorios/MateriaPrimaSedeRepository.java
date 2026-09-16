@@ -32,6 +32,8 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
 
     boolean existsByMateriaPrimaAndSedeId(MateriaPrima materiaPrima, Long sedeId);
 
+    boolean existsByMateriaPrimaCodigoAndSedeEmpresaNit(Long materiaPrimaId, Long empresaNit);
+
     List<MateriaPrimaSede> findBySedeIdOrderByIdAsc(Long sedeId);
 
     List<MateriaPrimaSede> findByMateriaPrimaCodigo(Long materiaPrimaId);

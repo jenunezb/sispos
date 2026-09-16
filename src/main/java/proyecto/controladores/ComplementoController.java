@@ -18,6 +18,7 @@ import java.util.List;
 public class ComplementoController {
  private final ProductoRepository productos;
  private final MateriaPrimaRepository materias;
+ private final MateriaPrimaSedeRepository materiasPorSede;
  private final ProductoComplementoRepository complementos;
  private final EmpresaRepository empresas;
  private final AdministradorAccesoService acceso;
@@ -81,7 +82,15 @@ public class ComplementoController {
   if(cfg.complementos()!=null) for(ComplementoProductoDTO item:cfg.complementos()){
    if(item.materiaPrimaId()==null || item.cantidadConsumo()==null || item.cantidadConsumo()<=0) throw new RuntimeException("Cada topping necesita materia prima y consumo mayor a cero");
    MateriaPrima m=materias.findById(item.materiaPrimaId()).orElseThrow(()->new RuntimeException("Materia prima no encontrada"));
-   if(m.getEmpresa()==null || !nit.equals(m.getEmpresa().getNit())) throw new RuntimeException("La materia prima no pertenece a la empresa");
+   boolean perteneceDirectamente = m.getEmpresa()!=null && nit.equals(m.getEmpresa().getNit());
+   boolean pertenecePorSede = materiasPorSede.existsByMateriaPrimaCodigoAndSedeEmpresaNit(m.getCodigo(), nit);
+   if(!perteneceDirectamente && !pertenecePorSede) throw new RuntimeException("La materia prima no pertenece a la empresa");
+   // Los registros antiguos se asociaban solo a la sede. Completar la empresa
+   // cuando esta vacia conserva el dato y evita que vuelva a quedar ambiguo.
+   if(m.getEmpresa()==null && pertenecePorSede) {
+    m.setEmpresa(p.getEmpresa());
+    materias.save(m);
+   }
    ProductoComplemento c=new ProductoComplemento(); c.setProducto(p);c.setMateriaPrima(m);
    c.setNombre(item.nombre()==null||item.nombre().isBlank()?m.getNombre():item.nombre().trim());
    c.setPrecioAdicional(Math.max(0,item.precioAdicional()==null?0:item.precioAdicional()));c.setCantidadConsumo(item.cantidadConsumo());c.setActivo(true);nuevos.add(c);
