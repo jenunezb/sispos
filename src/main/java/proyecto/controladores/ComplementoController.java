@@ -74,6 +74,9 @@ public class ComplementoController {
   p.setComplementosHabilitados(Boolean.TRUE.equals(cfg.habilitado()));
   p.setComplementosGratis(Math.max(0,cfg.gratis()==null?0:cfg.gratis())); productos.save(p);
   complementos.deleteByProductoCodigo(productoId);
+  // Ejecutar el DELETE antes de recrear la lista evita conflictos con la clave
+  // unica (producto, materia prima) cuando se edita una configuracion existente.
+  complementos.flush();
   List<ProductoComplemento> nuevos=new ArrayList<>();
   if(cfg.complementos()!=null) for(ComplementoProductoDTO item:cfg.complementos()){
    if(item.materiaPrimaId()==null || item.cantidadConsumo()==null || item.cantidadConsumo()<=0) throw new RuntimeException("Cada topping necesita materia prima y consumo mayor a cero");
