@@ -417,7 +417,8 @@ public class InventarioServicioImpl implements InventarioServicio {
                     ventas,
                     stockActual,
                     precio,
-                    totalVendido
+                    totalVendido,
+                    tieneReceta
             );
 
         }).toList();

@@ -106,7 +106,8 @@ public class InformeInventarioDiaServiceImpl implements InformeInventarioDiaServ
                             item.ventasDelDia(),
                             item.stockActual(),
                             item.precio(),
-                            item.totalVendido()
+                            item.totalVendido(),
+                            item.stockDerivado()
                     );
                 })
                 .toList();
