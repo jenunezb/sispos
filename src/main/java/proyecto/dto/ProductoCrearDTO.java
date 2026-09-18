@@ -14,5 +14,6 @@ public record ProductoCrearDTO(@NotBlank(message = "El nombre es obligatorio")
                                 @Positive(message = "El precio de venta debe ser mayor a 0")
                                 Double precioVenta,
 
-                               String categoria) {
+                               String categoria,
+                               Long sedeId) {
 }

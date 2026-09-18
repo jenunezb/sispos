@@ -2,8 +2,6 @@ package proyecto.servicios.interfaces;
 
 import proyecto.dto.*;
 
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,5 +37,12 @@ public interface InventarioServicio {
             LocalDateTime fin
     );
 
+    InventarioAjustableResponseDTO listarInventarioAjustablePorSede(Long sedeId);
+
+    AjusteManualMasivoResponseDTO ajustarInventarioManual(Long sedeId, List<AjusteManualItemDTO> items);
+
+    void actualizarStockMinimo(Long productoId, Long sedeId, Integer stockMinimo);
+
     void registrarMovimientoMateriaPrima(MovimientoMateriaPrimaDTO dto);
 }
+
