@@ -45,8 +45,7 @@ public class InventarioController {
             @RequestHeader("Authorization") String authorization,
             @PathVariable Long sedeId
     ) {
-        Administrador admin = administradorAccesoService.obtenerAdministradorAutenticado(authorization);
-        administradorAccesoService.validarAccesoASede(admin, sedeId);
+        administradorAccesoService.validarAccesoAutenticadoASede(authorization, sedeId);
         return ResponseEntity.ok(inventarioServicio.listarInventarioAjustablePorSede(sedeId));
     }
 
