@@ -572,3 +572,19 @@ SELECT m.id, CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota', 'APERTURA', m.cant
 FROM materia_prima_sede m WHERE NOT EXISTS (
     SELECT 1 FROM movimiento_materia_prima h WHERE h.materia_prima_sede_id=m.id
 );
+
+ALTER TABLE inventario ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS movimiento_stock_producto (
+    id BIGSERIAL PRIMARY KEY,
+    inventario_id BIGINT NOT NULL REFERENCES inventario(id),
+    fecha TIMESTAMP NOT NULL,
+    tipo VARCHAR(255) NOT NULL,
+    stock_anterior DOUBLE PRECISION NOT NULL,
+    stock_nuevo DOUBLE PRECISION NOT NULL,
+    observacion VARCHAR(255)
+);
+CREATE INDEX IF NOT EXISTS idx_mov_producto_fecha ON movimiento_stock_producto(inventario_id,fecha,id);
+INSERT INTO movimiento_stock_producto(inventario_id,fecha,tipo,stock_anterior,stock_nuevo,observacion)
+SELECT i.id,CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota','APERTURA',i.stock_actual,i.stock_actual,
+       'Inicio del historial; no representa una entrada'
+FROM inventario i WHERE NOT EXISTS(SELECT 1 FROM movimiento_stock_producto h WHERE h.inventario_id=i.id);

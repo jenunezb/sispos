@@ -1,4 +1,10 @@
-# Seguimiento diario de materia prima
+# Seguimiento diario de productos y materia prima
+
+Dentro de Informes hay una pestaña de seguimiento con selector Productos / Materia prima. Los productos con stock propio registran entradas, ventas, pérdidas, salidas manuales y ajustes en `movimiento_stock_producto`, con saldo anterior/nuevo y apertura al activar el historial. La migración no altera cantidades. Se incorpora control de versión para impedir sobrescrituras concurrentes.
+
+Endpoints de productos: `GET /api/inventarios/historial-productos/{sedeId}` y `GET /api/inventarios/historial-productos/{sedeId}/{productoId}?desde=YYYY-MM-DD&hasta=YYYY-MM-DD`, con autenticación de administrador y validación de sede. El seguimiento corresponde al inventario del punto de venta (`inventario`); el módulo independiente de producción conserva sus propios movimientos.
+
+Los productos con receta muestran su actividad registrada en `movimiento_inventario`, disponibilidad actual según insumos y enlaces al historial de cada materia prima. Sus saldos físicos se muestran N/A: no se suman como existencias independientes. Para conocer el consumo compartido con otros productos o combos se consulta el insumo. Los saldos anteriores a la apertura de productos con stock propio son desconocidos y se muestran N/D.
 
 El despliegue del backend ejecuta `schema.sql`: agrega la tabla de movimientos y una apertura por existencia actual, sin cambiar cantidades. La apertura se crea una sola vez por inventario y no es una entrada. No se reconstruyen entradas anteriores que no fueron almacenadas.
 

@@ -292,7 +292,9 @@ public class VentaServicioImpl implements VentaServicio {
                 );
             }
 
-            inventario.setStockActual(inventario.getStockActual() - cantidad);
+            inventario.cambiarStock(inventario.getStockActual() - cantidad,
+                    String.valueOf(producto.getNombre()).toLowerCase(java.util.Locale.ROOT).contains("combo") ? "VENTA_COMBO" : "VENTA_UNITARIA",
+                    producto.getNombre());
             inventarioRepository.save(inventario);
             notificacionStockMinimoService.evaluarYNotificar(inventario, inventario.getStockActual());
         }

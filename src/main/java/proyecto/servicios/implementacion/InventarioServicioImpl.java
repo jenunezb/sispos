@@ -62,7 +62,7 @@ public class InventarioServicioImpl implements InventarioServicio {
 
         Inventario inventario = obtenerOcrearInventario(productoId, sedeId);
         inventario.setEntradas(inventario.getEntradas() + cantidad);
-        inventario.setStockActual(inventario.getStockActual() + cantidad);
+        inventario.cambiarStock(inventario.getStockActual() + cantidad, "ENTRADA", "Entrada de producto");
 
         inventarioRepository.save(inventario);
         notificacionStockMinimoService.evaluarYNotificar(inventario, calcularStockReal(inventario));
@@ -92,7 +92,7 @@ public class InventarioServicioImpl implements InventarioServicio {
             }
 
             inventario.setSalidas(inventario.getSalidas() + cantidad);
-            inventario.setStockActual(inventario.getStockActual() - cantidad);
+            inventario.cambiarStock(inventario.getStockActual() - cantidad, "SALIDA_MANUAL", observacion);
         }
 
         inventarioRepository.save(inventario);
@@ -147,7 +147,7 @@ public class InventarioServicioImpl implements InventarioServicio {
             }
 
             inventario.setPerdidas(inventario.getPerdidas() + cantidad);
-            inventario.setStockActual(inventario.getStockActual() - cantidad);
+            inventario.cambiarStock(inventario.getStockActual() - cantidad, "PERDIDA", "Perdida de producto");
         }
 
         inventarioRepository.save(inventario);
@@ -175,7 +175,7 @@ public class InventarioServicioImpl implements InventarioServicio {
         switch (dto.tipo()) {
             case ENTRADA -> {
                 inventario.setEntradas(inventario.getEntradas() + dto.cantidad());
-                inventario.setStockActual(inventario.getStockActual() + dto.cantidad());
+                inventario.cambiarStock(inventario.getStockActual() + dto.cantidad(), "ENTRADA", dto.observacion());
             }
             case SALIDA -> {
                 if (!producto.getMateriasPrimas().isEmpty()) {
@@ -185,7 +185,7 @@ public class InventarioServicioImpl implements InventarioServicio {
                 }
                 inventario.setSalidas(inventario.getSalidas() + dto.cantidad());
                 if (producto.getMateriasPrimas().isEmpty()) {
-                    inventario.setStockActual(inventario.getStockActual() - dto.cantidad());
+                    inventario.cambiarStock(inventario.getStockActual() - dto.cantidad(), "SALIDA_MANUAL", dto.observacion());
                 }
             }
             case PERDIDA -> {
@@ -249,9 +249,7 @@ public class InventarioServicioImpl implements InventarioServicio {
                             inventario.getPerdidas() + dto.cantidad()
                     );
 
-                    inventario.setStockActual(
-                            inventario.getStockActual() - dto.cantidad()
-                    );
+                    inventario.cambiarStock(inventario.getStockActual() - dto.cantidad(), "PERDIDA", dto.observacion());
                 }
             }
 
