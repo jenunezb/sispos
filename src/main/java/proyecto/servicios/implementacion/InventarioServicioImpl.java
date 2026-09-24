@@ -135,7 +135,8 @@ public class InventarioServicioImpl implements InventarioServicio {
             for (ProductoMateriaPrima pmp : producto.getMateriasPrimas()) {
                 MateriaPrimaSede mpSede = materiaPrimaSedeRepository
                         .findByMateriaPrimaAndSede(pmp.getMateriaPrima(), sede).get();
-                mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - pmp.getMlConsumidos() * cantidad);
+                mpSede.cambiarStock(mpSede.getCantidadActualMl() - pmp.getMlConsumidos() * cantidad,
+                        "PERDIDA", producto.getCodigo(), "Perdida de producto");
             }
             inventario.setPerdidas(inventario.getPerdidas() + cantidad);
         } else {
@@ -225,9 +226,8 @@ public class InventarioServicioImpl implements InventarioServicio {
 
                         double mlNecesarios = pmp.getMlConsumidos() * dto.cantidad();
 
-                        mpSede.setCantidadActualMl(
-                                mpSede.getCantidadActualMl() - mlNecesarios
-                        );
+                        mpSede.cambiarStock(mpSede.getCantidadActualMl() - mlNecesarios,
+                                "PERDIDA", producto.getCodigo(), dto.observacion());
                     }
 
                     // 3?? Registrar perdida (solo historico)
@@ -491,7 +491,8 @@ public class InventarioServicioImpl implements InventarioServicio {
                     ));
 
             double mlNecesarios = pmp.getMlConsumidos() * cantidad;
-            mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
+            mpSede.cambiarStock(mpSede.getCantidadActualMl() - mlNecesarios,
+                    "SALIDA_MANUAL", producto.getCodigo(), "Salida manual de producto");
         }
     }
 
@@ -735,14 +736,14 @@ public class InventarioServicioImpl implements InventarioServicio {
         double stockActual = mpSede.getCantidadActualMl(); // ? AQUI
 
         if ("ENTRADA".equals(dto.tipo())) {
-            mpSede.setCantidadActualMl(stockActual + dto.cantidad());
+            mpSede.cambiarStock(stockActual + dto.cantidad(), "ENTRADA", null, "Entrada de materia prima");
         } else if ("SALIDA".equals(dto.tipo())) {
 
             if (stockActual < dto.cantidad()) {
                 throw new RuntimeException("Stock insuficiente");
             }
 
-            mpSede.setCantidadActualMl(stockActual - dto.cantidad());
+            mpSede.cambiarStock(stockActual - dto.cantidad(), "SALIDA_MANUAL", null, "Salida manual de materia prima");
         } else {
             throw new IllegalArgumentException("Tipo de movimiento invalido");
         }

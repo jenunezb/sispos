@@ -553,3 +553,22 @@ ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS presentacion VARCHAR(80);
 ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS contenido_presentacion DOUBLE PRECISION;
 ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS precio_presentacion DOUBLE PRECISION;
 ALTER TABLE materia_prima ADD COLUMN IF NOT EXISTS costo_unitario DOUBLE PRECISION;
+
+ALTER TABLE materia_prima_sede ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS movimiento_materia_prima (
+    id BIGSERIAL PRIMARY KEY,
+    materia_prima_sede_id BIGINT NOT NULL REFERENCES materia_prima_sede(id),
+    fecha TIMESTAMP NOT NULL,
+    tipo VARCHAR(255) NOT NULL,
+    stock_anterior DOUBLE PRECISION NOT NULL,
+    stock_nuevo DOUBLE PRECISION NOT NULL,
+    producto_id BIGINT,
+    observacion VARCHAR(255)
+);
+CREATE INDEX IF NOT EXISTS idx_mov_mp_fecha ON movimiento_materia_prima(materia_prima_sede_id, fecha, id);
+INSERT INTO movimiento_materia_prima(materia_prima_sede_id,fecha,tipo,stock_anterior,stock_nuevo,observacion)
+SELECT m.id, CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota', 'APERTURA', m.cantidad_actual_ml,
+       m.cantidad_actual_ml, 'Inicio del historial; no representa una entrada'
+FROM materia_prima_sede m WHERE NOT EXISTS (
+    SELECT 1 FROM movimiento_materia_prima h WHERE h.materia_prima_sede_id=m.id
+);

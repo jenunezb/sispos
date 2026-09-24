@@ -89,7 +89,7 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
         MateriaPrimaSede mpSede = new MateriaPrimaSede();
         mpSede.setMateriaPrima(materiaPrima);
         mpSede.setSede(sede);
-        mpSede.setCantidadActualMl(dto.cantidadInicialMl());
+        mpSede.cambiarStock(dto.cantidadInicialMl(), "ENTRADA", null, "Carga inicial");
         mpSede.setMlPorVaso(0);
         mpSede.setActiva(true);
 
@@ -129,7 +129,8 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
             );
         }
 
-        mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlADescontar);
+        mpSede.cambiarStock(mpSede.getCantidadActualMl() - mlADescontar,
+                "VENTA_UNITARIA", null, "Venta por consumo configurado");
         materiaPrimaSedeRepository.save(mpSede);
     }
     @Override
@@ -423,7 +424,8 @@ public class MateriaPrimaSedeServiceImpl implements MateriaPrimaSedeService {
             materiaSede.setCantidadActualMl(0);
             materiaSede.setMlPorVaso(0);
         }
-        materiaSede.setCantidadActualMl(materiaSede.getCantidadActualMl() + cantidadAgregada);
+        materiaSede.cambiarStock(materiaSede.getCantidadActualMl() + cantidadAgregada,
+                "ENTRADA", null, "Carga de materia prima");
         materiaSede.setActiva(true);
         materiaPrimaSedeRepository.save(materiaSede);
 

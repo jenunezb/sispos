@@ -268,7 +268,7 @@ public class VentaServicioImpl implements VentaServicio {
                     );
                 }
 
-                mpSede.setCantidadActualMl(mpSede.getCantidadActualMl() - mlNecesarios);
+                mpSede.consumirVenta(mlNecesarios, producto);
                 materiaPrimaSedeRepository.save(mpSede);
             }
 
@@ -493,7 +493,7 @@ public class VentaServicioImpl implements VentaServicio {
             MateriaPrimaSede stock = materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(config.getMateriaPrima().getCodigo(), sede.getId())
                     .orElseThrow(() -> new RuntimeException("No hay " + config.getNombre() + " en esta sede"));
             if (stock.getCantidadActualMl() < consumo) throw new RuntimeException("Materia prima insuficiente: " + config.getNombre());
-            stock.setCantidadActualMl(stock.getCantidadActualMl() - consumo);
+            stock.consumirVenta(consumo, producto);
             materiaPrimaSedeRepository.save(stock);
             DetalleVentaComplemento guardado = new DetalleVentaComplemento();
             guardado.setDetalleVenta(detalle); guardado.setComplemento(config); guardado.setNombre(config.getNombre());
