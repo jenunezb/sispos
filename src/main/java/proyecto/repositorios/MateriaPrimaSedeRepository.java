@@ -1,6 +1,8 @@
 package proyecto.repositorios;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import proyecto.entidades.MateriaPrima;
 import proyecto.entidades.MateriaPrimaSede;
 import proyecto.entidades.Sede;
@@ -30,7 +32,27 @@ public interface MateriaPrimaSedeRepository extends JpaRepository<MateriaPrimaSe
 
     boolean existsByMateriaPrimaAndSedeId(MateriaPrima materiaPrima, Long sedeId);
 
+    boolean existsByMateriaPrimaCodigoAndSedeEmpresaNit(Long materiaPrimaId, Long empresaNit);
+
     List<MateriaPrimaSede> findBySedeIdOrderByIdAsc(Long sedeId);
+
+    List<MateriaPrimaSede> findByMateriaPrimaCodigo(Long materiaPrimaId);
+
+    List<MateriaPrimaSede> findBySedeIdInOrderByIdAsc(List<Long> sedeIds);
+
+    @Query("SELECT COALESCE(SUM(m.cantidadActualMl), 0) FROM MateriaPrimaSede m WHERE m.materiaPrima.codigo = :materiaPrimaId")
+    double sumarStockMateriaPrima(@Param("materiaPrimaId") Long materiaPrimaId);
+
+    @Query("""
+        SELECT mps
+        FROM MateriaPrimaSede mps
+        JOIN mps.materiaPrima mp
+        WHERE mps.sede.id = :sedeId
+          AND mps.activa = true
+          AND mp.activa = true
+        ORDER BY mp.nombre ASC
+    """)
+    List<MateriaPrimaSede> findActivasBySedeIdOrderByMateriaPrimaNombreAsc(@Param("sedeId") Long sedeId);
 
 }
 
