@@ -8,9 +8,12 @@ import proyecto.entidades.Producto;
 import proyecto.entidades.ProductoMateriaPrima;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductoMateriaPrimaRepository
         extends JpaRepository<ProductoMateriaPrima, Long> {
+
+    boolean existsByProductoCodigo(Long productoCodigo);
 
     boolean existsByProductoAndMateriaPrima(Producto producto, MateriaPrima materiaPrima);
 
@@ -24,6 +27,23 @@ public interface ProductoMateriaPrimaRepository
     );
 
     List<ProductoMateriaPrima> findByProductoCodigo(Long productoCodigo);
+
+    List<ProductoMateriaPrima> findByMateriaPrimaCodigoOrderByProductoNombreAsc(Long materiaPrimaId);
+
+    @Query("""
+        SELECT pmp
+        FROM ProductoMateriaPrima pmp
+        JOIN Inventario i ON i.producto = pmp.producto
+        WHERE pmp.materiaPrima.codigo = :materiaPrimaId
+          AND i.sede.id = :sedeId
+        ORDER BY pmp.producto.nombre ASC
+    """)
+    List<ProductoMateriaPrima> findByMateriaPrimaCodigoAndSedeIdOrderByProductoNombreAsc(
+            @Param("materiaPrimaId") Long materiaPrimaId,
+            @Param("sedeId") Long sedeId
+    );
+
+    Optional<ProductoMateriaPrima> findByMateriaPrimaCodigoAndProductoCodigo(Long materiaPrimaId, Long productoId);
 }
 
 

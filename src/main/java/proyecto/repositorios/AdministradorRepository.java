@@ -9,6 +9,7 @@ import proyecto.entidades.Administrador;
 import proyecto.entidades.Vendedor;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,7 +20,7 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "    :sedeId AS sedeId,\n" +
             "    p.nombre AS productoNombre,\n" +
             "\n" +
-            "    /* Inventario inicial antes del período */\n" +
+            "    /* Inventario inicial antes del perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo */\n" +
             "    COALESCE(SUM(\n" +
             "        CASE\n" +
             "            WHEN m.fecha < :fechaInicio AND m.tipo = 'ENTRADA' THEN m.cantidad\n" +
@@ -28,7 +29,7 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
             "        END\n" +
             "    ), 0) AS inventarioInicial,\n" +
             "\n" +
-            "    /* Entradas del período */\n" +
+            "    /* Entradas del perÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­odo */\n" +
             "    COALESCE(SUM(\n" +
             "        CASE\n" +
             "            WHEN m.fecha BETWEEN :fechaInicio AND :fechaFin\n" +
@@ -131,4 +132,43 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
 
     Optional<Administrador> findByCorreo(String correo);
 
+    Optional<Administrador> findByCorreoIgnoreCase(String correo);
+
+    List<Administrador> findByEmpresaNit(Long nit);
+
+    List<Administrador> findByEmpresaNitAndEsSuperAdminFalseOrderByNombreAsc(Long nit);
+
+    Optional<Administrador> findByCodigoAndEmpresaNit(Integer codigo, Long nit);
+
+    @Query("""
+            SELECT DISTINCT a
+            FROM Administrador a
+            LEFT JOIN FETCH a.sedesAsignadas sedes
+            WHERE a.codigo = :codigo
+            """)
+    Optional<Administrador> findDetalleByCodigo(@Param("codigo") Integer codigo);
+
+    @Query("""
+            SELECT DISTINCT a
+            FROM Administrador a
+            LEFT JOIN FETCH a.sedesAsignadas sedes
+            WHERE a.empresa.nit = :empresaNit
+              AND a.esSuperAdmin = false
+            ORDER BY a.nombre ASC
+            """)
+    List<Administrador> findDetalleByEmpresaNit(@Param("empresaNit") Long empresaNit);
+
+    @Query("""
+            SELECT DISTINCT a
+            FROM Administrador a
+            LEFT JOIN FETCH a.sedesAsignadas sedes
+            WHERE a.codigo IN :codigos
+            """)
+    List<Administrador> findDetalleByCodigoIn(@Param("codigos") Collection<Integer> codigos);
+
+    long countByEsSuperAdminTrue();
+
 }
+
+
+
