@@ -56,6 +56,8 @@ class AdministradorServicioImplTest {
     private Cloudinary cloudinary;
     @Mock
     private SedeRepository sedeRepository;
+    @Mock
+    private SuscripcionSedeInicializacionService suscripcionSedeInicializacionService;
 
     @InjectMocks
     private AdministradorServicioImpl administradorServicio;
@@ -152,6 +154,7 @@ class AdministradorServicioImplTest {
         verify(empresaRepository).save(empresaCaptor.capture());
         assertEquals(null, empresaCaptor.getValue().getLogo());
         verify(imagenRepository, never()).save(any());
+        verify(suscripcionSedeInicializacionService).crearPendienteActivacion(any(Sede.class));
     }
 
     @Test

@@ -56,6 +56,9 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         }
 
         SuscripcionLoginInfo suscripcionInfo = evaluarSuscripcionLogin(cuenta);
+        if (suscripcionInfo.bloquear()) {
+            throw new RuntimeException(suscripcionInfo.mensaje());
+        }
         PremiumAccesoInfo premiumAccesoInfo = resolverPremiumAcceso(cuenta);
 
         // Generar y retornar token
@@ -124,17 +127,33 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
     }
 
     private SuscripcionLoginInfo evaluarSuscripcionLogin(LoginCuentaDTO cuenta) {
-        if (Boolean.TRUE.equals(cuenta.getEsSuperAdmin()) || cuenta.getEmpresaNit() == null) {
+        if (Boolean.TRUE.equals(cuenta.getEsSuperAdmin())
+                || cuenta.getEmpresaNit() == null
+                || !esCuentaOperativa(cuenta.getRol())) {
             return SuscripcionLoginInfo.sinNovedad();
         }
 
-        List<SuscripcionSede> suscripciones = suscripcionSedeRepository.findBySedeEmpresaNit(cuenta.getEmpresaNit());
-        if (suscripciones.isEmpty()) {
+        SuscripcionSede suscripcion = vendedorRepository.findByCorreo(cuenta.getCorreo())
+                .filter(vendedor -> vendedor.getSede() != null)
+                .flatMap(vendedor -> suscripcionSedeRepository.findBySedeId(vendedor.getSede().getId()))
+                .orElse(null);
+
+        if (suscripcion == null) {
             return SuscripcionLoginInfo.sinNovedad();
         }
 
-        List<SuscripcionEstadoInfo> estados = suscripciones.stream()
-                .filter(suscripcion -> !esSuscripcionSinConfigurar(suscripcion))
+        if (requiereActivacionSoporte(suscripcion)) {
+            return new SuscripcionLoginInfo(
+                    true,
+                    true,
+                    EstadoSuscripcionSede.VENCIDO.name(),
+                    null,
+                    "La sede esta pendiente de activacion. Comunicate con soporte tecnico para habilitarla."
+            );
+        }
+
+        List<SuscripcionEstadoInfo> estados = List.of(suscripcion).stream()
+                .filter(item -> !esSuscripcionSinConfigurar(item))
                 .map(this::evaluarEstado)
                 .toList();
 
@@ -151,6 +170,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
             String fecha = formatearFechaMensaje(vencida.fechaVencimiento());
             return new SuscripcionLoginInfo(
                     true,
+                    false,
                     vencida.estado().name(),
                     vencida.fechaVencimiento() != null ? DATE_FORMATTER.format(vencida.fechaVencimiento()) : null,
                     "Tu suscripcion esta vencida desde el " + fecha + ". Realiza el pago por llave al numero 3026367474 y, si ya pagaste, envia el comprobante para activar nuevamente el servicio."
@@ -165,6 +185,7 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
         if (porVencer != null) {
             return new SuscripcionLoginInfo(
                     true,
+                    false,
                     porVencer.estado().name(),
                     porVencer.fechaVencimiento() != null ? DATE_FORMATTER.format(porVencer.fechaVencimiento()) : null,
                     "Tu suscripcion esta por vencer."
@@ -206,6 +227,12 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
                 && suscripcion.getFechaProximoVencimiento() == null;
     }
 
+    private boolean requiereActivacionSoporte(SuscripcionSede suscripcion) {
+        return suscripcion != null
+                && SuscripcionSedeInicializacionService.OBSERVACION_PENDIENTE_ACTIVACION
+                .equals(suscripcion.getObservacion());
+    }
+
     private String formatearFechaMensaje(LocalDate fecha) {
         if (fecha == null) {
             return "fecha no disponible";
@@ -238,12 +265,13 @@ public class AutenticacionServicioImpl implements AutenticacionServicio {
 
     private record SuscripcionLoginInfo(
             boolean advertir,
+            boolean bloquear,
             String estado,
             String fechaVencimiento,
             String mensaje
     ) {
         private static SuscripcionLoginInfo sinNovedad() {
-            return new SuscripcionLoginInfo(false, null, null, null);
+            return new SuscripcionLoginInfo(false, false, null, null, null);
         }
     }
 

@@ -9,14 +9,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import proyecto.dto.LoginCuentaDTO;
 import proyecto.dto.LoginDTO;
 import proyecto.dto.TokenDTO;
+import proyecto.entidades.Sede;
 import proyecto.entidades.SuscripcionSede;
+import proyecto.entidades.Vendedor;
 import proyecto.repositorios.CuentaRepo;
 import proyecto.repositorios.SuscripcionSedeRepository;
 import proyecto.repositorios.VendedorRepository;
 import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -93,7 +94,6 @@ class AutenticacionServicioImplTest {
         );
 
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
-        when(suscripcionSedeRepository.findBySedeEmpresaNit(900123456L)).thenReturn(List.of());
         when(vendedorRepository.findByCorreo("vendedor@correo.com")).thenReturn(Optional.empty());
         when(jwtUtils.generarToken(eq("vendedor@correo.com"), anyMap())).thenReturn("token-falso");
 
@@ -125,7 +125,6 @@ class AutenticacionServicioImplTest {
         );
 
         when(cuentaRepo.findLoginByCorreo("admin@correo.com")).thenReturn(Optional.of(administrador));
-        when(suscripcionSedeRepository.findBySedeEmpresaNit(900999111L)).thenReturn(List.of());
         when(jwtUtils.generarToken(eq("admin@correo.com"), anyMap())).thenReturn("token-admin");
 
         TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("admin@correo.com", "secreta"));
@@ -157,9 +156,14 @@ class AutenticacionServicioImplTest {
         suscripcion.setFechaUltimoPago(LocalDate.of(2026, 6, 1));
         suscripcion.setFechaProximoVencimiento(LocalDate.now().minusDays(1));
 
+        Sede sede = new Sede();
+        sede.setId(10L);
+        Vendedor entidadVendedor = new Vendedor();
+        entidadVendedor.setSede(sede);
+
         when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
-        when(suscripcionSedeRepository.findBySedeEmpresaNit(900123456L)).thenReturn(List.of(suscripcion));
-        when(vendedorRepository.findByCorreo("vendedor@correo.com")).thenReturn(Optional.empty());
+        when(vendedorRepository.findByCorreo("vendedor@correo.com")).thenReturn(Optional.of(entidadVendedor));
+        when(suscripcionSedeRepository.findBySedeId(10L)).thenReturn(Optional.of(suscripcion));
         when(jwtUtils.generarToken(eq("vendedor@correo.com"), anyMap())).thenReturn("token-falso");
 
         TokenDTO respuesta = autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta"));
@@ -170,6 +174,47 @@ class AutenticacionServicioImplTest {
         assertNotNull(respuesta.getMensajeSuscripcion());
         assertTrue(respuesta.getMensajeSuscripcion().contains("Tu suscripcion esta vencida desde el "));
         assertTrue(respuesta.getMensajeSuscripcion().contains("3026367474"));
+    }
+
+    @Test
+    void debeBloquearLoginSiLaSedeEstaPendienteDeActivacionPorSoporte() {
+        LoginCuentaDTO vendedor = crearCuentaLogin(
+                20,
+                "vendedor@correo.com",
+                encoder.encode("secreta"),
+                "vendedor",
+                "Vendedor",
+                1,
+                "Empresa Nueva",
+                900999111L,
+                3015550000L,
+                false,
+                false
+        );
+
+        SuscripcionSede suscripcion = new SuscripcionSede();
+        suscripcion.setActiva(true);
+        suscripcion.setEstadoServicio(proyecto.entidades.EstadoSuscripcionSede.VENCIDO);
+        suscripcion.setFechaProximoVencimiento(LocalDate.now().minusDays(1));
+        suscripcion.setObservacion(SuscripcionSedeInicializacionService.OBSERVACION_PENDIENTE_ACTIVACION);
+
+        Sede sede = new Sede();
+        sede.setId(30L);
+        Vendedor entidadVendedor = new Vendedor();
+        entidadVendedor.setSede(sede);
+
+        when(cuentaRepo.findLoginByCorreo("vendedor@correo.com")).thenReturn(Optional.of(vendedor));
+        when(vendedorRepository.findByCorreo("vendedor@correo.com")).thenReturn(Optional.of(entidadVendedor));
+        when(suscripcionSedeRepository.findBySedeId(30L)).thenReturn(Optional.of(suscripcion));
+
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> autenticacionServicio.login(new LoginDTO("vendedor@correo.com", "secreta")));
+
+        assertEquals(
+                "La sede esta pendiente de activacion. Comunicate con soporte tecnico para habilitarla.",
+                exception.getMessage()
+        );
+        verify(jwtUtils, never()).generarToken(eq("vendedor@correo.com"), anyMap());
     }
 
     private LoginCuentaDTO crearCuentaLogin(

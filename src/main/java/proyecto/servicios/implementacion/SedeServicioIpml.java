@@ -6,11 +6,15 @@ import proyecto.dto.SedeActualizarDTO;
 import proyecto.dto.SedeCrearDTO;
 import proyecto.dto.SedeDTO;
 import proyecto.entidades.Empresa;
+import proyecto.entidades.EstadoSuscripcionSede;
 import proyecto.entidades.Sede;
+import proyecto.entidades.SuscripcionSede;
 import proyecto.repositorios.EmpresaRepository;
 import proyecto.repositorios.SedeRepository;
+import proyecto.repositorios.SuscripcionSedeRepository;
 import proyecto.servicios.interfaces.SedeServicio;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -18,6 +22,8 @@ import java.util.List;
 public class SedeServicioIpml implements SedeServicio {
     private final SedeRepository sedeRepository;
     private final EmpresaRepository empresaRepository;
+    private final SuscripcionSedeInicializacionService suscripcionSedeInicializacionService;
+    private final SuscripcionSedeRepository suscripcionSedeRepository;
 
     public SedeDTO crear(SedeCrearDTO dto, Long empresaNit) {
 
@@ -32,7 +38,9 @@ public class SedeServicioIpml implements SedeServicio {
         sede.setUbicacion(dto.ubicacion());
         sede.setEmpresa(empresa);
 
-        return toDTO(sedeRepository.save(sede));
+        Sede sedeGuardada = sedeRepository.save(sede);
+        suscripcionSedeInicializacionService.crearPendienteActivacion(sedeGuardada);
+        return toDTO(sedeGuardada);
     }
 
     public List<SedeDTO> listar() {
@@ -59,10 +67,31 @@ public class SedeServicioIpml implements SedeServicio {
     }
 
     private SedeDTO toDTO(Sede sede) {
+        SuscripcionSede suscripcion = suscripcionSedeRepository.findBySedeId(sede.getId()).orElse(null);
         return new SedeDTO(
                 sede.getId(),
-                sede.getUbicacion()
+                sede.getUbicacion(),
+                calcularEstadoSuscripcion(suscripcion),
+                suscripcion != null ? suscripcion.getFechaProximoVencimiento() : null
         );
+    }
+
+    private String calcularEstadoSuscripcion(SuscripcionSede suscripcion) {
+        if (suscripcion == null) {
+            return "SIN_CONFIGURAR";
+        }
+        if (!Boolean.TRUE.equals(suscripcion.getActiva())) {
+            return EstadoSuscripcionSede.SUSPENDIDO.name();
+        }
+
+        LocalDate vencimiento = suscripcion.getFechaProximoVencimiento();
+        if (vencimiento == null || vencimiento.isBefore(LocalDate.now())) {
+            return EstadoSuscripcionSede.VENCIDO.name();
+        }
+        if (!vencimiento.isAfter(LocalDate.now().plusDays(5))) {
+            return EstadoSuscripcionSede.POR_VENCER.name();
+        }
+        return EstadoSuscripcionSede.ACTIVO.name();
     }
 
     public SedeDTO obtenerPorId(Long id) {

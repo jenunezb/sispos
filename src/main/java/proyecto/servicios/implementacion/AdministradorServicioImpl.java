@@ -33,6 +33,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
     private final EmpresaRepository empresaRepository;
     private final Cloudinary cloudinary;
     private final SedeRepository sedeRepository;
+    private final SuscripcionSedeInicializacionService suscripcionSedeInicializacionService;
 
 
     @Override
@@ -423,8 +424,9 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         sede.setEmpresa(empresa);
         sede.setAdministrador(admin);
 
-        sedeRepository.save(sede);
-        admin.setSedesAsignadas(new ArrayList<>(List.of(sede)));
+        Sede sedeGuardada = sedeRepository.save(sede);
+        suscripcionSedeInicializacionService.crearPendienteActivacion(sedeGuardada);
+        admin.setSedesAsignadas(new ArrayList<>(List.of(sedeGuardada)));
         administradorRepository.save(admin);
 
         return admin.getCodigo();
