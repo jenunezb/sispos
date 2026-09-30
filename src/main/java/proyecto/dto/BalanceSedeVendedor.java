@@ -11,6 +11,12 @@ public record BalanceSedeVendedor(
         Double totalVentas,
         Double ventasEfectivo,
         Double ventasTransferencia,
-        Long cantidadVentas
+        Long cantidadVentas,
+        String plan,
+        Boolean gastosHabilitados,
+        Boolean cajaHabilitada,
+        Double totalGastos,
+        Double gastosEfectivo,
+        Double cajaEsperada
 ) {
 }

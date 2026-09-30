@@ -29,4 +29,25 @@ ORDER BY m.producto.id ASC
             @Param("fin") LocalDateTime fin
     );
 
+    @Query("""
+SELECT
+    m.producto.id,
+    SUM(
+        CASE
+            WHEN m.tipo = 'ENTRADA' THEN m.cantidad
+            WHEN m.tipo IN ('SALIDA', 'PERDIDA') THEN -m.cantidad
+            ELSE 0
+        END
+    )
+FROM MovimientoInventario m
+WHERE m.sede.id = :sedeId
+  AND m.fecha > :fin
+GROUP BY m.producto.id
+ORDER BY m.producto.id ASC
+""")
+    List<Object[]> resumenMovimientosPosteriores(
+            @Param("sedeId") Long sedeId,
+            @Param("fin") LocalDateTime fin
+    );
+
 }
