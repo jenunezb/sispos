@@ -8,11 +8,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dto.SedeCrearDTO;
 import proyecto.entidades.Empresa;
 import proyecto.entidades.Sede;
+import proyecto.entidades.SuscripcionSede;
 import proyecto.repositorios.EmpresaRepository;
 import proyecto.repositorios.SedeRepository;
 import proyecto.repositorios.SuscripcionSedeRepository;
 
 import java.util.Optional;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,5 +61,27 @@ class SedeServicioIpmlTest {
         assertEquals("Centro", respuesta.ubicacion());
         assertEquals("SIN_CONFIGURAR", respuesta.estadoSuscripcion());
         verify(suscripcionSedeInicializacionService).crearPendienteActivacion(any(Sede.class));
+    }
+
+    @Test
+    void obtenerPorIdDebeIncluirMensajeDePagoSoloParaLaSedeVencida() {
+        Sede sede = new Sede();
+        sede.setId(30L);
+        sede.setUbicacion("Centro");
+
+        SuscripcionSede suscripcion = new SuscripcionSede();
+        suscripcion.setSede(sede);
+        suscripcion.setActiva(true);
+        suscripcion.setFechaProximoVencimiento(LocalDate.now().minusDays(2));
+
+        when(sedeRepository.findById(30L)).thenReturn(Optional.of(sede));
+        when(suscripcionSedeRepository.findBySedeId(30L)).thenReturn(Optional.of(suscripcion));
+
+        var respuesta = servicio.obtenerPorId(30L);
+
+        assertEquals("VENCIDO", respuesta.estadoSuscripcion());
+        assertEquals(LocalDate.now().minusDays(2), respuesta.fechaVencimientoSuscripcion());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                respuesta.mensajeSuscripcion().contains("Realiza el pago por llave"));
     }
 }

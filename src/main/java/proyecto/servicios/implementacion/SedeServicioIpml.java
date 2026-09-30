@@ -68,12 +68,36 @@ public class SedeServicioIpml implements SedeServicio {
 
     private SedeDTO toDTO(Sede sede) {
         SuscripcionSede suscripcion = suscripcionSedeRepository.findBySedeId(sede.getId()).orElse(null);
+        String estado = calcularEstadoSuscripcion(suscripcion);
         return new SedeDTO(
                 sede.getId(),
                 sede.getUbicacion(),
-                calcularEstadoSuscripcion(suscripcion),
-                suscripcion != null ? suscripcion.getFechaProximoVencimiento() : null
+                estado,
+                suscripcion != null ? suscripcion.getFechaProximoVencimiento() : null,
+                construirMensajeSuscripcion(suscripcion, estado)
         );
+    }
+
+    private String construirMensajeSuscripcion(SuscripcionSede suscripcion, String estado) {
+        if (suscripcion == null) {
+            return null;
+        }
+        if (SuscripcionSedeInicializacionService.OBSERVACION_PENDIENTE_ACTIVACION
+                .equals(suscripcion.getObservacion())) {
+            return "La sede esta pendiente de activacion. Comunicate con soporte tecnico para habilitarla.";
+        }
+        if (EstadoSuscripcionSede.VENCIDO.name().equals(estado)
+                || EstadoSuscripcionSede.SUSPENDIDO.name().equals(estado)) {
+            String fecha = suscripcion.getFechaProximoVencimiento() != null
+                    ? suscripcion.getFechaProximoVencimiento().toString()
+                    : "fecha no disponible";
+            return "Tu suscripcion esta vencida desde el " + fecha
+                    + ". Realiza el pago por llave al numero 3026367474 y, si ya pagaste, envia el comprobante para activar nuevamente el servicio.";
+        }
+        if (EstadoSuscripcionSede.POR_VENCER.name().equals(estado)) {
+            return "Tu suscripcion esta por vencer.";
+        }
+        return null;
     }
 
     private String calcularEstadoSuscripcion(SuscripcionSede suscripcion) {
