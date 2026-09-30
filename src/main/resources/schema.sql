@@ -1,3 +1,20 @@
+CREATE TABLE IF NOT EXISTS correccion_pago_venta (
+    id BIGSERIAL PRIMARY KEY,
+    venta_id BIGINT NOT NULL REFERENCES venta(id),
+    caja_id BIGINT,
+    fecha TIMESTAMP NOT NULL,
+    usuario VARCHAR(255) NOT NULL,
+    rol VARCHAR(255) NOT NULL,
+    anterior VARCHAR(255) NOT NULL,
+    nuevo VARCHAR(255) NOT NULL,
+    motivo VARCHAR(500) NOT NULL,
+    efectivo_anterior DOUBLE PRECISION,
+    transferencia_anterior DOUBLE PRECISION,
+    efectivo_nuevo DOUBLE PRECISION,
+    transferencia_nueva DOUBLE PRECISION
+);
+CREATE INDEX IF NOT EXISTS idx_correccion_pago_venta ON correccion_pago_venta(venta_id);
+
 ALTER TABLE administrador
     ADD COLUMN IF NOT EXISTS es_super_admin BOOLEAN NOT NULL DEFAULT FALSE;
 

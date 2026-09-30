@@ -80,8 +80,9 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public CajaTurnoResponseDTO cerrarCaja(Administrador administrador, Long cajaId, CajaCierreDTO dto) {
-        CajaTurno caja = cajaTurnoRepository.findById(cajaId)
+        CajaTurno caja = cajaTurnoRepository.bloquearPorId(cajaId)
                 .orElseThrow(() -> new RuntimeException("Caja no encontrada"));
 
         if (caja.getEstado() != EstadoCaja.ABIERTA) {
@@ -106,8 +107,9 @@ public class CajaTurnoServicioImpl implements CajaTurnoServicio {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public CajaTurnoResponseDTO cerrarCaja(Vendedor vendedor, Long cajaId, CajaCierreDTO dto) {
-        CajaTurno caja = cajaTurnoRepository.findById(cajaId)
+        CajaTurno caja = cajaTurnoRepository.bloquearPorId(cajaId)
                 .orElseThrow(() -> new RuntimeException("Caja no encontrada"));
 
         if (caja.getEstado() != EstadoCaja.ABIERTA) {

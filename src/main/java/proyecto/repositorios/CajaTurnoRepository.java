@@ -14,6 +14,14 @@ import java.util.Optional;
 @Repository
 public interface CajaTurnoRepository extends JpaRepository<CajaTurno, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from CajaTurno c where c.id = :id")
+    Optional<CajaTurno> bloquearPorId(@Param("id") Long id);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from CajaTurno c where c.sede.id = :sedeId and c.fechaApertura <= :fecha and (c.fechaCierre is null or c.fechaCierre >= :fecha) order by c.fechaApertura desc")
+    List<CajaTurno> bloquearTurnosDeVenta(@Param("sedeId") Long sedeId, @Param("fecha") LocalDateTime fecha);
+
     boolean existsBySedeIdAndEstado(Long sedeId, EstadoCaja estado);
 
     Optional<CajaTurno> findFirstBySedeIdAndEstadoOrderByFechaAperturaDesc(Long sedeId, EstadoCaja estado);
