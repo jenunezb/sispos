@@ -5,11 +5,13 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import proyecto.dto.*;
 import proyecto.entidades.*;
 import proyecto.repositorios.*;
+import proyecto.eventos.EmpresaRegistradaEvent;
 import proyecto.servicios.interfaces.AdministradorServicio;
 
 import java.time.LocalDate;
@@ -34,6 +36,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
     private final Cloudinary cloudinary;
     private final SedeRepository sedeRepository;
     private final SuscripcionSedeInicializacionService suscripcionSedeInicializacionService;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Override
@@ -428,6 +431,17 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         suscripcionSedeInicializacionService.crearPeriodoPrueba(sedeGuardada);
         admin.setSedesAsignadas(new ArrayList<>(List.of(sedeGuardada)));
         administradorRepository.save(admin);
+
+        eventPublisher.publishEvent(new EmpresaRegistradaEvent(
+                empresa.getNit(),
+                empresa.getNombre(),
+                (admin.getNombre() + " " + admin.getApellido()).trim(),
+                admin.getCorreo(),
+                admin.getCelular(),
+                dto.nombreSede(),
+                sedeGuardada.getUbicacion(),
+                LocalDate.now().plusMonths(1)
+        ));
 
         return admin.getCodigo();
     }

@@ -7,6 +7,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import proyecto.dto.AdministradorEmpresaCrearDTO;
 import proyecto.dto.AdministradorSedesDTO;
 import proyecto.dto.RegistroEmpresaDTO;
@@ -17,6 +18,7 @@ import proyecto.entidades.Empresa;
 import proyecto.entidades.Imagen;
 import proyecto.entidades.Sede;
 import proyecto.entidades.Vendedor;
+import proyecto.eventos.EmpresaRegistradaEvent;
 import proyecto.repositorios.AdministradorRepository;
 import proyecto.repositorios.CiudadRepo;
 import proyecto.repositorios.CuentaRepo;
@@ -58,6 +60,8 @@ class AdministradorServicioImplTest {
     private SedeRepository sedeRepository;
     @Mock
     private SuscripcionSedeInicializacionService suscripcionSedeInicializacionService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private AdministradorServicioImpl administradorServicio;
@@ -155,6 +159,7 @@ class AdministradorServicioImplTest {
         assertEquals(null, empresaCaptor.getValue().getLogo());
         verify(imagenRepository, never()).save(any());
         verify(suscripcionSedeInicializacionService).crearPeriodoPrueba(any(Sede.class));
+        verify(eventPublisher).publishEvent(any(EmpresaRegistradaEvent.class));
     }
 
     @Test
