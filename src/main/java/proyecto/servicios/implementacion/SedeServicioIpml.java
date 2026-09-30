@@ -86,6 +86,13 @@ public class SedeServicioIpml implements SedeServicio {
                 .equals(suscripcion.getObservacion())) {
             return "La sede esta pendiente de activacion. Comunicate con soporte tecnico para habilitarla.";
         }
+        if (SuscripcionSedeInicializacionService.OBSERVACION_PERIODO_PRUEBA
+                .equals(suscripcion.getObservacion())
+                && (EstadoSuscripcionSede.ACTIVO.name().equals(estado)
+                || EstadoSuscripcionSede.POR_VENCER.name().equals(estado))) {
+            return "Tu periodo de prueba gratuito esta activo hasta el "
+                    + suscripcion.getFechaProximoVencimiento() + ".";
+        }
         if (EstadoSuscripcionSede.VENCIDO.name().equals(estado)
                 || EstadoSuscripcionSede.SUSPENDIDO.name().equals(estado)) {
             String fecha = suscripcion.getFechaProximoVencimiento() != null

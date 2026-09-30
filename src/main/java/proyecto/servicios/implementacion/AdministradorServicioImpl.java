@@ -425,7 +425,7 @@ public class AdministradorServicioImpl implements AdministradorServicio {
         sede.setAdministrador(admin);
 
         Sede sedeGuardada = sedeRepository.save(sede);
-        suscripcionSedeInicializacionService.crearPendienteActivacion(sedeGuardada);
+        suscripcionSedeInicializacionService.crearPeriodoPrueba(sedeGuardada);
         admin.setSedesAsignadas(new ArrayList<>(List.of(sedeGuardada)));
         administradorRepository.save(admin);
 

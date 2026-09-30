@@ -50,4 +50,28 @@ class SuscripcionSedeInicializacionServiceTest {
                 guardada.getObservacion()
         );
     }
+
+    @Test
+    void debeCrearUnMesDePruebaParaLaPrimeraSedeDeLaEmpresa() {
+        Sede sede = new Sede();
+        sede.setId(26L);
+        when(suscripcionSedeRepository.save(any(SuscripcionSede.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        servicio.crearPeriodoPrueba(sede);
+
+        ArgumentCaptor<SuscripcionSede> captor = ArgumentCaptor.forClass(SuscripcionSede.class);
+        verify(suscripcionSedeRepository).save(captor.capture());
+
+        SuscripcionSede guardada = captor.getValue();
+        assertEquals(sede, guardada.getSede());
+        assertTrue(guardada.getActiva());
+        assertEquals(EstadoSuscripcionSede.ACTIVO, guardada.getEstadoServicio());
+        assertEquals(LocalDate.now(), guardada.getFechaInicioServicio());
+        assertEquals(LocalDate.now().plusMonths(1), guardada.getFechaProximoVencimiento());
+        assertEquals(
+                SuscripcionSedeInicializacionService.OBSERVACION_PERIODO_PRUEBA,
+                guardada.getObservacion()
+        );
+    }
 }

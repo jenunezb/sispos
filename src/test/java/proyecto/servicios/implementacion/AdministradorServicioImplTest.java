@@ -154,7 +154,7 @@ class AdministradorServicioImplTest {
         verify(empresaRepository).save(empresaCaptor.capture());
         assertEquals(null, empresaCaptor.getValue().getLogo());
         verify(imagenRepository, never()).save(any());
-        verify(suscripcionSedeInicializacionService).crearPendienteActivacion(any(Sede.class));
+        verify(suscripcionSedeInicializacionService).crearPeriodoPrueba(any(Sede.class));
     }
 
     @Test
