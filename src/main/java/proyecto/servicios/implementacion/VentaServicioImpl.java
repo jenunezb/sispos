@@ -526,17 +526,9 @@ public class VentaServicioImpl implements VentaServicio {
     @Override
     @Transactional
     public void anularVenta(Long ventaId) {
-
-        Venta venta = ventaRepository.findById(ventaId)
+        Venta venta = ventaRepository.bloquearPorId(ventaId)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
-
-        if (venta.getAnulado()) {
-            throw new RuntimeException("La venta ya esta anulada");
-        }
-
-        venta.setAnulado(true);
-
-        ventaRepository.save(venta);
+        cambiarEstadoConInventario(venta, false);
     }
 
 
@@ -547,11 +539,9 @@ public class VentaServicioImpl implements VentaServicio {
             throw new RuntimeException("El estado de la venta es obligatorio");
         }
 
-        Venta venta = ventaRepository.findByIdAndSedeEmpresaNit(ventaId, empresaNit)
+        Venta venta = ventaRepository.bloquearPorIdYEmpresa(ventaId, empresaNit)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada para la empresa"));
-
-        venta.setAnulado(!valido);
-        ventaRepository.save(venta);
+        cambiarEstadoConInventario(venta, valido);
     }
 
     @Override
@@ -561,11 +551,136 @@ public class VentaServicioImpl implements VentaServicio {
             throw new RuntimeException("El estado de la venta es obligatorio");
         }
 
-        Venta venta = ventaRepository.findById(ventaId)
+        Venta venta = ventaRepository.bloquearPorId(ventaId)
                 .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+        cambiarEstadoConInventario(venta, valido);
+    }
+
+    /**
+     * Cambia el estado una sola vez y mantiene el inventario alineado con la venta.
+     * Invalidar repone lo descontado; volver a validar realiza nuevamente el descuento.
+     */
+    private void cambiarEstadoConInventario(Venta venta, boolean valido) {
+        boolean actualmenteValida = !Boolean.TRUE.equals(venta.getAnulado());
+        if (actualmenteValida == valido) {
+            return;
+        }
+
+        boolean ventaProduccion = esVendedorProduccion(venta.getVendedor());
+        List<DetalleVenta> detalles = venta.getDetalles() == null ? List.of() : venta.getDetalles();
+        for (DetalleVenta detalle : detalles) {
+            Producto producto = detalle.getProducto();
+            if (producto == null) {
+                continue; // Los productos rapidos no administran existencias.
+            }
+            int cantidad = detalle.getCantidad() == null ? 0 : detalle.getCantidad();
+            if (cantidad <= 0) {
+                continue;
+            }
+
+            if (ventaProduccion) {
+                ajustarInventarioProduccionPorEstado(venta, producto, cantidad, valido);
+            } else {
+                ajustarInventarioGeneralPorEstado(venta.getSede(), producto, cantidad, valido);
+            }
+            ajustarComplementosPorEstado(venta.getSede(), detalle, producto, valido);
+        }
 
         venta.setAnulado(!valido);
         ventaRepository.save(venta);
+    }
+
+    private void ajustarInventarioGeneralPorEstado(Sede sede, Producto producto, int cantidad, boolean validar) {
+        if (producto.getMateriasPrimas() != null && !producto.getMateriasPrimas().isEmpty()) {
+            for (ProductoMateriaPrima receta : producto.getMateriasPrimas()) {
+                MateriaPrimaSede stock = materiaPrimaSedeRepository
+                        .findByMateriaPrimaCodigoAndSedeId(receta.getMateriaPrima().getCodigo(), sede.getId())
+                        .orElseThrow(() -> new RuntimeException(
+                                "No hay " + receta.getMateriaPrima().getNombre() + " en esta sede"));
+                double consumo = receta.getMlConsumidos() * cantidad;
+                ajustarMateriaPrima(stock, consumo, producto, validar);
+            }
+        } else {
+            Inventario inventario = inventarioRepository
+                    .findVisibleByProductoCodigoAndSedeId(producto.getCodigo(), sede.getId())
+                    .orElseThrow(() -> new RuntimeException("No hay inventario para " + producto.getNombre()));
+            int nuevoStock = inventario.getStockActual() + (validar ? -cantidad : cantidad);
+            if (nuevoStock < 0) {
+                throw new RuntimeException("Stock insuficiente para volver a validar " + producto.getNombre());
+            }
+            inventario.cambiarStock(nuevoStock, validar ? tipoVenta(producto) : "ANULACION_VENTA",
+                    validar ? "Venta marcada nuevamente como valida" : "Devolucion por venta invalida");
+            inventarioRepository.save(inventario);
+            notificacionStockMinimoService.evaluarYNotificar(inventario, inventario.getStockActual());
+        }
+
+        registrarMovimientoEstado(sede, producto, cantidad, validar);
+    }
+
+    private void ajustarComplementosPorEstado(Sede sede, DetalleVenta detalle, Producto producto, boolean validar) {
+        if (detalle.getComplementos() == null) return;
+        for (DetalleVentaComplemento seleccionado : detalle.getComplementos()) {
+            ProductoComplemento complemento = seleccionado.getComplemento();
+            if (complemento == null || complemento.getMateriaPrima() == null) continue;
+            int cantidadComplemento = seleccionado.getCantidad() == null ? 0 : seleccionado.getCantidad();
+            int cantidadProducto = detalle.getCantidad() == null ? 0 : detalle.getCantidad();
+            double consumo = complemento.getCantidadConsumo() * cantidadComplemento * cantidadProducto;
+            MateriaPrimaSede stock = materiaPrimaSedeRepository
+                    .findByMateriaPrimaCodigoAndSedeId(complemento.getMateriaPrima().getCodigo(), sede.getId())
+                    .orElseThrow(() -> new RuntimeException("No hay " + seleccionado.getNombre() + " en esta sede"));
+            ajustarMateriaPrima(stock, consumo, producto, validar);
+        }
+    }
+
+    private void ajustarMateriaPrima(MateriaPrimaSede stock, double consumo, Producto producto, boolean validar) {
+        double nuevaCantidad = stock.getCantidadActualMl() + (validar ? -consumo : consumo);
+        if (nuevaCantidad < 0) {
+            throw new RuntimeException("Materia prima insuficiente para volver a validar: "
+                    + stock.getMateriaPrima().getNombre());
+        }
+        stock.cambiarStock(nuevaCantidad, validar ? tipoVenta(producto) : "ANULACION_VENTA",
+                producto.getCodigo(), validar ? "Venta marcada nuevamente como valida" : "Devolucion por venta invalida");
+        materiaPrimaSedeRepository.save(stock);
+    }
+
+    private void ajustarInventarioProduccionPorEstado(Venta venta, Producto producto, int cantidad, boolean validar) {
+        InventarioProduccion inventario = inventarioProduccionRepository
+                .findByProductoCodigoAndSedeId(producto.getCodigo(), venta.getSede().getId())
+                .orElseThrow(() -> new RuntimeException("No hay inventario de produccion para " + producto.getNombre()));
+        int nuevoStock = inventario.getStockActual() + (validar ? -cantidad : cantidad);
+        if (nuevoStock < 0) {
+            throw new RuntimeException("Stock de produccion insuficiente para volver a validar " + producto.getNombre());
+        }
+        inventario.setStockActual(nuevoStock);
+        int despachado = inventario.getDespachadoAcumulado() == null ? 0 : inventario.getDespachadoAcumulado();
+        inventario.setDespachadoAcumulado(Math.max(0, despachado + (validar ? cantidad : -cantidad)));
+        inventarioProduccionRepository.save(inventario);
+
+        MovimientoProduccion movimiento = new MovimientoProduccion();
+        movimiento.setProducto(producto);
+        movimiento.setSede(venta.getSede());
+        movimiento.setCliente(venta.getCliente());
+        movimiento.setVendedor(venta.getVendedor());
+        movimiento.setTipo(validar ? TipoMovimientoProduccion.DESPACHO : TipoMovimientoProduccion.AJUSTE);
+        movimiento.setCantidad(cantidad);
+        movimiento.setObservacion(validar ? "Venta marcada nuevamente como valida" : "Devolucion por venta invalida");
+        movimientoProduccionRepository.save(movimiento);
+    }
+
+    private void registrarMovimientoEstado(Sede sede, Producto producto, int cantidad, boolean validar) {
+        MovimientoInventario movimiento = new MovimientoInventario();
+        movimiento.setProducto(producto);
+        movimiento.setSede(sede);
+        movimiento.setTipo(validar ? TipoMovimiento.SALIDA : TipoMovimiento.ENTRADA);
+        movimiento.setCantidad(cantidad);
+        movimiento.setObservacion(validar ? "Venta marcada nuevamente como valida" : "Devolucion por venta invalida");
+        movimiento.setFecha(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime());
+        movimientoInventarioRepository.save(movimiento);
+    }
+
+    private String tipoVenta(Producto producto) {
+        return String.valueOf(producto.getNombre()).toLowerCase(java.util.Locale.ROOT).contains("combo")
+                ? "VENTA_COMBO" : "VENTA_UNITARIA";
     }
 
     @Override

@@ -20,6 +20,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     @Query("select v from Venta v where v.id = :id")
     Optional<Venta> bloquearPorId(@Param("id") Long id);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select v from Venta v where v.id = :id and v.sede.empresa.nit = :empresaNit")
+    Optional<Venta> bloquearPorIdYEmpresa(@Param("id") Long id, @Param("empresaNit") Long empresaNit);
+
     boolean existsByVendedorCodigo(Long vendedorId);
 
     List<Venta> findByVendedorCodigoAndAnuladoFalse(Long vendedorId);

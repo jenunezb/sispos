@@ -194,7 +194,7 @@ class VentaServicioImplTest {
         venta.setSede(sede);
         venta.setAnulado(false);
 
-        when(ventaRepository.findByIdAndSedeEmpresaNit(10L, 900123456L))
+        when(ventaRepository.bloquearPorIdYEmpresa(10L, 900123456L))
                 .thenReturn(Optional.of(venta));
 
         ventaServicio.cambiarEstadoVenta(10L, false, 900123456L);
@@ -204,6 +204,105 @@ class VentaServicioImplTest {
         assertFalse(venta.getAnulado());
 
         verify(ventaRepository, times(2)).save(venta);
+    }
+
+    @Test
+    void invalidarYRevalidarVentaDevuelveYDescuentaProductoSinReceta() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+        Sede sede = new Sede();
+        sede.setId(5L);
+        sede.setEmpresa(empresa);
+        Producto producto = new Producto();
+        producto.setCodigo(20L);
+        producto.setNombre("Agua");
+        Inventario inventario = new Inventario();
+        inventario.setProducto(producto);
+        inventario.setSede(sede);
+        inventario.setStockActual(8);
+        DetalleVenta detalle = new DetalleVenta();
+        detalle.setProducto(producto);
+        detalle.setCantidad(2);
+        Venta venta = ventaConDetalle(10L, sede, detalle);
+
+        when(ventaRepository.bloquearPorIdYEmpresa(10L, empresa.getNit())).thenReturn(Optional.of(venta));
+        when(inventarioRepository.findVisibleByProductoCodigoAndSedeId(20L, 5L)).thenReturn(Optional.of(inventario));
+
+        ventaServicio.cambiarEstadoVenta(10L, false, empresa.getNit());
+        assertEquals(10, inventario.getStockActual());
+        assertTrue(venta.getAnulado());
+
+        ventaServicio.cambiarEstadoVenta(10L, true, empresa.getNit());
+        assertEquals(8, inventario.getStockActual());
+        assertFalse(venta.getAnulado());
+        verify(movimientoInventarioRepository, times(2)).save(any(MovimientoInventario.class));
+    }
+
+    @Test
+    void invalidarYRevalidarVentaDevuelveYDescuentaMateriaPrimaYComplemento() {
+        Empresa empresa = new Empresa();
+        empresa.setNit(900123456L);
+        Sede sede = new Sede();
+        sede.setId(6L);
+        sede.setEmpresa(empresa);
+        MateriaPrima materiaReceta = new MateriaPrima();
+        materiaReceta.setCodigo(31L);
+        materiaReceta.setNombre("Cafe");
+        MateriaPrima materiaComplemento = new MateriaPrima();
+        materiaComplemento.setCodigo(32L);
+        materiaComplemento.setNombre("Crema");
+        Producto producto = new Producto();
+        producto.setCodigo(21L);
+        producto.setNombre("Cafe especial");
+        ProductoMateriaPrima receta = new ProductoMateriaPrima();
+        receta.setProducto(producto);
+        receta.setMateriaPrima(materiaReceta);
+        receta.setMlConsumidos(10);
+        producto.getMateriasPrimas().add(receta);
+        MateriaPrimaSede stockReceta = stockMateria(sede, materiaReceta, 80);
+        MateriaPrimaSede stockComplemento = stockMateria(sede, materiaComplemento, 40);
+        ProductoComplemento complemento = new ProductoComplemento();
+        complemento.setMateriaPrima(materiaComplemento);
+        complemento.setCantidadConsumo(3D);
+        DetalleVentaComplemento seleccionado = new DetalleVentaComplemento();
+        seleccionado.setComplemento(complemento);
+        seleccionado.setNombre("Crema");
+        seleccionado.setCantidad(2);
+        DetalleVenta detalle = new DetalleVenta();
+        detalle.setProducto(producto);
+        detalle.setCantidad(2);
+        detalle.getComplementos().add(seleccionado);
+        Venta venta = ventaConDetalle(11L, sede, detalle);
+
+        when(ventaRepository.bloquearPorIdYEmpresa(11L, empresa.getNit())).thenReturn(Optional.of(venta));
+        when(materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(31L, 6L)).thenReturn(Optional.of(stockReceta));
+        when(materiaPrimaSedeRepository.findByMateriaPrimaCodigoAndSedeId(32L, 6L)).thenReturn(Optional.of(stockComplemento));
+
+        ventaServicio.cambiarEstadoVenta(11L, false, empresa.getNit());
+        assertEquals(100D, stockReceta.getCantidadActualMl());
+        assertEquals(52D, stockComplemento.getCantidadActualMl());
+
+        ventaServicio.cambiarEstadoVenta(11L, true, empresa.getNit());
+        assertEquals(80D, stockReceta.getCantidadActualMl());
+        assertEquals(40D, stockComplemento.getCantidadActualMl());
+    }
+
+    private Venta ventaConDetalle(Long id, Sede sede, DetalleVenta detalle) {
+        Venta venta = new Venta();
+        venta.setId(id);
+        venta.setSede(sede);
+        venta.setAnulado(false);
+        venta.setDetalles(List.of(detalle));
+        detalle.setVenta(venta);
+        return venta;
+    }
+
+    private MateriaPrimaSede stockMateria(Sede sede, MateriaPrima materiaPrima, double cantidad) {
+        MateriaPrimaSede stock = new MateriaPrimaSede();
+        stock.setSede(sede);
+        stock.setMateriaPrima(materiaPrima);
+        stock.setCantidadActualMl(cantidad);
+        return stock;
     }
 
     @Test
