@@ -46,3 +46,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+.gradle-local/
+
+# Private DIAN artifacts must never be committed.
+/data/dian-private/

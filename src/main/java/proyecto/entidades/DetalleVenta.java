@@ -3,6 +3,9 @@ package proyecto.entidades;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @ToString
 @Entity
@@ -14,6 +17,24 @@ public class DetalleVenta {
     private Integer cantidad;
     private Double precioUnitario;
     private Double subtotal;
+
+    @Column(name = "precio_unitario_fiscal", precision = 19, scale = 6)
+    private BigDecimal precioUnitarioFiscal;
+
+    @Column(name = "subtotal_fiscal", precision = 19, scale = 6)
+    private BigDecimal subtotalFiscal;
+
+    @Column(name = "descuento_fiscal", precision = 19, scale = 6)
+    private BigDecimal descuentoFiscal;
+
+    @Column(name = "base_impuesto_fiscal", precision = 19, scale = 6)
+    private BigDecimal baseImpuestoFiscal;
+
+    @Column(name = "tarifa_impuesto_fiscal", precision = 9, scale = 6)
+    private BigDecimal tarifaImpuestoFiscal;
+
+    @Column(name = "valor_impuesto_fiscal", precision = 19, scale = 6)
+    private BigDecimal valorImpuestoFiscal;
 
     @ManyToOne
     @JoinColumn(name = "venta_id")
@@ -32,5 +53,8 @@ public class DetalleVenta {
 
     @Column(nullable = true)
     private String nombreLibre;
+
+    @OneToMany(mappedBy = "detalleVenta", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DetalleVentaComplemento> complementos = new ArrayList<>();
 
 }
