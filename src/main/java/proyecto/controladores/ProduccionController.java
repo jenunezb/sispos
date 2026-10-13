@@ -1,0 +1,303 @@
+package proyecto.controladores;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import proyecto.dto.*;
+import proyecto.entidades.EstadoComandaCocina;
+import proyecto.entidades.Venta;
+import proyecto.servicios.interfaces.AdministradorServicio;
+import proyecto.servicios.implementacion.ConfiguracionCocinaSedeService;
+import proyecto.servicios.interfaces.ComandaCocinaServicio;
+import proyecto.servicios.interfaces.ProduccionServicio;
+import proyecto.servicios.interfaces.VentaServicio;
+import proyecto.utils.JWTUtils;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/produccion")
+@RequiredArgsConstructor
+public class ProduccionController {
+
+    private final ProduccionServicio produccionServicio;
+    private final VentaServicio ventaServicio;
+    private final AdministradorServicio administradorServicio;
+    private final ConfiguracionCocinaSedeService configuracionCocinaSedeService;
+    private final ComandaCocinaServicio comandaCocinaServicio;
+    private final JWTUtils jwtUtils;
+
+    @PostMapping("/clientes")
+    public ResponseEntity<ClienteDTO> crearCliente(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ClienteCrearDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.crearCliente(obtenerCorreo(authorization), dto)
+        );
+    }
+
+    @GetMapping("/clientes")
+    public ResponseEntity<List<ClienteDTO>> listarClientes(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarClientes(obtenerCorreo(authorization))
+        );
+    }
+
+    @PutMapping("/clientes/{clienteId}")
+    public ResponseEntity<ClienteDTO> actualizarCliente(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long clienteId,
+            @Valid @RequestBody ClienteActualizarDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.actualizarCliente(obtenerCorreo(authorization), clienteId, dto)
+        );
+    }
+
+    @DeleteMapping("/clientes/{clienteId}")
+    public ResponseEntity<MensajeDTO<String>> eliminarCliente(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long clienteId
+    ) {
+        produccionServicio.eliminarCliente(obtenerCorreo(authorization), clienteId);
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Cliente eliminado correctamente"));
+    }
+
+    @GetMapping("/productos")
+    public ResponseEntity<List<ProductoProduccionDTO>> listarProductos(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarProductos(obtenerCorreo(authorization))
+        );
+    }
+
+    @PostMapping("/productos")
+    public ResponseEntity<ProductoProduccionDTO> crearProducto(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProductoProduccionRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.crearProducto(obtenerCorreo(authorization), dto)
+        );
+    }
+
+    @PutMapping("/productos/{productoId}")
+    public ResponseEntity<ProductoProduccionDTO> actualizarProducto(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long productoId,
+            @Valid @RequestBody ProductoProduccionRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.actualizarProducto(obtenerCorreo(authorization), productoId, dto)
+        );
+    }
+
+    @DeleteMapping("/productos/{productoId}")
+    public ResponseEntity<MensajeDTO<String>> eliminarProducto(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long productoId
+    ) {
+        produccionServicio.eliminarProducto(obtenerCorreo(authorization), productoId);
+        return ResponseEntity.ok(new MensajeDTO<>(false, "Producto eliminado correctamente"));
+    }
+
+    @PostMapping("/inventario/produccion")
+    public ResponseEntity<MensajeDTO<String>> registrarProduccion(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProduccionRegistroDTO dto
+    ) {
+        return ResponseEntity.ok(new MensajeDTO<>(
+                false,
+                produccionServicio.registrarProduccion(obtenerCorreo(authorization), dto)
+        ));
+    }
+
+    @PostMapping("/inventario/produccion/lote")
+    public ResponseEntity<MensajeDTO<String>> registrarProduccionLote(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProduccionRegistroMultipleDTO dto
+    ) {
+        return ResponseEntity.ok(new MensajeDTO<>(
+                false,
+                produccionServicio.registrarProduccionMultiple(obtenerCorreo(authorization), dto)
+        ));
+    }
+
+    @GetMapping("/inventario")
+    public ResponseEntity<List<InventarioProduccionDTO>> listarInventario(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarInventario(obtenerCorreo(authorization))
+        );
+    }
+
+    @GetMapping("/inventario/ajuste-manual")
+    public ResponseEntity<ProduccionAjusteManualResponseDTO> listarInventarioAjustable(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarInventarioAjustable(obtenerCorreo(authorization))
+        );
+    }
+
+    @PutMapping("/inventario/ajuste-manual")
+    public ResponseEntity<ProduccionAjusteManualResultadoResponseDTO> ajustarInventarioManual(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody ProduccionAjusteManualRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.ajustarInventarioManual(obtenerCorreo(authorization), dto)
+        );
+    }
+
+    @GetMapping("/inventario/ajuste-manual/historial")
+    public ResponseEntity<List<ProduccionMovimientoManualDTO>> listarHistorialAjustesManuales(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarHistorialAjustesManuales(obtenerCorreo(authorization))
+        );
+    }
+
+    @GetMapping("/admin-pin/estado")
+    public ResponseEntity<AdminPinEstadoResponseDTO> obtenerEstadoAdminPin(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.obtenerEstadoAdminPin(obtenerCorreo(authorization))
+        );
+    }
+
+    @PostMapping("/admin-pin/validar")
+    public ResponseEntity<AdminPinValidacionResponseDTO> validarAdminPin(
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody AdminPinValidacionRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.validarAdminPin(obtenerCorreo(authorization), dto)
+        );
+    }
+
+    @PutMapping("/admin-pin")
+    public ResponseEntity<AdminPinMensajeResponseDTO> actualizarAdminPin(
+            @RequestHeader("Authorization") String authorization,
+            @RequestBody AdminPinActualizarRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.actualizarAdminPin(obtenerCorreo(authorization), dto)
+        );
+    }
+
+    @PostMapping("/clientes/{clienteId}/precios")
+    public ResponseEntity<PrecioClienteDTO> guardarPrecio(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long clienteId,
+            @Valid @RequestBody PrecioClienteRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.guardarPrecioCliente(obtenerCorreo(authorization), clienteId, dto)
+        );
+    }
+
+    @GetMapping("/clientes/{clienteId}/precios")
+    public ResponseEntity<List<PrecioClienteDTO>> listarPrecios(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long clienteId
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarPreciosCliente(obtenerCorreo(authorization), clienteId)
+        );
+    }
+
+    @PostMapping("/ventas")
+    public ResponseEntity<VentaResponseDTO> crearVentaProduccion(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @RequestBody VentaRecuestDTO dto
+    ) {
+        Venta venta = ventaServicio.crearVentaProduccion(obtenerCorreo(authorization), dto);
+        return ResponseEntity.ok(ventaServicio.mapToResponse(venta));
+    }
+
+    @GetMapping("/ventas")
+    public ResponseEntity<List<VentaResponseDTO>> listarVentas(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarVentas(obtenerCorreo(authorization))
+        );
+    }
+
+    @GetMapping("/ventas/rango")
+    public ResponseEntity<List<VentaResponseDTO>> listarVentasRango(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.listarVentasRango(obtenerCorreo(authorization), desde, hasta)
+        );
+    }
+
+    @GetMapping("/informe-diario")
+    public ResponseEntity<InformeProduccionDiaDTO> obtenerInformeDiario(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(
+                produccionServicio.obtenerInformeDiario(obtenerCorreo(authorization), fecha)
+        );
+    }
+
+    @GetMapping("/logo")
+    public ResponseEntity<MensajeDTO<String>> obtenerLogoEmpresa(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerLogoEmpresa(correo)));
+    }
+
+    @GetMapping("/impresion-cocina")
+    public ResponseEntity<MensajeDTO<Boolean>> obtenerImpresionCocina(
+            @RequestHeader("Authorization") String authorization, @RequestParam Long sedeId
+    ) {
+        return ResponseEntity.ok(new MensajeDTO<>(false, configuracionCocinaSedeService.obtener(authorization, sedeId).habilitada()));
+    }
+
+    @GetMapping("/comandas-cocina")
+    public ResponseEntity<MensajeDTO<List<ComandaCocinaResponseDTO>>> listarComandasCocina(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(false, comandaCocinaServicio.listarComandasActivas(correo)));
+    }
+
+    @PatchMapping("/comandas-cocina/{comandaId}/estado")
+    public ResponseEntity<MensajeDTO<ComandaCocinaResponseDTO>> actualizarEstadoComanda(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long comandaId,
+            @Valid @RequestBody ComandaCocinaEstadoDTO dto
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(
+                false,
+                comandaCocinaServicio.actualizarEstado(correo, comandaId, dto.estado())
+        ));
+    }
+
+    private String obtenerCorreo(String authorization) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        return claims.getBody().getSubject();
+    }
+}
