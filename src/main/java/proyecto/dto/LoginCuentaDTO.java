@@ -7,4 +7,9 @@ public interface LoginCuentaDTO {
     String getRol();
     String getNombre();
     Integer getEstado();
+    String getNombreEmpresa();
+    Long getEmpresaNit();
+    Long getEmpresaTelefono();
+    Boolean getEsSuperAdmin();
+    Boolean getEsAdministradorEmpresa();
 }
