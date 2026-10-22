@@ -20,6 +20,8 @@ public class DianTransmissionPackageService {
     static final String PRODUCTION_SERVICE_URL = "https://vpfe.dian.gov.co/WcfDianCustomerServices.svc";
     static final String SEND_TEST_SET_ACTION =
             "http://wcf.dian.colombia/IWcfDianCustomerServices/SendTestSetAsync";
+    static final String GET_STATUS_ZIP_ACTION =
+            "http://wcf.dian.colombia/IWcfDianCustomerServices/GetStatusZip";
 
     public PackageData prepareSecuredTestSet(DianElectronicDocument document, DianConfiguration configuration) {
         if (configuration == null || configuration.getEnvironment() != DianEnvironment.HABILITACION) {
@@ -38,6 +40,23 @@ public class DianTransmissionPackageService {
         byte[] securedEnvelope = wsSecurity.sign(unsigned.soapEnvelope(), material.pkcs12(), material.password(),
                 serviceUrl, SEND_TEST_SET_ACTION);
         return new PackageData(unsigned.xmlFileName(), unsigned.zipFileName(), unsigned.zip(), securedEnvelope);
+    }
+
+    public byte[] prepareSecuredStatusQuery(DianConfiguration configuration, String trackId) {
+        if (configuration == null) throw new IllegalArgumentException("Falta la configuración DIAN");
+        DianCertificateService.SigningMaterial material = certificates.load(configuration);
+        String serviceUrl = serviceUrl(configuration);
+        return wsSecurity.sign(soap.getStatusZip(required(trackId, "TrackId")), material.pkcs12(),
+                material.password(), serviceUrl, GET_STATUS_ZIP_ACTION);
+    }
+
+    public String serviceUrl(DianConfiguration configuration) {
+        if (configuration == null) throw new IllegalArgumentException("Falta la configuración DIAN");
+        if (configuration.getDianServiceUrl() != null && !configuration.getDianServiceUrl().isBlank()) {
+            return configuration.getDianServiceUrl().trim();
+        }
+        return configuration.getEnvironment() == DianEnvironment.PRODUCCION
+                ? PRODUCTION_SERVICE_URL : TEST_SERVICE_URL;
     }
 
     private PackageData prepare(DianElectronicDocument document, String testSetId) {

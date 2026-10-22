@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import proyecto.dian.service.DianDocumentPreparationService;
 import proyecto.dian.service.DianSaleValidationService;
+import proyecto.dian.service.DianInvoiceTransmissionService;
 
 @RestController
 @RequestMapping("/api/ventas/{ventaId}/factura-electronica")
@@ -24,6 +25,7 @@ public class DianSaleController {
     private final DianDocumentPreparationService preparation;
     private final DianDocumentSigningService signing;
     private final DianInvoicePdfService invoicePdf;
+    private final DianInvoiceTransmissionService transmission;
 
     @GetMapping("/validate")
     public ResponseEntity<DianSaleValidationResponse> validate(
@@ -58,5 +60,28 @@ public class DianSaleController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + result.fileName() + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(result.content());
+    }
+
+    @PostMapping("/send-test-set")
+    public ResponseEntity<DianDocumentResponse> sendTestSet(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long ventaId) {
+        return ResponseEntity.ok(transmission.sendTestSet(authorization, ventaId));
+    }
+
+    @PostMapping("/refresh-status")
+    public ResponseEntity<DianDocumentResponse> refreshStatus(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long ventaId,
+            @RequestParam DianEnvironment environment) {
+        return ResponseEntity.ok(transmission.refreshStatus(authorization, ventaId, environment));
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<DianDocumentResponse> status(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long ventaId,
+            @RequestParam DianEnvironment environment) {
+        return ResponseEntity.ok(transmission.get(authorization, ventaId, environment));
     }
 }

@@ -9,15 +9,18 @@ public record DianDocumentResponse(
         DianEnvironment environment,
         String fullNumber,
         String cufeOrCude,
+        String trackId,
         DianDocumentStatus status,
         String dianStatusCode,
-        String dianStatusMessage
+        String dianStatusMessage,
+        String dianValidationErrors
 ) {
     public static DianDocumentResponse from(DianElectronicDocument document) {
         return new DianDocumentResponse(document.getId(),
                 document.getVenta() == null ? null : document.getVenta().getId(),
                 document.getDocumentType(), document.getEnvironment(), document.getFullNumber(),
-                document.getCufeOrCude(), document.getStatus(), document.getDianStatusCode(),
-                document.getDianStatusMessage());
+                document.getCufeOrCude(), document.getTrackId(), document.getStatus(),
+                document.getDianStatusCode(), document.getDianStatusMessage(),
+                document.getDianValidationErrors());
     }
 }
