@@ -398,6 +398,14 @@ CREATE TABLE IF NOT EXISTS dian_numbering_range (
     CONSTRAINT ck_dian_range_environment CHECK (environment IN ('HABILITACION', 'PRODUCCION'))
 );
 
+-- Las bases ya existentes conservan la restriccion creada originalmente.
+-- Se reemplaza de forma idempotente para permitir el estado inicial range_from - 1.
+ALTER TABLE dian_numbering_range
+    DROP CONSTRAINT IF EXISTS ck_dian_range_values;
+ALTER TABLE dian_numbering_range
+    ADD CONSTRAINT ck_dian_range_values
+    CHECK (range_from - 1 <= current_number AND current_number <= range_to);
+
 CREATE TABLE IF NOT EXISTS dian_electronic_document (
     id BIGSERIAL PRIMARY KEY,
     empresa_id BIGINT NOT NULL REFERENCES empresa(nit),
