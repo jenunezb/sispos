@@ -6,6 +6,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import proyecto.dian.model.DianNumberingRange;
+import proyecto.dian.model.DianConfiguration;
+import proyecto.dian.model.DianDocumentType;
+import proyecto.dian.model.DianEnvironment;
+import proyecto.dian.dto.DianNumberingRangeRequest;
 import proyecto.dian.repository.DianConfigurationRepository;
 import proyecto.dian.repository.DianNumberingRangeRepository;
 import proyecto.entidades.Empresa;
@@ -42,6 +46,28 @@ class DianNumberingServiceTest {
         assertEquals(101L, range.getCurrentNumber());
         verify(ranges).findByIdForUpdate(7L, 902091864L);
         verify(ranges).save(range);
+    }
+
+    @Test
+    void createsRangeBeforeItsFirstNumberSoTheInitialConsecutiveIsNotSkipped() {
+        Empresa company = new Empresa();
+        company.setNit(902091864L);
+        DianConfiguration configuration = new DianConfiguration();
+        configuration.setEmpresa(company);
+        configuration.setEnvironment(DianEnvironment.HABILITACION);
+        var request = new DianNumberingRangeRequest(DianEnvironment.HABILITACION,
+                DianDocumentType.INVOICE, "SETP", "18760000001", 990000000L, 995000000L,
+                LocalDate.parse("2019-01-19"), LocalDate.parse("2030-01-19"), null);
+        when(tenantContext.requireCompanyAdministrator("Bearer token")).thenReturn(company);
+        when(configurations.findByEmpresaNitAndEnvironment(company.getNit(), DianEnvironment.HABILITACION))
+                .thenReturn(Optional.of(configuration));
+        when(ranges.save(any(DianNumberingRange.class))).thenAnswer(call -> call.getArgument(0));
+
+        service.create("Bearer token", request);
+
+        var saved = org.mockito.ArgumentCaptor.forClass(DianNumberingRange.class);
+        verify(ranges).save(saved.capture());
+        assertEquals(989999999L, saved.getValue().getCurrentNumber());
     }
 
     @Test

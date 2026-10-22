@@ -392,7 +392,7 @@ CREATE TABLE IF NOT EXISTS dian_numbering_range (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     CONSTRAINT uk_dian_range_resolution UNIQUE (empresa_id, environment, document_type, prefix, resolution_number),
-    CONSTRAINT ck_dian_range_values CHECK (range_from <= current_number AND current_number <= range_to),
+    CONSTRAINT ck_dian_range_values CHECK (range_from - 1 <= current_number AND current_number <= range_to),
     CONSTRAINT ck_dian_range_dates CHECK (valid_from <= valid_until),
     CONSTRAINT ck_dian_range_document_type CHECK (document_type IN ('INVOICE', 'CREDIT_NOTE', 'DEBIT_NOTE')),
     CONSTRAINT ck_dian_range_environment CHECK (environment IN ('HABILITACION', 'PRODUCCION'))
