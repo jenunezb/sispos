@@ -11,4 +11,6 @@ public interface MateriaPrimaRepository extends JpaRepository<MateriaPrima, Long
 
     Optional<MateriaPrima> findByNombreIgnoreCase(String nombre);
 
+    Optional<MateriaPrima> findByNombreIgnoreCaseAndEmpresaNit(String nombre, Long empresaNit);
+
 }
