@@ -15,6 +15,8 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         FROM DetalleVenta d
         JOIN d.producto p
         JOIN d.venta v
+        LEFT JOIN v.vendedor vend
+        WHERE v.anulado = false
     """)
     Double costoProduccionTotal();
 
@@ -23,7 +25,10 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
         FROM DetalleVenta d
         JOIN d.producto p
         JOIN d.venta v
+        LEFT JOIN v.vendedor vend
         WHERE v.sede.id = :sedeId
+          AND v.anulado = false
+          AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
     """)
     Double costoProduccionPorSede(@Param("sedeId") Long sedeId);
 
@@ -32,7 +37,9 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     FROM DetalleVenta d
     JOIN d.producto p
     JOIN d.venta v
+        LEFT JOIN v.vendedor vend
     WHERE v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
 """)
     Double costoProduccionEntreFechas(
             @Param("desde") LocalDateTime desde,
@@ -44,8 +51,11 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
     FROM DetalleVenta d
     JOIN d.producto p
     JOIN d.venta v
+        LEFT JOIN v.vendedor vend
     WHERE v.sede.id = :sedeId
-    AND v.fecha BETWEEN :desde AND :hasta
+      AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
+      AND (vend IS NULL OR vend.tipoPerfil IS NULL OR vend.tipoPerfil <> proyecto.entidades.TipoPerfilVendedor.PRODUCCION)
 """)
     Double costoProduccionPorSedeEntreFechas(
             @Param("sedeId") Long sedeId,
@@ -53,4 +63,22 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
             @Param("hasta") LocalDateTime hasta
     );
 
+    @Query("""
+    SELECT COALESCE(SUM(d.cantidad * p.precioProduccion), 0)
+    FROM DetalleVenta d
+    JOIN d.producto p
+    JOIN d.venta v
+    WHERE v.sede.empresa.nit = :empresaNit
+      AND v.fecha BETWEEN :desde AND :hasta
+      AND v.anulado = false
+""")
+    Double costoProduccionEntreFechasPorEmpresa(
+            @Param("empresaNit") Long empresaNit,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
+    );
+
+
 }
+
+

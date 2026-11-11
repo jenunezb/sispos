@@ -1,21 +1,37 @@
 package proyecto.repositorios;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import proyecto.entidades.Producto;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
-    // Puedes agregar consultas personalizadas si lo necesitas
-    // Ejemplo: List<Producto> findByNombreContainingIgnoreCase(String nombre);
 
-    // Buscar productos activos
-    List<Producto> findByEstadoTrue();
+    Optional<Producto> findByEmpresaNitAndCodigoBarras(Long empresaNit, String codigoBarras);
 
-    List<Producto> findAllByOrderByCodigoAsc();
+    List<Producto> findByActivoTrueAndEmpresaNitOrderByCodigoAsc(Long empresaNit);
 
-    // Buscar por nombre (opcional, útil más adelante)
-    List<Producto> findByNombreContainingIgnoreCase(String nombre);
+    Optional<Producto> findByCodigoAndEmpresaNit(Long codigo, Long empresaNit);
+
+    @Query("""
+        SELECT DISTINCT p
+        FROM Producto p
+        JOIN Inventario i ON i.producto = p
+        JOIN i.sede s
+        WHERE p.activo = true
+          AND p.empresa.nit = :empresaNit
+          AND s.id = :sedeId
+          AND s.empresa.nit = :empresaNit
+        ORDER BY p.codigo ASC
+    """)
+    List<Producto> findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(
+            @Param("empresaNit") Long empresaNit,
+            @Param("sedeId") Long sedeId
+    );
+
 }
