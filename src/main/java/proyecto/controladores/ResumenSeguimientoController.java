@@ -10,9 +10,11 @@ import proyecto.servicios.implementacion.ResumenSeguimientoService;
 public class ResumenSeguimientoController {
     private final AdministradorAccesoService acceso;
     private final ResumenSeguimientoService resumen;
+    private final proyecto.servicios.implementacion.SuscripcionFeatureService suscripcionFeatureService;
     @GetMapping("/{sedeId}/hoy")
     public ResumenSeguimientoService.Resumen hoy(@RequestHeader("Authorization") String authorization,@PathVariable long sedeId) {
         acceso.validarAccesoASede(acceso.obtenerAdministradorAutenticado(authorization),sedeId);
+        suscripcionFeatureService.validarInformesHabilitados(sedeId);
         return resumen.hoy(sedeId);
     }
 }

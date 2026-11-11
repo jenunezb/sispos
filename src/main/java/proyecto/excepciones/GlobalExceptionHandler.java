@@ -40,6 +40,12 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<MensajeDTO<String>> manejarEstadoHttp(org.springframework.web.server.ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new MensajeDTO<>(true, ex.getReason()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<MensajeDTO<String>> manejarRuntime(RuntimeException ex) {
         return ResponseEntity

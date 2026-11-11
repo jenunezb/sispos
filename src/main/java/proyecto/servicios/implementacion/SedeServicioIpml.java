@@ -74,7 +74,9 @@ public class SedeServicioIpml implements SedeServicio {
                 sede.getUbicacion(),
                 estado,
                 suscripcion != null ? suscripcion.getFechaProximoVencimiento() : null,
-                construirMensajeSuscripcion(suscripcion, estado)
+                construirMensajeSuscripcion(suscripcion, estado),
+                suscripcion != null && suscripcion.getPlan() == proyecto.entidades.PlanSuscripcionSede.PREMIUM
+                        && ("ACTIVO".equals(estado) || "POR_VENCER".equals(estado))
         );
     }
 

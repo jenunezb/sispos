@@ -16,6 +16,18 @@ public class SuscripcionFeatureService {
 
     private final SuscripcionSedeRepository suscripcionSedeRepository;
 
+    public boolean tieneInformesHabilitados(Long sedeId) {
+        return tieneGastosHabilitados(sedeId);
+    }
+
+    public void validarInformesHabilitados(Long sedeId) {
+        if (!tieneInformesHabilitados(sedeId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "La sede requiere un plan PREMIUM vigente para consultar informes");
+        }
+    }
+
     public void validarGastosHabilitados(Long sedeId) {
         SuscripcionSede suscripcion = suscripcionSedeRepository.findBySedeId(sedeId)
                 .orElseThrow(() -> new RuntimeException("La sede no tiene una suscripcion configurada para usar gastos"));

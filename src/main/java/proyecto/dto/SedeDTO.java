@@ -7,6 +7,7 @@ public record SedeDTO(
         String ubicacion,
         String estadoSuscripcion,
         LocalDate fechaVencimientoSuscripcion,
-        String mensajeSuscripcion
+        String mensajeSuscripcion,
+        boolean informesHabilitados
 ) {
 }

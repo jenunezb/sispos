@@ -31,6 +31,7 @@ public class ReporteVentasAdminController {
     private final ReporteVentasAdminServicio reporteVentasAdminServicio;
     private final AdministradorAccesoService administradorAccesoService;
     private final SedeRepository sedeRepository;
+    private final proyecto.servicios.implementacion.SuscripcionFeatureService suscripcionFeatureService;
 
     @GetMapping("/por-mes")
     public MensajeDTO<List<VentasPorMesDTO>> ventasPorMes(
@@ -115,6 +116,7 @@ public class ReporteVentasAdminController {
     private List<Long> resolverSedeIds(Administrador admin, Long empresaNit, Long sedeId) {
         if (sedeId != null) {
             administradorAccesoService.validarAccesoASede(admin, sedeId);
+            suscripcionFeatureService.validarInformesHabilitados(sedeId);
             return List.of(sedeId);
         }
 
@@ -125,6 +127,7 @@ public class ReporteVentasAdminController {
 
         return sedeRepository.findByEmpresaNitAndIdIn(empresaNitConsulta, sedeIdsVisibles).stream()
                 .map(sede -> sede.getId())
+                .filter(suscripcionFeatureService::tieneInformesHabilitados)
                 .toList();
     }
 }
