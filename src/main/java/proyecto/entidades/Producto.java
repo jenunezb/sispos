@@ -11,6 +11,7 @@ import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @ToString
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(name = "uk_producto_empresa_codigo_barras", columnNames = {"empresa_id", "codigo_barras"}))
 public class Producto implements Serializable {
 
     @Id
@@ -31,6 +32,9 @@ public class Producto implements Serializable {
 
     @Column(length = 50)
     private String categoria;
+
+    @Column(name = "codigo_barras", length = 100)
+    private String codigoBarras;
 
     @Column(name = "codigo_estandar_fiscal", length = 50)
     private String codigoEstandarFiscal;

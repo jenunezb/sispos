@@ -68,7 +68,8 @@ SELECT new proyecto.dto.InventarioDTO(
     COALESCE(i.salidas, 0),
     COALESCE(i.perdidas, 0),
     COALESCE(i.stockMinimo, 0),
-    p.precioVenta
+    p.precioVenta,
+    p.codigoBarras
 )
 FROM Producto p
 JOIN p.empresa e

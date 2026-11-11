@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
+    Optional<Producto> findByEmpresaNitAndCodigoBarras(Long empresaNit, String codigoBarras);
+
     List<Producto> findByActivoTrueAndEmpresaNitOrderByCodigoAsc(Long empresaNit);
 
     Optional<Producto> findByCodigoAndEmpresaNit(Long codigo, Long empresaNit);

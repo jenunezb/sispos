@@ -464,7 +464,8 @@ public class InventarioServicioImpl implements InventarioServicio {
                 inv.getSalidas(),
                 inv.getPerdidas(),
                 inv.getStockMinimo(),
-                inv.getProducto().getPrecioVenta()
+                inv.getProducto().getPrecioVenta(),
+                inv.getProducto().getCodigoBarras()
         );
     }
 

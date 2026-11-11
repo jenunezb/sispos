@@ -36,6 +36,7 @@ public class ProductoServicioImpl implements ProductoServicio {
     private final SedeRepository sedeRepository;
 
     @Override
+    @Transactional
     public ProductoDTO crearProducto(ProductoCrearDTO dto) {
         // 🔹 Buscar sede
         Sede sede = sedeRepository.findById(dto.sedeId())
@@ -47,6 +48,8 @@ public class ProductoServicioImpl implements ProductoServicio {
         }
 
         Producto producto = new Producto();
+        producto.setEmpresa(empresa);
+        producto.setCodigoBarras(validarCodigoBarras(dto.codigoBarras(), producto.getEmpresa(), producto.getCodigo()));
         producto.setNombre(dto.nombre());
         producto.setDescripcion(dto.descripcion());
         producto.setPrecioProduccion(dto.precioProduccion());
@@ -98,10 +101,12 @@ public class ProductoServicioImpl implements ProductoServicio {
     }
 
     @Override
+    @Transactional
     public ProductoDTO actualizarProducto(ProductoActualizarDTO dto) {
         Producto producto = productoRepository.findById(dto.codigo())
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
+        producto.setCodigoBarras(validarCodigoBarras(dto.codigoBarras(), producto.getEmpresa(), producto.getCodigo()));
         producto.setNombre(dto.nombre());
         producto.setDescripcion(dto.descripcion());
         producto.setPrecioProduccion(dto.precioProduccion());
@@ -205,6 +210,19 @@ public class ProductoServicioImpl implements ProductoServicio {
         return mapToDTO(producto);
     }
 
+    private String validarCodigoBarras(String valor, Empresa empresa, Long productoId) {
+        if (valor == null || valor.isBlank()) return null;
+        String codigo = valor.trim();
+        if (codigo.length() > 100 || codigo.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException("Código de barras inválido: máximo 100 caracteres sin caracteres de control");
+        }
+        if (empresa == null) throw new IllegalArgumentException("El producto no tiene empresa asociada");
+        productoRepository.findByEmpresaNitAndCodigoBarras(empresa.getNit(), codigo)
+                .filter(p -> !java.util.Objects.equals(p.getCodigo(), productoId))
+                .ifPresent(p -> { throw new IllegalArgumentException("El código de barras ya pertenece a otro producto de la empresa"); });
+        return codigo;
+    }
+
     private ProductoDTO mapToDTO(Producto producto) {
         return new ProductoDTO(
                 producto.getCodigo(),
@@ -213,7 +231,8 @@ public class ProductoServicioImpl implements ProductoServicio {
                 producto.getPrecioProduccion(),
                 producto.getPrecioVenta(),
                 producto.getCategoria(),
-                producto.getEstado()
+                producto.getEstado(),
+                producto.getCodigoBarras()
         );
     }
 }

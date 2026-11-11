@@ -99,4 +99,54 @@ class ProductoServicioImplTest {
         assertEquals(235L, respuesta.get(0).codigo());
         verify(productoRepository).findActivosByEmpresaNitAndSedeIdOrderByCodigoAsc(eq(1097726190L), eq(7L));
     }
+
+    @Test
+    void crearConCodigoDeBarrasConservaCerosInicialesYLoExpone() {
+        Empresa empresa = new Empresa(); empresa.setNit(123L);
+        Sede sede = new Sede(); sede.setEmpresa(empresa);
+        when(sedeRepository.findById(1L)).thenReturn(java.util.Optional.of(sede));
+        when(productoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        var dto = new proyecto.dto.ProductoCrearDTO("Cafe", "Desc", 0D, 2000D, null, 1L, " 0012345 ");
+        var creado = productoServicio.crearProducto(dto);
+        assertEquals("0012345", creado.codigoBarras());
+        verify(productoRepository).findByEmpresaNitAndCodigoBarras(123L, "0012345");
+    }
+
+    @Test
+    void noPermiteCodigoDuplicadoEnLaEmpresa() {
+        Empresa empresa = new Empresa(); empresa.setNit(123L);
+        Sede sede = new Sede(); sede.setEmpresa(empresa);
+        Producto existente = new Producto(); existente.setCodigo(2L);
+        when(sedeRepository.findById(1L)).thenReturn(java.util.Optional.of(sede));
+        when(productoRepository.findByEmpresaNitAndCodigoBarras(123L, "00123"))
+                .thenReturn(java.util.Optional.of(existente));
+        var dto = new proyecto.dto.ProductoCrearDTO("Cafe", "Desc", 0D, 2000D, null, 1L, "00123");
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> productoServicio.crearProducto(dto));
+        verify(productoRepository, never()).save(any());
+        verifyNoInteractions(inventarioRepository);
+    }
+
+    @Test
+    void actualizarPermiteConservarYEliminarCodigoPropio() {
+        Empresa empresa = new Empresa(); empresa.setNit(123L);
+        Producto producto = new Producto(); producto.setCodigo(2L); producto.setEmpresa(empresa);
+        when(productoRepository.findById(2L)).thenReturn(java.util.Optional.of(producto));
+        when(productoRepository.findByEmpresaNitAndCodigoBarras(123L, "00123"))
+                .thenReturn(java.util.Optional.of(producto));
+        when(productoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        var dto = new proyecto.dto.ProductoActualizarDTO(2L, "Cafe", "Desc", 0D, 2000D, null, true, "00123");
+        assertEquals("00123", productoServicio.actualizarProducto(dto).codigoBarras());
+        var sinCodigo = new proyecto.dto.ProductoActualizarDTO(2L, "Cafe", "Desc", 0D, 2000D, null, true, " ");
+        org.junit.jupiter.api.Assertions.assertNull(productoServicio.actualizarProducto(sinCodigo).codigoBarras());
+    }
+
+    @Test
+    void rechazaCodigoDemasiadoLargo() {
+        Empresa empresa = new Empresa(); empresa.setNit(123L);
+        Sede sede = new Sede(); sede.setEmpresa(empresa);
+        when(sedeRepository.findById(1L)).thenReturn(java.util.Optional.of(sede));
+        var dto = new proyecto.dto.ProductoCrearDTO("Cafe", "Desc", 0D, 2000D, null, 1L, "1".repeat(101));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> productoServicio.crearProducto(dto));
+        verify(productoRepository, never()).save(any());
+    }
 }
