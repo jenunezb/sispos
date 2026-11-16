@@ -6,5 +6,5 @@ public record ProductoDTO(Long codigo,
                           Double precioProduccion,
                           Double precioVenta,
                           String categoria,
-                          Boolean estado) {
+                          Boolean estado, String codigoBarras) {
 }

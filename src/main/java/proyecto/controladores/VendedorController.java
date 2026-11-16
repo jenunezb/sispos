@@ -1,19 +1,21 @@
 package proyecto.controladores;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
-import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import proyecto.dto.BalanceSedeDTO;
 import proyecto.dto.BalanceSedeVendedor;
 import proyecto.dto.InventarioDTO;
 import proyecto.dto.InventarioVendedorResponseDTO;
-import proyecto.entidades.Usuario;
+import proyecto.dto.MensajeDTO;
 import proyecto.entidades.Vendedor;
 import proyecto.servicios.interfaces.AdministradorServicio;
+import proyecto.servicios.implementacion.ConfiguracionCocinaSedeService;
 import proyecto.servicios.interfaces.InventarioServicio;
 import proyecto.servicios.interfaces.VendedorServicio;
+import proyecto.utils.JWTUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,8 +27,11 @@ import java.util.List;
 @AllArgsConstructor
 public class VendedorController {
 
-    private InventarioServicio inventarioServicio;
-    private VendedorServicio vendedorServicio;
+    private final InventarioServicio inventarioServicio;
+    private final VendedorServicio vendedorServicio;
+    private final AdministradorServicio administradorServicio;
+    private final ConfiguracionCocinaSedeService configuracionCocinaSedeService;
+    private final JWTUtils jwtUtils;
 
     @GetMapping("/inventario")
     public InventarioVendedorResponseDTO inventarioVendedor(@RequestParam("correo") String correo) {
@@ -46,18 +51,33 @@ public class VendedorController {
             @RequestParam(required = false) String hasta
     ) {
 
-        LocalDateTime fDesde;
-        LocalDateTime fHasta;
-
         if (desde != null && hasta != null) {
-            fDesde = LocalDate.parse(desde).atStartOfDay();
-            fHasta = LocalDate.parse(hasta).atTime(23, 59, 59);
-        } else {
-            fDesde = LocalDate.now().atStartOfDay();
-            fHasta = LocalDate.now().atTime(23, 59, 59);
+            LocalDateTime fDesde = LocalDate.parse(desde).atStartOfDay();
+            LocalDateTime fHasta = LocalDate.parse(hasta).atTime(23, 59, 59);
+            return vendedorServicio.balancePorSedeId(correo, fDesde, fHasta);
         }
+        return vendedorServicio.balanceTurnoActual(correo);
+    }
 
-        return vendedorServicio.balancePorSedeId(correo, fDesde, fHasta);
+    @GetMapping("/logo")
+    public ResponseEntity<MensajeDTO<String>> obtenerLogoEmpresa(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        String correo = obtenerCorreo(authorization);
+        return ResponseEntity.ok(new MensajeDTO<>(false, administradorServicio.obtenerLogoEmpresa(correo)));
+    }
+
+    @GetMapping("/impresion-cocina")
+    public ResponseEntity<MensajeDTO<Boolean>> obtenerImpresionCocina(
+            @RequestHeader("Authorization") String authorization, @RequestParam Long sedeId
+    ) {
+        return ResponseEntity.ok(new MensajeDTO<>(false, configuracionCocinaSedeService.obtener(authorization, sedeId).habilitada()));
+    }
+
+    private String obtenerCorreo(String authorization) {
+        String token = authorization.replace("Bearer ", "");
+        Jws<Claims> claims = jwtUtils.parseJwt(token);
+        return claims.getBody().getSubject();
     }
 }
 

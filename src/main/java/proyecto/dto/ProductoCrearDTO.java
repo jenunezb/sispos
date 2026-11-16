@@ -15,5 +15,7 @@ public record ProductoCrearDTO(@NotBlank(message = "El nombre es obligatorio")
                                 Double precioVenta,
 
                                String categoria,
-                               Long sedeId) {
+                               Long sedeId,
+                                    @Size(max = 100, message = "El código de barras admite máximo 100 caracteres")
+                                    String codigoBarras) {
 }

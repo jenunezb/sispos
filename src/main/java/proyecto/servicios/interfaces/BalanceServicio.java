@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface BalanceServicio {
 
-    public BalanceGeneralDTO balanceDelDia();
+    public BalanceGeneralDTO balanceDelDia(Long empresaNit);
 
-    public BalanceGeneralDTO balanceGeneral(LocalDateTime desde, LocalDateTime hasta);
+    public BalanceGeneralDTO balanceGeneral(Long empresaNit, LocalDateTime desde, LocalDateTime hasta);
 
     List<BalanceSedeDTO> balancePorSede(Long empresaNit, LocalDateTime desde, LocalDateTime hasta);
 

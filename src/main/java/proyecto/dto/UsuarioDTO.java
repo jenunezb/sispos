@@ -7,6 +7,8 @@ String ciudad,
 String telefono,
 String password,
 String correo,
-boolean estado
+boolean estado,
+Long sedeId,
+String perfil
 ) {
 }

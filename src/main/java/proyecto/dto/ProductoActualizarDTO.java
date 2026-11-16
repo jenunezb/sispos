@@ -19,5 +19,7 @@ public record ProductoActualizarDTO(@NotNull(message = "El código del producto 
 
                                     String categoria,
 
-                                    Boolean estado) {
+                                    Boolean estado,
+                                    @Size(max = 100, message = "El código de barras admite máximo 100 caracteres")
+                                    String codigoBarras) {
 }
