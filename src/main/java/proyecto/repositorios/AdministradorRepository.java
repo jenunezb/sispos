@@ -134,6 +134,8 @@ public interface AdministradorRepository extends JpaRepository<Administrador, Lo
 
     Optional<Administrador> findByCorreoIgnoreCase(String correo);
 
+    Optional<Administrador> findByCodigo(Integer codigo);
+
     List<Administrador> findByEmpresaNit(Long nit);
 
     List<Administrador> findByEmpresaNitAndEsSuperAdminFalseOrderByNombreAsc(Long nit);

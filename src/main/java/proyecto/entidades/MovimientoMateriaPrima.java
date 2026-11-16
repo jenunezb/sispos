@@ -17,4 +17,6 @@ public class MovimientoMateriaPrima {
     private double stockNuevo;
     private Long productoId;
     private String observacion;
+    @Column(name = "compra_id")
+    private Long compraId;
 }

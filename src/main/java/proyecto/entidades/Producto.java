@@ -27,6 +27,9 @@ public class Producto implements Serializable {
     @PositiveOrZero
     private Double precioProduccion;
 
+    @Column(name = "costo_compra_promedio", precision = 19, scale = 4)
+    private java.math.BigDecimal costoCompraPromedio;
+
     @Column(nullable = false)
     private Double precioVenta;
 

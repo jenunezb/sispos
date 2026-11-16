@@ -14,4 +14,5 @@ public class MovimientoStockProducto {
     private double stockAnterior;
     private double stockNuevo;
     private String observacion;
+    @Column(name = "compra_id") private Long compraId;
 }

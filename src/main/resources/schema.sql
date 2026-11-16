@@ -613,3 +613,67 @@ INSERT INTO movimiento_stock_producto(inventario_id,fecha,tipo,stock_anterior,st
 SELECT i.id,CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota','APERTURA',i.stock_actual,i.stock_actual,
        'Inicio del historial; no representa una entrada'
 FROM inventario i WHERE NOT EXISTS(SELECT 1 FROM movimiento_stock_producto h WHERE h.inventario_id=i.id);
+
+-- Compras de mercancía. Esquema aditivo: no modifica movimientos ni existencias previas.
+CREATE TABLE IF NOT EXISTS proveedor (
+    id BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    contacto VARCHAR(255)
+);
+ALTER TABLE proveedor ADD COLUMN IF NOT EXISTS empresa_id BIGINT REFERENCES empresa(nit);
+ALTER TABLE proveedor ADD COLUMN IF NOT EXISTS identificacion VARCHAR(30);
+ALTER TABLE proveedor ADD COLUMN IF NOT EXISTS correo VARCHAR(254);
+ALTER TABLE proveedor ADD COLUMN IF NOT EXISTS telefono VARCHAR(40);
+ALTER TABLE proveedor ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE producto ADD COLUMN IF NOT EXISTS costo_compra_promedio NUMERIC(19,4);
+ALTER TABLE movimiento_materia_prima ADD COLUMN IF NOT EXISTS compra_id BIGINT;
+ALTER TABLE movimiento_stock_producto ADD COLUMN IF NOT EXISTS compra_id BIGINT;
+
+CREATE TABLE IF NOT EXISTS compra (
+    id BIGSERIAL PRIMARY KEY,
+    empresa_id BIGINT NOT NULL REFERENCES empresa(nit),
+    sede_id BIGINT NOT NULL REFERENCES sede(id),
+    proveedor_id BIGINT NOT NULL REFERENCES proveedor(id),
+    numero_factura VARCHAR(80) NOT NULL,
+    fecha_factura DATE NOT NULL,
+    fecha_recepcion TIMESTAMP NOT NULL,
+    registrado_por VARCHAR(20) NOT NULL,
+    registrado_por_id BIGINT NOT NULL,
+    condicion_pago VARCHAR(20) NOT NULL,
+    modo_pago VARCHAR(30),
+    fecha_vencimiento DATE,
+    total NUMERIC(19,2) NOT NULL,
+    total_pagado NUMERIC(19,2) NOT NULL DEFAULT 0,
+    estado VARCHAR(20) NOT NULL,
+    observacion VARCHAR(500),
+    CONSTRAINT uk_compra_factura_proveedor_sede UNIQUE(sede_id, proveedor_id, numero_factura)
+);
+CREATE INDEX IF NOT EXISTS idx_compra_sede_fecha ON compra(sede_id,fecha_factura);
+CREATE INDEX IF NOT EXISTS idx_compra_proveedor_fecha ON compra(proveedor_id,fecha_factura);
+CREATE TABLE IF NOT EXISTS compra_detalle (
+    id BIGSERIAL PRIMARY KEY,
+    compra_id BIGINT NOT NULL REFERENCES compra(id) ON DELETE CASCADE,
+    tipo_item VARCHAR(20) NOT NULL,
+    materia_prima_id BIGINT REFERENCES materia_prima(codigo),
+    producto_id BIGINT REFERENCES producto(codigo),
+    nombre_item VARCHAR(160) NOT NULL,
+    unidad_base VARCHAR(20) NOT NULL,
+    presentacion VARCHAR(80),
+    contenido_presentacion NUMERIC(19,3),
+    cantidad NUMERIC(19,3) NOT NULL,
+    costo_unitario NUMERIC(19,4) NOT NULL,
+    subtotal NUMERIC(19,2) NOT NULL,
+    CONSTRAINT ck_compra_detalle_tipo CHECK ((tipo_item='MATERIA_PRIMA' AND materia_prima_id IS NOT NULL AND producto_id IS NULL) OR (tipo_item='PRODUCTO' AND producto_id IS NOT NULL AND materia_prima_id IS NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_compra_detalle_compra ON compra_detalle(compra_id);
+CREATE TABLE IF NOT EXISTS pago_compra (
+    id BIGSERIAL PRIMARY KEY,
+    compra_id BIGINT NOT NULL REFERENCES compra(id) ON DELETE CASCADE,
+    fecha DATE NOT NULL,
+    monto NUMERIC(19,2) NOT NULL,
+    modo_pago VARCHAR(30) NOT NULL,
+    referencia VARCHAR(255),
+    registrado_por VARCHAR(20) NOT NULL,
+    registrado_por_id BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_pago_compra_compra_fecha ON pago_compra(compra_id,fecha,id);

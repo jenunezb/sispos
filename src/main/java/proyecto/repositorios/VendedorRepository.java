@@ -16,6 +16,8 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
 
     Optional<Vendedor> findByCorreoIgnoreCase(String correo);
 
+    Optional<Vendedor> findByCodigo(Integer codigo);
+
     Optional<Vendedor> findByCedula(String cedula);
 
     Optional<Vendedor> findByCedulaAndSedeId(String cedula, Long sedeId);
