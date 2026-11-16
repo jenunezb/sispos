@@ -2,7 +2,6 @@ package proyecto.entidades;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,9 +29,8 @@ public class Usuario extends Cuenta implements Serializable {
     @NotBlank(message = "El teléfono es obligatorio")
     private String telefono;
 
-    @NotNull(message = "La ciudad es obligatoria")
-    @JoinColumn(nullable = false)
     @ManyToOne
+    @JoinColumn(nullable = true)
     private Ciudad ciudad;
 
     @Column(nullable = false)
