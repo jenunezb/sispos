@@ -21,6 +21,7 @@ public interface ComandaCocinaRepository extends JpaRepository<ComandaCocina, Lo
         LEFT JOIN FETCH c.sede s
         LEFT JOIN FETCH c.vendedor
         LEFT JOIN FETCH c.administrador
+        LEFT JOIN FETCH c.mesero
         WHERE s.empresa.nit = :empresaNit
           AND c.estado IN :estados
         ORDER BY c.fechaCreacion ASC
@@ -37,6 +38,7 @@ public interface ComandaCocinaRepository extends JpaRepository<ComandaCocina, Lo
         LEFT JOIN FETCH c.sede s
         LEFT JOIN FETCH c.vendedor
         LEFT JOIN FETCH c.administrador
+        LEFT JOIN FETCH c.mesero
         WHERE s.id = :sedeId
           AND c.estado IN :estados
         ORDER BY c.fechaCreacion ASC

@@ -127,6 +127,18 @@ CREATE TABLE IF NOT EXISTS pago_suscripcion_sede (
     CONSTRAINT fk_pago_suscripcion_sede_sede FOREIGN KEY (sede_id) REFERENCES sede(id)
 );
 
+CREATE TABLE IF NOT EXISTS mesero (
+    id BIGSERIAL PRIMARY KEY,
+    usuario VARCHAR(40) NOT NULL UNIQUE,
+    nombre VARCHAR(120) NOT NULL,
+    password_hash VARCHAR(60) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    clave_sesion VARCHAR(36) NOT NULL,
+    sede_id BIGINT NOT NULL REFERENCES sede(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_mesero_sede ON mesero(sede_id);
+
 CREATE TABLE IF NOT EXISTS comanda_cocina (
     id BIGSERIAL PRIMARY KEY,
     fecha_creacion TIMESTAMP NOT NULL,
@@ -150,6 +162,8 @@ CREATE TABLE IF NOT EXISTS comanda_cocina_detalle (
     cantidad INTEGER NOT NULL,
     CONSTRAINT fk_comanda_cocina_detalle_comanda FOREIGN KEY (comanda_id) REFERENCES comanda_cocina(id) ON DELETE CASCADE
 );
+
+ALTER TABLE comanda_cocina ADD COLUMN IF NOT EXISTS mesero_id BIGINT REFERENCES mesero(id);
 
 CREATE TABLE IF NOT EXISTS mesa_estado (
     id BIGSERIAL PRIMARY KEY,

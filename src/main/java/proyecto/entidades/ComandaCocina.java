@@ -13,7 +13,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = {"detalles", "sede", "vendedor", "administrador"})
+@ToString(exclude = {"detalles", "sede", "vendedor", "administrador", "mesero"})
 @Entity
 @Table(name = "comanda_cocina")
 public class ComandaCocina {
@@ -52,6 +52,10 @@ public class ComandaCocina {
     @ManyToOne
     @JoinColumn(name = "administrador_id")
     private Administrador administrador;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mesero_id")
+    private Mesero mesero;
 
     @OneToMany(mappedBy = "comanda", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ComandaCocinaDetalle> detalles = new ArrayList<>();

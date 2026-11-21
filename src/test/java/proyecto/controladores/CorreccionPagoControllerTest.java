@@ -8,6 +8,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import proyecto.excepciones.GlobalExceptionHandler;
 import proyecto.servicios.implementacion.CorreccionPagoService;
+import proyecto.servicios.implementacion.MeseroCuentaService;
 import proyecto.utils.FiltroToken;
 import proyecto.utils.JWTUtils;
 import static org.mockito.Mockito.*;
@@ -27,7 +28,8 @@ class CorreccionPagoControllerTest {
         Jws<Claims> token = mock(Jws.class); when(token.getBody()).thenReturn(claims);
         when(jwt.parseJwt("token")).thenReturn(token);
         mvc = MockMvcBuilders.standaloneSetup(new CorreccionPagoController(service))
-                .setControllerAdvice(new GlobalExceptionHandler()).addFilters(new FiltroToken(jwt)).build();
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .addFilters(new FiltroToken(jwt, mock(MeseroCuentaService.class))).build();
     }
 
     @Test void vendedorYAdminLleganAlServicioConIdentidadAutenticada() throws Exception {

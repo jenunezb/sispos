@@ -14,6 +14,7 @@ import proyecto.entidades.*;
 import proyecto.excepciones.GlobalExceptionHandler;
 import proyecto.repositorios.*;
 import proyecto.servicios.implementacion.ClienteServicio;
+import proyecto.servicios.implementacion.MeseroCuentaService;
 import proyecto.utils.FiltroToken;
 import proyecto.utils.JWTUtils;
 
@@ -39,7 +40,8 @@ class ClienteControllerTest {
         empresa.setNit(123L);
         var servicio = new ClienteServicio(clientes, administradores, vendedores, jwt);
         mvc = MockMvcBuilders.standaloneSetup(new ClienteController(servicio))
-                .setControllerAdvice(new GlobalExceptionHandler()).addFilters(new FiltroToken(jwt)).build();
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .addFilters(new FiltroToken(jwt, mock(MeseroCuentaService.class))).build();
     }
 
     @SuppressWarnings("unchecked")

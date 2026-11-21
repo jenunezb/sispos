@@ -2,8 +2,10 @@ package proyecto.servicios.implementacion;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import proyecto.dto.InventarioDTO;
 import proyecto.dto.MesaEstadoDTO;
 import proyecto.dto.MesaEstadoItemDTO;
@@ -19,7 +21,6 @@ import proyecto.servicios.interfaces.MesaEstadoServicio;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -78,8 +79,40 @@ public class MesaEstadoServicioImpl implements MesaEstadoServicio {
         }
         mesaEstado.setFechaActualizacion(ahoraBogota());
 
-        List<MesaEstadoItem> items = new ArrayList<>();
-        for (MesaEstadoItemDTO itemDto : dto.carrito() == null ? List.<MesaEstadoItemDTO>of() : dto.carrito()) {
+        mesaEstado.getItems().clear();
+        agregarItems(mesaEstado, dto.carrito() == null ? List.of() : dto.carrito());
+        return guardarYNotificar(sedeId, mesaEstado);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MesaEstadoDTO> listarMesasMesero(Mesero mesero) {
+        return mesaEstadoRepository.findDetalleBySedeId(mesero.getSede().getId()).stream()
+                .filter(this::visibleParaMesero)
+                .map(this::mapToDto)
+                .toList();
+    }
+
+    @Transactional
+    public MesaEstadoDTO agregarPedidoMesero(Mesero mesero, Long mesaId, Long version, List<MesaEstadoItemDTO> pedido) {
+        Long sedeId = mesero.getSede().getId();
+        MesaEstado mesa = mesaEstadoRepository.findDetalleBySedeIdAndMesaReferenciaId(sedeId, mesaId)
+                .filter(this::visibleParaMesero)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mesa no disponible"));
+        if (!version.equals(mesa.getVersion())) {
+            throw new MesaVersionConflictException();
+        }
+        agregarItems(mesa, pedido);
+        mesa.setEstado("OCUPADA");
+        mesa.setFechaActualizacion(ahoraBogota());
+        return guardarYNotificar(sedeId, mesa);
+    }
+
+    private boolean visibleParaMesero(MesaEstado mesa) {
+        return Boolean.TRUE.equals(mesa.getVisible()) && "MESA".equals(mesa.getTipo());
+    }
+
+    private void agregarItems(MesaEstado mesaEstado, List<MesaEstadoItemDTO> items) {
+        for (MesaEstadoItemDTO itemDto : items) {
             MesaEstadoItem item = new MesaEstadoItem();
             item.setMesaEstado(mesaEstado);
             item.setNombreLibre(limpiar(itemDto.nombreLibre()));
@@ -98,12 +131,11 @@ public class MesaEstadoServicioImpl implements MesaEstadoServicio {
                 item.setPrecioVenta(itemDto.producto().precioVenta());
             }
 
-            items.add(item);
+            mesaEstado.getItems().add(item);
         }
+    }
 
-        mesaEstado.getItems().clear();
-        mesaEstado.getItems().addAll(items);
-
+    private MesaEstadoDTO guardarYNotificar(Long sedeId, MesaEstado mesaEstado) {
         MesaEstadoDTO guardada = mapToDto(mesaEstadoRepository.saveAndFlush(mesaEstado));
         eventPublisher.publishEvent(new MesaEstadoActualizadoEvento(sedeId, guardada));
         return guardada;

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
@@ -13,15 +14,20 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ResponseStatusException;
 import proyecto.dto.MensajeDTO;
+import proyecto.servicios.implementacion.MeseroCuentaService;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
 public class FiltroToken extends OncePerRequestFilter {
 
     private final JWTUtils jwtUtils;
+    private final MeseroCuentaService meseroCuentaService;
+    public static final String ATRIBUTO_MESERO = "meseroAutenticado";
 
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
@@ -43,6 +49,31 @@ public class FiltroToken extends OncePerRequestFilter {
 
         String requestURI = req.getRequestURI();
         String token = getToken(req);
+        String ruta = requestURI.substring(req.getContextPath().length());
+        boolean rutaMesero = ruta.equals("/api/mesero") || ruta.startsWith("/api/mesero/");
+        boolean tokenMesero = token != null && token.startsWith(JWTUtils.PREFIJO_MESERO);
+        if (rutaMesero || tokenMesero) {
+            if (!rutaMesero) {
+                crearRespuestaError("No tienes permisos para acceder a este recurso",
+                        HttpServletResponse.SC_FORBIDDEN, res);
+                return;
+            }
+            if (!"POST".equals(req.getMethod()) || !"/api/mesero/login".equals(ruta)) {
+                if (!tokenMesero) {
+                    crearRespuestaError("Inicia sesión como mesero", HttpServletResponse.SC_UNAUTHORIZED, res);
+                    return;
+                }
+                try {
+                    req.setAttribute(ATRIBUTO_MESERO,
+                            meseroCuentaService.obtenerMesero(jwtUtils.parsearTokenMesero(token)));
+                } catch (JwtException | IllegalArgumentException | ResponseStatusException ex) {
+                    crearRespuestaError("Vuelve a iniciar sesión", HttpServletResponse.SC_UNAUTHORIZED, res);
+                    return;
+                }
+            }
+            chain.doFilter(req, res);
+            return;
+        }
         boolean error = true;
 
         try {
@@ -117,6 +148,7 @@ public class FiltroToken extends OncePerRequestFilter {
 
     private void crearRespuestaError(String mensaje, int codigoError, HttpServletResponse response) throws IOException {
         MensajeDTO<String> dto = new MensajeDTO<>(true, mensaje);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType("application/json");
         response.setStatus(codigoError);
         response.getWriter().write(new ObjectMapper().writeValueAsString(dto));

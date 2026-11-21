@@ -16,6 +16,7 @@ import java.util.List;
 import proyecto.entidades.Venta;
 import proyecto.excepciones.GlobalExceptionHandler;
 import proyecto.servicios.implementacion.VentaAccesoService;
+import proyecto.servicios.implementacion.MeseroCuentaService;
 import proyecto.servicios.interfaces.ComandaCocinaServicio;
 import proyecto.servicios.interfaces.VentaServicio;
 import proyecto.utils.FiltroToken;
@@ -43,7 +44,8 @@ class VentaControllerTest {
         when(jwt.parseJwt("token")).thenReturn(token);
         mvc = MockMvcBuilders.standaloneSetup(new VentaController(ventas,
                         mock(ComandaCocinaServicio.class), acceso, jwt))
-                .setControllerAdvice(new GlobalExceptionHandler()).addFilters(new FiltroToken(jwt)).build();
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .addFilters(new FiltroToken(jwt, mock(MeseroCuentaService.class))).build();
     }
 
     @ParameterizedTest

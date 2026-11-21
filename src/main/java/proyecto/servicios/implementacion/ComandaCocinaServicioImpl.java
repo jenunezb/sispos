@@ -56,6 +56,19 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
             throw new RuntimeException("La sede no corresponde al usuario autenticado");
         }
 
+        return guardarComanda(sede, contexto.vendedor(), contexto.administrador(), null,
+                dto.nombreMesa(), dto.observaciones(), dto.detalles());
+    }
+
+    @Transactional
+    public ComandaCocinaResponseDTO crearComandaMesero(
+            Mesero mesero, String nombreMesa, String observaciones, List<ComandaCocinaDetalleDTO> detalles) {
+        return guardarComanda(mesero.getSede(), null, null, mesero, nombreMesa, observaciones, detalles);
+    }
+
+    private ComandaCocinaResponseDTO guardarComanda(Sede sede, Vendedor vendedor, Administrador administrador,
+                                                   Mesero mesero, String nombreMesa, String observaciones,
+                                                   List<ComandaCocinaDetalleDTO> items) {
         if (!Boolean.TRUE.equals(sede.getImpresionCocinaHabilitada())) {
             throw new RuntimeException("La impresion de cocina no esta habilitada para esta sede");
         }
@@ -65,15 +78,16 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
         ComandaCocina comanda = new ComandaCocina();
         comanda.setFechaCreacion(ahora);
         comanda.setFechaActualizacion(ahora);
-        comanda.setNombreMesa(dto.nombreMesa().trim());
-        comanda.setObservaciones(limpiarTexto(dto.observaciones()));
+        comanda.setNombreMesa(nombreMesa.trim());
+        comanda.setObservaciones(limpiarTexto(observaciones));
         comanda.setEstado(EstadoComandaCocina.PENDIENTE);
         comanda.setSede(sede);
-        comanda.setVendedor(contexto.vendedor());
-        comanda.setAdministrador(contexto.administrador());
-        comanda.setTotalItems(dto.detalles().stream().mapToInt(ComandaCocinaDetalleDTO::cantidad).sum());
+        comanda.setVendedor(vendedor);
+        comanda.setAdministrador(administrador);
+        comanda.setMesero(mesero);
+        comanda.setTotalItems(items.stream().mapToInt(ComandaCocinaDetalleDTO::cantidad).sum());
 
-        List<ComandaCocinaDetalle> detalles = new ArrayList<>(dto.detalles().stream()
+        List<ComandaCocinaDetalle> detalles = new ArrayList<>(items.stream()
                 .map(item -> {
                     ComandaCocinaDetalle detalle = new ComandaCocinaDetalle();
                     detalle.setComanda(comanda);
@@ -122,10 +136,6 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
     }
 
     private ComandaCocinaResponseDTO mapToResponse(ComandaCocina comanda) {
-        String responsable = comanda.getVendedor() != null
-                ? comanda.getVendedor().getNombre()
-                : comanda.getAdministrador() != null ? comanda.getAdministrador().getNombre() : "Sin responsable";
-
         return new ComandaCocinaResponseDTO(
                 comanda.getId(),
                 comanda.getFechaCreacion(),
@@ -136,7 +146,7 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
                 comanda.getTotalItems(),
                 comanda.getSede() != null ? comanda.getSede().getId() : null,
                 comanda.getSede() != null ? comanda.getSede().getUbicacion() : null,
-                responsable,
+                obtenerResponsable(comanda),
                 comanda.getDetalles().stream()
                         .map(detalle -> new ComandaCocinaDetalleDTO(
                                 detalle.getProductoNombre(),
@@ -144,6 +154,13 @@ public class ComandaCocinaServicioImpl implements ComandaCocinaServicio {
                         ))
                         .toList()
         );
+    }
+
+    private String obtenerResponsable(ComandaCocina comanda) {
+        if (comanda.getMesero() != null) return comanda.getMesero().getNombre();
+        if (comanda.getVendedor() != null) return comanda.getVendedor().getNombre();
+        if (comanda.getAdministrador() != null) return comanda.getAdministrador().getNombre();
+        return "Sin responsable";
     }
 
     private UsuarioContexto resolverUsuario(String correo) {
